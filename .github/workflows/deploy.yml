@@ -23,9 +23,14 @@ jobs:
           HOST: ${{ secrets.HOSTINGER_HOST }}
           USER: ${{ secrets.HOSTINGER_USERNAME }}
           PASS: ${{ secrets.HOSTINGER_PASSWORD }}
-        run: |
+      run: |
           lftp -u "$USER","$PASS" "sftp://$HOST:65002" -e "
             set sftp:auto-confirm yes
+            cd domains
+            ls
+            cd nichodev.com
+            ls
+            cd public_html
             pwd
             ls
             bye
