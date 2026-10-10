@@ -1,0 +1,33 @@
+
+name: Publicar site na Hostinger
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar arquivos do repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar cliente SFTP
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Enviar arquivos para a Hostinger
+        env:
+          HOST: ${{ secrets.HOSTINGER_HOST }}
+          USER: ${{ secrets.HOSTINGER_USERNAME }}
+          PASS: ${{ secrets.HOSTINGER_PASSWORD }}
+        run: |
+          lftp -u "$USER","$PASS" "sftp://$HOST:65002" -e "
+            set sftp:auto-confirm yes
+            put index.html -o public_html/index.html
+            put voz.html -o public_html/voz.html
+            put robots.txt -o public_html/robots.txt
+            bye
+          "
