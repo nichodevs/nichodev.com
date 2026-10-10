@@ -26,8 +26,7 @@ jobs:
         run: |
           lftp -u "$USER","$PASS" "sftp://$HOST:65002" -e "
             set sftp:auto-confirm yes
-            put index.html -o public_html/index.html
-            put voz.html -o public_html/voz.html
-            put robots.txt -o public_html/robots.txt
+            pwd
+            ls
             bye
           "
