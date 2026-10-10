@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estúdio de voz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+/* Layout: uma coluna centrada. Tela inicial com título e START, depois o painel de controles. Branco, preto, bordas grossas retas, fonte pixelada. */
+:root{
+  --bg:#ffffff;
+  --fg:#000000;
+  --mute:#555555;
+  --line:#000000;
+  --font:"Press Start 2P","Courier New",monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#000000;--fg:#ffffff;--mute:#b5b5b5;--line:#ffffff;color-scheme:dark}
+}
+:root[data-theme="dark"]{--bg:#000000;--fg:#ffffff;--mute:#b5b5b5;--line:#ffffff;color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:11px;line-height:1.9;padding-inline:16px;padding-block:24px 56px}
+main{max-width:560px;margin-inline:auto}
+
+.cursor{display:inline-block;width:.6em;height:.95em;margin-left:.3em;background:var(--fg);vertical-align:-.1em;animation:blink 1.06s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.cursor{animation:none}}
+
+button{font-family:var(--font);font-size:12px;line-height:1;color:var(--fg);background:var(--bg);border:3px solid var(--line);border-radius:0;padding:16px 20px;cursor:pointer;text-transform:uppercase}
+button:hover{background:var(--fg);color:var(--bg)}
+button:focus-visible,input:focus-visible{outline:3px dashed var(--fg);outline-offset:4px}
+
+/* Painel */
+#studio h2{margin:0 0 20px;font-weight:400;font-size:clamp(14px,4.4vw,20px);line-height:1.4}
+.warn{margin:0 0 24px;padding:12px 14px;border:3px solid var(--line);color:var(--mute);font-size:10px;line-height:1.9}
+.bar{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+#go{flex:0 0 auto}
+#go.on{background:var(--fg);color:var(--bg)}
+#go.on:hover{background:var(--bg);color:var(--fg)}
+.meter{flex:1 1 140px;min-width:0;display:grid;grid-template-columns:repeat(20,1fr);gap:2px;height:20px;border:3px solid var(--line);padding:2px}
+.meter i{background:transparent}
+.meter i.on{background:var(--fg)}
+#msg{min-height:2.4em;margin:0 0 20px;font-size:10px;color:var(--mute)}
+
+.presets{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px}
+.presets button{font-size:10px;padding:12px 14px}
+.presets button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+
+fieldset{margin:0 0 20px;padding:14px 16px 20px;border:3px solid var(--line);min-width:0}
+legend{padding:0 8px;font-size:11px;text-transform:uppercase}
+label{display:flex;justify-content:space-between;gap:12px;font-size:10px;color:var(--mute);margin-bottom:12px}
+label b{font-weight:400;color:var(--fg)}
+
+input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:28px;margin:0;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:6px;background:var(--fg);border:0}
+input[type=range]::-moz-range-track{height:6px;background:var(--fg);border:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:28px;margin-top:-11px;background:var(--bg);border:3px solid var(--line);border-radius:0}
+input[type=range]::-moz-range-thumb{width:12px;height:22px;background:var(--bg);border:3px solid var(--line);border-radius:0}
+input[type=range]:hover::-webkit-slider-thumb{background:var(--fg)}
+input[type=range]:hover::-moz-range-thumb{background:var(--fg)}
+
+/* Botão para voltar à página anterior */
+.back-wrap{display:flex;justify-content:center;margin-top:28px}
+#back{min-width:140px}
+
+</style>
+
+<main id="studio">
+  <h2>estúdio de voz<span class="cursor" aria-hidden="true"></span></h2>
+  <p class="warn">Use fones de ouvido. Com caixas de som, o microfone capta a saída e causa microfonia.</p>
+
+  <div class="bar">
+    <button id="go" type="button">Ligar microfone</button>
+    <div class="meter" id="lvl" role="img" aria-label="Nível do microfone"></div>
+  </div>
+  <p id="msg" role="status"></p>
+
+  <div class="presets" id="presets">
+    <button type="button" data-p="normal" aria-pressed="true">Normal</button>
+    <button type="button" data-p="grave" aria-pressed="false">Voz grave</button>
+    <button type="button" data-p="crianca" aria-pressed="false">Voz fina</button>
+    <button type="button" data-p="robo" aria-pressed="false">Robô</button>
+    <button type="button" data-p="rock" aria-pressed="false">Rock</button>
+  </div>
+
+  <fieldset><legend>Tom</legend>
+    <label for="pitch">Semitons <b id="v-pitch">0</b></label>
+    <input id="pitch" type="range" min="-12" max="12" step="1" value="0">
+  </fieldset>
+  <fieldset><legend>Drive</legend>
+    <label for="drive">Intensidade <b id="v-drive">0%</b></label>
+    <input id="drive" type="range" min="0" max="100" value="0">
+  </fieldset>
+  <fieldset><legend>Chorus</legend>
+    <label for="chorus">Mistura <b id="v-chorus">0%</b></label>
+    <input id="chorus" type="range" min="0" max="100" value="0">
+  </fieldset>
+  <fieldset><legend>Reverb</legend>
+    <label for="reverb">Mistura <b id="v-reverb">0%</b></label>
+    <input id="reverb" type="range" min="0" max="100" value="0">
+  </fieldset>
+  <fieldset><legend>Volume</legend>
+    <label for="vol">Saída <b id="v-vol">100%</b></label>
+    <input id="vol" type="range" min="0" max="150" value="100">
+  </fieldset>
+
+  <div class="back-wrap">
+    <button id="back" type="button">Voltar</button>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const msg = t => $('msg').textContent = t;
+let fx = null, stream = null, running = false;
+
+const SEG = 20;
+$('lvl').innerHTML = '<i></i>'.repeat(SEG);
+const segs = $('lvl').children;
+
+const PRESETS = {
+  normal:{pitch:0,drive:0,chorus:0,reverb:0},
+  grave:{pitch:-5,drive:10,chorus:0,reverb:15},
+  crianca:{pitch:7,drive:0,chorus:20,reverb:10},
+  robo:{pitch:-2,drive:55,chorus:70,reverb:25},
+  rock:{pitch:0,drive:70,chorus:25,reverb:35}
+};
+
+function markPreset(key){
+  document.querySelectorAll('#presets button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === key)));
+}
+
+function apply(){
+  const p = +$('pitch').value, d = +$('drive').value/100, c = +$('chorus').value/100,
+        r = +$('reverb').value/100, v = +$('vol').value/100;
+  $('v-pitch').textContent = (p>0?'+':'')+p;
+  $('v-drive').textContent = Math.round(d*100)+'%';
+  $('v-chorus').textContent = Math.round(c*100)+'%';
+  $('v-reverb').textContent = Math.round(r*100)+'%';
+  $('v-vol').textContent = Math.round(v*100)+'%';
+  if(!fx) return;
+  fx.pitch.pitch = p;
+  fx.pitch.wet.value = p===0 ? 0 : 1;
+  fx.drive.distortion = 0.2 + d*0.8;
+  fx.drive.wet.value = d;
+  fx.chorus.wet.value = c;
+  fx.reverb.wet.value = r;
+  fx.out.volume.value = Tone.gainToDb(Math.max(v,0.0001));
+}
+
+['pitch','drive','chorus','reverb','vol'].forEach(id => $(id).addEventListener('input', () => { markPreset(null); apply(); }));
+$('presets').addEventListener('click', e => {
+  const k = e.target.dataset.p; if(!k) return;
+  Object.entries(PRESETS[k]).forEach(([id,val]) => $(id).value = val);
+  markPreset(k);
+  apply();
+});
+
+function paintMeter(n){
+  for(let i=0;i<SEG;i++) segs[i].classList.toggle('on', i<n);
+}
+
+async function start(){
+  try{
+    await Tone.start();
+    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  }catch(err){
+    msg('Não foi possível acessar o microfone. Permita o acesso nas configurações do navegador e tente de novo.');
+    return;
+  }
+  const ctx = Tone.getContext().rawContext;
+  const src = ctx.createMediaStreamSource(stream);
+  fx = {
+    pitch: new Tone.PitchShift({pitch:0,windowSize:0.08,wet:0}),
+    drive: new Tone.Distortion({distortion:0.2,wet:0}),
+    chorus: new Tone.Chorus({frequency:1.8,delayTime:3.5,depth:0.7,wet:0}).start(),
+    reverb: new Tone.Reverb({decay:2.5,wet:0}),
+    out: new Tone.Volume(0),
+    meter: new Tone.Meter({smoothing:0.8})
+  };
+  await fx.reverb.generate();
+  Tone.connect(src, fx.pitch);
+  fx.pitch.chain(fx.drive, fx.chorus, fx.reverb, fx.out, Tone.getDestination());
+  fx.out.connect(fx.meter);
+  fx.src = src;
+  running = true;
+  $('go').textContent = 'Desligar microfone';
+  $('go').classList.add('on');
+  msg('Ao vivo. Ajuste os controles enquanto fala.');
+  apply();
+  (function loop(){
+    if(!running) return;
+    const db = fx.meter.getValue();
+    const lvl = Math.max(0, Math.min(1, (db+60)/60));
+    paintMeter(Math.round(lvl*SEG));
+    requestAnimationFrame(loop);
+  })();
+}
+
+function stop(){
+  running = false;
+  stream && stream.getTracks().forEach(t => t.stop());
+  if(fx){ fx.src.disconnect(); Object.values(fx).forEach(n => n.dispose && n.dispose()); fx = null; }
+  paintMeter(0);
+  $('go').textContent = 'Ligar microfone';
+  $('go').classList.remove('on');
+  msg('Microfone desligado.');
+}
+
+
+$('back').addEventListener('click', () => {
+  if (window.history.length > 1) {
+    window.history.back();
+  } else {
+    window.location.href = 'index.html';
+  }
+});
+
+$('go').addEventListener('click', () => running ? stop() : start());
+apply();
+</script>
+
+</html>
