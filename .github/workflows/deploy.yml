@@ -18,12 +18,12 @@ jobs:
       - name: Instalar cliente SFTP
         run: sudo apt-get update && sudo apt-get install -y lftp
 
-      - name: Enviar arquivos para a Hostinger
+      - name: Verificar caminho na Hostinger
         env:
           HOST: ${{ secrets.HOSTINGER_HOST }}
           USER: ${{ secrets.HOSTINGER_USERNAME }}
           PASS: ${{ secrets.HOSTINGER_PASSWORD }}
-      run: |
+        run: |
           lftp -u "$USER","$PASS" "sftp://$HOST:65002" -e "
             set sftp:auto-confirm yes
             cd domains
