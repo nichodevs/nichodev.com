@@ -18,7 +18,7 @@ jobs:
       - name: Instalar cliente SFTP
         run: sudo apt-get update && sudo apt-get install -y lftp
 
-      - name: Verificar caminho na Hostinger
+      - name: Publicar arquivos na Hostinger
         env:
           HOST: ${{ secrets.HOSTINGER_HOST }}
           USER: ${{ secrets.HOSTINGER_USERNAME }}
@@ -26,12 +26,9 @@ jobs:
         run: |
           lftp -u "$USER","$PASS" "sftp://$HOST:65002" -e "
             set sftp:auto-confirm yes
-            cd domains
-            ls
-            cd nichodev.com
-            ls
-            cd public_html
-            pwd
-            ls
+            cd domains/nichodev.com/public_html
+            put index.html -o index.html
+            put voz.html -o voz.html
+            put robots.txt -o robots.txt
             bye
           "
