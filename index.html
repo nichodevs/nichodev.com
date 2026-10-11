@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -76,6 +77,11 @@
       outline-offset: 5px;
     }
 
+    .api-button:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
     .api-status {
       max-width: 90vw;
       font-family: monospace;
@@ -95,9 +101,54 @@
     }
   </style>
 </head>
+
 <body>
   <h1>nichodevs<span class="cursor" aria-hidden="true"></span></h1>
 
-  <a class="api-button" href="voz.html">START</a>
+  <button class="api-button" id="startButton" type="button">
+    START
+  </button>
+
+  <p class="api-status" id="apiStatus" role="status" aria-live="polite"></p>
+
+  <script>
+    const startButton = document.getElementById("startButton");
+    const apiStatus = document.getElementById("apiStatus");
+
+    startButton.addEventListener("click", async () => {
+      startButton.disabled = true;
+      apiStatus.textContent = "CONECTANDO À API...";
+
+      try {
+        const response = await fetch("/api/status", {
+          method: "GET",
+          headers: {
+            "Accept": "application/json"
+          },
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          throw new Error("A API retornou um erro HTTP.");
+        }
+
+        const data = await response.json();
+
+        if (data.status !== "ok") {
+          throw new Error("A API não confirmou o funcionamento.");
+        }
+
+        apiStatus.textContent = "CONEXÃO OK! ABRINDO ESTÚDIO...";
+
+        window.location.href = "voz.html";
+      } catch (error) {
+        apiStatus.textContent =
+          "ERRO AO CONECTAR À API. TENTE NOVAMENTE.";
+
+        startButton.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
+```
