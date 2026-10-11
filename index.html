@@ -114,6 +114,11 @@
   <script>
     const startButton = document.getElementById("startButton");
     const apiStatus = document.getElementById("apiStatus");
+    // Restaura a página quando o visitante volta do estúdio.
+window.addEventListener("pageshow", () => {
+  startButton.disabled = false;
+  apiStatus.textContent = "";
+});
 
     startButton.addEventListener("click", async () => {
       startButton.disabled = true;
