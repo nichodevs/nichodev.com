@@ -8,35 +8,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
 <style>
-/* Layout: uma coluna centrada. Tela inicial com título e START, depois o painel de controles. Branco, preto, bordas grossas retas, fonte pixelada. */
-:root{
-  --bg:#ffffff;
-  --fg:#000000;
-  --mute:#555555;
-  --line:#000000;
-  --font:"Press Start 2P","Courier New",monospace;
-  color-scheme:light;
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){--bg:#000000;--fg:#ffffff;--mute:#b5b5b5;--line:#ffffff;color-scheme:dark}
-}
-:root[data-theme="dark"]{--bg:#000000;--fg:#ffffff;--mute:#b5b5b5;--line:#ffffff;color-scheme:dark}
-
+:root{--bg:#fff;--fg:#000;--mute:#555;--line:#000;--font:"Press Start 2P","Courier New",monospace;color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--fg:#fff;--mute:#b5b5b5;--line:#fff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#000;--fg:#fff;--mute:#b5b5b5;--line:#fff;color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{background:var(--bg)}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:11px;line-height:1.9;padding-inline:16px;padding-block:24px 56px}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:11px;line-height:1.9;padding:24px 16px 56px}
 main{max-width:560px;margin-inline:auto}
-
 .cursor{display:inline-block;width:.6em;height:.95em;margin-left:.3em;background:var(--fg);vertical-align:-.1em;animation:blink 1.06s steps(1) infinite}
 @keyframes blink{50%{opacity:0}}
-@media (prefers-reduced-motion:reduce){.cursor{animation:none}}
-
-button{font-family:var(--font);font-size:12px;line-height:1;color:var(--fg);background:var(--bg);border:3px solid var(--line);border-radius:0;padding:16px 20px;cursor:pointer;text-transform:uppercase}
+@media(prefers-reduced-motion:reduce){.cursor{animation:none}}
+button,select{font-family:var(--font);font-size:11px;line-height:1.5;color:var(--fg);background:var(--bg);border:3px solid var(--line);border-radius:0;padding:12px;max-width:100%}
+button{cursor:pointer;text-transform:uppercase}
 button:hover{background:var(--fg);color:var(--bg)}
-button:focus-visible,input:focus-visible{outline:3px dashed var(--fg);outline-offset:4px}
-
-/* Painel */
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px dashed var(--fg);outline-offset:4px}
 #studio h2{margin:0 0 20px;font-weight:400;font-size:clamp(14px,4.4vw,20px);line-height:1.4}
 .warn{margin:0 0 24px;padding:12px 14px;border:3px solid var(--line);color:var(--mute);font-size:10px;line-height:1.9}
 .bar{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
@@ -44,42 +30,47 @@ button:focus-visible,input:focus-visible{outline:3px dashed var(--fg);outline-of
 #go.on{background:var(--fg);color:var(--bg)}
 #go.on:hover{background:var(--bg);color:var(--fg)}
 .meter{flex:1 1 140px;min-width:0;display:grid;grid-template-columns:repeat(20,1fr);gap:2px;height:20px;border:3px solid var(--line);padding:2px}
-.meter i{background:transparent}
-.meter i.on{background:var(--fg)}
+.meter i{background:transparent}.meter i.on{background:var(--fg)}
 #msg{min-height:2.4em;margin:0 0 20px;font-size:10px;color:var(--mute)}
-
+.device-box{border:3px solid var(--line);padding:14px 16px;margin-bottom:24px}
+.device-box label{display:block;margin-bottom:10px}
+.device-box select{display:block;width:100%;padding:12px;font-size:10px}
+.device-box button{margin-top:12px;font-size:9px}
+.small{color:var(--mute);font-size:9px;line-height:1.9}
 .presets{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px}
 .presets button{font-size:10px;padding:12px 14px}
 .presets button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
-
 fieldset{margin:0 0 20px;padding:14px 16px 20px;border:3px solid var(--line);min-width:0}
 legend{padding:0 8px;font-size:11px;text-transform:uppercase}
 label{display:flex;justify-content:space-between;gap:12px;font-size:10px;color:var(--mute);margin-bottom:12px}
 label b{font-weight:400;color:var(--fg)}
-
 input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:28px;margin:0;background:transparent;cursor:pointer}
 input[type=range]::-webkit-slider-runnable-track{height:6px;background:var(--fg);border:0}
 input[type=range]::-moz-range-track{height:6px;background:var(--fg);border:0}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:28px;margin-top:-11px;background:var(--bg);border:3px solid var(--line);border-radius:0}
 input[type=range]::-moz-range-thumb{width:12px;height:22px;background:var(--bg);border:3px solid var(--line);border-radius:0}
-input[type=range]:hover::-webkit-slider-thumb{background:var(--fg)}
-input[type=range]:hover::-moz-range-thumb{background:var(--fg)}
-
-/* Botão para voltar à página anterior */
+input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-range-thumb{background:var(--fg)}
 .back-wrap{display:flex;justify-content:center;margin-top:28px}
 #back{min-width:140px}
-
 </style>
-
+</head>
+<body>
 <main id="studio">
   <h2>estúdio de voz<span class="cursor" aria-hidden="true"></span></h2>
-  <p class="warn">Use fones de ouvido. Com caixas de som, o microfone capta a saída e causa microfonia.</p>
+  <p class="warn">Use fones de ouvido. Para enviar a voz modificada a outro aplicativo, selecione CABLE Input abaixo. No WhatsApp Desktop ou Discord, selecione CABLE Output como microfone.</p>
 
   <div class="bar">
     <button id="go" type="button">Ligar microfone</button>
     <div class="meter" id="lvl" role="img" aria-label="Nível do microfone"></div>
   </div>
-  <p id="msg" role="status"></p>
+  <p id="msg" role="status">Permita o acesso ao microfone quando solicitado.</p>
+
+  <section class="device-box">
+    <label for="outputDevice">Saída do áudio processado</label>
+    <select id="outputDevice"><option value="">Saída padrão do Windows</option></select>
+    <button id="refreshDevices" type="button">Atualizar dispositivos</button>
+    <p class="small">Para usar em chamadas, escolha “CABLE Input (VB-Audio Virtual Cable)”. Se não aparecer, instale o VB-CABLE, permita o microfone e atualize a lista. Sem cabo virtual, você ainda pode ouvir os efeitos pela saída padrão.</p>
+  </section>
 
   <div class="presets" id="presets">
     <button type="button" data-p="normal" aria-pressed="true">Normal</button>
@@ -89,38 +80,20 @@ input[type=range]:hover::-moz-range-thumb{background:var(--fg)}
     <button type="button" data-p="rock" aria-pressed="false">Rock</button>
   </div>
 
-  <fieldset><legend>Tom</legend>
-    <label for="pitch">Semitons <b id="v-pitch">0</b></label>
-    <input id="pitch" type="range" min="-12" max="12" step="1" value="0">
-  </fieldset>
-  <fieldset><legend>Drive</legend>
-    <label for="drive">Intensidade <b id="v-drive">0%</b></label>
-    <input id="drive" type="range" min="0" max="100" value="0">
-  </fieldset>
-  <fieldset><legend>Chorus</legend>
-    <label for="chorus">Mistura <b id="v-chorus">0%</b></label>
-    <input id="chorus" type="range" min="0" max="100" value="0">
-  </fieldset>
-  <fieldset><legend>Reverb</legend>
-    <label for="reverb">Mistura <b id="v-reverb">0%</b></label>
-    <input id="reverb" type="range" min="0" max="100" value="0">
-  </fieldset>
-  <fieldset><legend>Volume</legend>
-    <label for="vol">Saída <b id="v-vol">100%</b></label>
-    <input id="vol" type="range" min="0" max="150" value="100">
-  </fieldset>
-
-  <div class="back-wrap">
-    <button id="back" type="button">Voltar</button>
-  </div>
+  <fieldset><legend>Tom</legend><label for="pitch">Semitons <b id="v-pitch">0</b></label><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></fieldset>
+  <fieldset><legend>Drive</legend><label for="drive">Intensidade <b id="v-drive">0%</b></label><input id="drive" type="range" min="0" max="100" value="0"></fieldset>
+  <fieldset><legend>Chorus</legend><label for="chorus">Mistura <b id="v-chorus">0%</b></label><input id="chorus" type="range" min="0" max="100" value="0"></fieldset>
+  <fieldset><legend>Reverb</legend><label for="reverb">Mistura <b id="v-reverb">0%</b></label><input id="reverb" type="range" min="0" max="100" value="0"></fieldset>
+  <fieldset><legend>Volume</legend><label for="vol">Saída <b id="v-vol">100%</b></label><input id="vol" type="range" min="0" max="150" value="100"></fieldset>
+  <div class="back-wrap"><button id="back" type="button">Voltar</button></div>
 </main>
 
+<audio id="processedAudio" autoplay playsinline></audio>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const msg = t => $('msg').textContent = t;
-let fx = null, stream = null, running = false;
-
+let fx = null, stream = null, running = false, mediaOut = null;
 const SEG = 20;
 $('lvl').innerHTML = '<i></i>'.repeat(SEG);
 const segs = $('lvl').children;
@@ -136,6 +109,47 @@ const PRESETS = {
 function markPreset(key){
   document.querySelectorAll('#presets button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === key)));
 }
+
+async function refreshOutputs(){
+  const select = $('outputDevice');
+  const previous = select.value;
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    select.innerHTML = '<option value="">Saída padrão do Windows</option>';
+    devices.filter(d => d.kind === 'audiooutput').forEach((d, i) => {
+      const opt = document.createElement('option');
+      opt.value = d.deviceId;
+      opt.textContent = d.label || `Saída de áudio ${i + 1}`;
+      select.appendChild(opt);
+    });
+    if ([...select.options].some(o => o.value === previous)) select.value = previous;
+  } catch(e) {
+    msg('Não foi possível listar as saídas de áudio.');
+  }
+}
+
+$('refreshDevices').addEventListener('click', async () => {
+  try {
+    const temp = await navigator.mediaDevices.getUserMedia({audio:true});
+    temp.getTracks().forEach(t => t.stop());
+  } catch(e) {}
+  await refreshOutputs();
+  msg('Lista atualizada. Se necessário, permita o acesso ao microfone.');
+});
+
+$('outputDevice').addEventListener('change', async () => {
+  const audio = $('processedAudio');
+  if (typeof audio.setSinkId !== 'function') {
+    msg('Seu navegador não permite selecionar a saída. Use Chrome ou Edge atualizado.');
+    return;
+  }
+  try {
+    await audio.setSinkId($('outputDevice').value);
+    msg(running ? 'Saída alterada; a voz continua ao vivo.' : 'Saída selecionada. Ligue o microfone para começar.');
+  } catch(e) {
+    msg('Não foi possível selecionar essa saída. Confira o dispositivo e tente novamente.');
+  }
+});
 
 function apply(){
   const p = +$('pitch').value, d = +$('drive').value/100, c = +$('chorus').value/100,
@@ -157,74 +171,110 @@ function apply(){
 
 ['pitch','drive','chorus','reverb','vol'].forEach(id => $(id).addEventListener('input', () => { markPreset(null); apply(); }));
 $('presets').addEventListener('click', e => {
-  const k = e.target.dataset.p; if(!k) return;
+  const k = e.target.dataset.p;
+  if(!k || !PRESETS[k]) return;
   Object.entries(PRESETS[k]).forEach(([id,val]) => $(id).value = val);
   markPreset(k);
   apply();
 });
 
-function paintMeter(n){
-  for(let i=0;i<SEG;i++) segs[i].classList.toggle('on', i<n);
-}
+function paintMeter(n){for(let i=0;i<SEG;i++) segs[i].classList.toggle('on', i<n);}
 
 async function start(){
-  try{
-    await Tone.start();
-    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-  }catch(err){
-    msg('Não foi possível acessar o microfone. Permita o acesso nas configurações do navegador e tente de novo.');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    msg('Acesso ao microfone indisponível. Abra o site por HTTPS no Chrome ou Edge.');
     return;
   }
-  const ctx = Tone.getContext().rawContext;
-  const src = ctx.createMediaStreamSource(stream);
-  fx = {
-    pitch: new Tone.PitchShift({pitch:0,windowSize:0.08,wet:0}),
-    drive: new Tone.Distortion({distortion:0.2,wet:0}),
-    chorus: new Tone.Chorus({frequency:1.8,delayTime:3.5,depth:0.7,wet:0}).start(),
-    reverb: new Tone.Reverb({decay:2.5,wet:0}),
-    out: new Tone.Volume(0),
-    meter: new Tone.Meter({smoothing:0.8})
-  };
-  await fx.reverb.generate();
-  Tone.connect(src, fx.pitch);
-  fx.pitch.chain(fx.drive, fx.chorus, fx.reverb, fx.out, Tone.getDestination());
-  fx.out.connect(fx.meter);
-  fx.src = src;
-  running = true;
-  $('go').textContent = 'Desligar microfone';
-  $('go').classList.add('on');
-  msg('Ao vivo. Ajuste os controles enquanto fala.');
-  apply();
-  (function loop(){
-    if(!running) return;
-    const db = fx.meter.getValue();
-    const lvl = Math.max(0, Math.min(1, (db+60)/60));
-    paintMeter(Math.round(lvl*SEG));
-    requestAnimationFrame(loop);
-  })();
+  $('go').disabled = true;
+  try {
+    await Tone.start();
+    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    await refreshOutputs();
+
+    const ctx = Tone.getContext().rawContext;
+    const src = ctx.createMediaStreamSource(stream);
+    mediaOut = ctx.createMediaStreamDestination();
+
+    fx = {
+      pitch: new Tone.PitchShift({pitch:0,windowSize:0.08,wet:0}),
+      drive: new Tone.Distortion({distortion:0.2,wet:0}),
+      chorus: new Tone.Chorus({frequency:1.8,delayTime:3.5,depth:0.7,wet:0}).start(),
+      reverb: new Tone.Reverb({decay:2.5,wet:0}),
+      out: new Tone.Volume(0),
+      meter: new Tone.Meter({smoothing:0.8}),
+      src
+    };
+    await fx.reverb.generate();
+
+    Tone.connect(src, fx.pitch);
+    fx.pitch.chain(fx.drive, fx.chorus, fx.reverb, fx.out);
+    fx.out.connect(mediaOut);
+    fx.out.connect(fx.meter);
+
+    $('processedAudio').srcObject = mediaOut.stream;
+    if(typeof $('processedAudio').setSinkId === 'function') {
+      await $('processedAudio').setSinkId($('outputDevice').value);
+    }
+    await $('processedAudio').play();
+
+    running = true;
+    $('go').textContent = 'Desligar microfone';
+    $('go').classList.add('on');
+    msg($('outputDevice').value ? 'Ao vivo. Voz processada enviada à saída selecionada.' : 'Ao vivo pela saída padrão. Para chamadas, selecione CABLE Input.');
+    apply();
+
+    (function loop(){
+      if(!running || !fx) return;
+      const db = fx.meter.getValue();
+      const lvl = Math.max(0, Math.min(1, (db+60)/60));
+      paintMeter(Math.round(lvl*SEG));
+      requestAnimationFrame(loop);
+    })();
+  } catch(err) {
+    console.error(err);
+    cleanupAudio();
+    msg('Não consegui iniciar. Confira as permissões do microfone, a saída de áudio e a conexão com a internet.');
+  } finally {
+    $('go').disabled = false;
+  }
 }
 
-function stop(){
+function cleanupAudio(){
   running = false;
-  stream && stream.getTracks().forEach(t => t.stop());
-  if(fx){ fx.src.disconnect(); Object.values(fx).forEach(n => n.dispose && n.dispose()); fx = null; }
+  if(stream) stream.getTracks().forEach(t => t.stop());
+  stream = null;
+  if(fx) {
+    try { if(fx.src) fx.src.disconnect(); } catch(e) {}
+    Object.values(fx).forEach(n => { try { if(n && typeof n.dispose === 'function') n.dispose(); } catch(e) {} });
+    fx = null;
+  }
+  if(mediaOut) {
+    mediaOut.stream.getTracks().forEach(t => t.stop());
+    mediaOut = null;
+  }
+  $('processedAudio').pause();
+  $('processedAudio').srcObject = null;
   paintMeter(0);
   $('go').textContent = 'Ligar microfone';
   $('go').classList.remove('on');
+}
+
+function stop(){
+  cleanupAudio();
   msg('Microfone desligado.');
 }
 
-
-$('back').addEventListener('click', () => {
-  if (window.history.length > 1) {
-    window.history.back();
-  } else {
-    window.location.href = 'index.html';
-  }
-});
-
 $('go').addEventListener('click', () => running ? stop() : start());
+$('back').addEventListener('click', () => {
+  if(running) stop();
+  if(window.history.length > 1) window.history.back();
+  else window.location.href = 'index.html';
+});
+if(navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+  navigator.mediaDevices.addEventListener('devicechange', refreshOutputs);
+}
+refreshOutputs();
 apply();
 </script>
-
+</body>
 </html>
