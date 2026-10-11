@@ -33,21 +33,11 @@
       font-size: clamp(16px, 4vw, 32px);
       font-weight: 400;
       text-align: center;
-      animation: piscar 1s steps(1, end) infinite;
-    }
-
-    .cursor {
-      display: inline-block;
-      width: .65em;
-      height: 1em;
-      margin-left: .2em;
-      background: currentColor;
-      vertical-align: -.12em;
     }
 
     .api-button {
       padding: 14px 18px;
-      border: 2px solid currentColor;
+      border: 2px solid #000;
       background: #fff;
       color: #000;
       font: inherit;
@@ -83,20 +73,11 @@
       text-align: center;
       overflow-wrap: anywhere;
     }
-
-    @keyframes piscar {
-      50% { opacity: 0; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      h1 { animation: none; }
-      .api-button { transition: none; }
-    }
   </style>
 </head>
 
 <body>
-  <h1>nichodev.com<span class="cursor" aria-hidden="true"></span></h1>
+  <h1>nichodev.com</h1>
 
   <button class="api-button" id="startButton" type="button">
     START
