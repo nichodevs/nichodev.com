@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>nichodev.com</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,53 +24,43 @@
       align-items: center;
       gap: 30px;
       padding: 24px;
-      background: #ffffff;
-      color: #000000;
+      background: #fff;
+      color: #000;
       font-family: "Press Start 2P", monospace;
     }
 
     h1 {
-  font-size: clamp(16px, 4vw, 32px);
-  font-weight: 400;
-  text-align: center;
-  animation: piscar-titulo 1s steps(1, end) infinite;
-}
-
-@keyframes piscar-titulo {
-  50% {
-    opacity: 0;
-  }
-}
+      font-size: clamp(16px, 4vw, 32px);
+      font-weight: 400;
+      text-align: center;
+      animation: piscar 1s steps(1, end) infinite;
+    }
 
     .cursor {
       display: inline-block;
-      width: 0.65em;
+      width: .65em;
       height: 1em;
-      background-color: #000000;
-      margin-left: 0.2em;
-      vertical-align: -0.12em;
+      margin-left: .2em;
+      background: currentColor;
+      vertical-align: -.12em;
     }
 
     .api-button {
-      display: inline-block;
-      text-decoration: none;
-      text-align: center;
       padding: 14px 18px;
-      border: 2px solid #000000;
-      border-radius: 0;
-      background: #ffffff;
-      color: #000000;
-      font-family: inherit;
+      border: 2px solid currentColor;
+      background: #fff;
+      color: #000;
+      font: inherit;
       font-size: clamp(9px, 2vw, 11px);
       line-height: 1.6;
       cursor: pointer;
-      transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+      transition: background-color .15s, color .15s, transform .15s;
     }
 
     .api-button:hover,
     .api-button:focus-visible {
-      background: #000000;
-      color: #ffffff;
+      background: #000;
+      color: #fff;
     }
 
     .api-button:active {
@@ -79,29 +68,30 @@
     }
 
     .api-button:focus-visible {
-      outline: 2px dashed #000000;
+      outline: 2px dashed #000;
       outline-offset: 5px;
     }
 
     .api-button:disabled {
-      opacity: 0.6;
+      opacity: .6;
       cursor: wait;
     }
 
     .api-status {
       max-width: 90vw;
-      font-family: monospace;
-      font-size: 14px;
-      line-height: 1.5;
+      font: 14px/1.5 monospace;
       text-align: center;
       overflow-wrap: anywhere;
     }
 
+    @keyframes piscar {
+      50% { opacity: 0; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-  .api-button {
-    transition: none;
-  }
-}
+      h1 { animation: none; }
+      .api-button { transition: none; }
+    }
   </style>
 </head>
 
@@ -115,45 +105,32 @@
   <p class="api-status" id="apiStatus" role="status" aria-live="polite"></p>
 
   <script>
-    const startButton = document.getElementById("startButton");
-    const apiStatus = document.getElementById("apiStatus");
-    // Restaura a página quando o visitante volta do estúdio.
-window.addEventListener("pageshow", () => {
-  startButton.disabled = false;
-  apiStatus.textContent = "";
-});
+    const button = document.getElementById("startButton");
+    const status = document.getElementById("apiStatus");
 
-    startButton.addEventListener("click", async () => {
-      startButton.disabled = true;
-      apiStatus.textContent = "CONECTANDO À API...";
+    window.addEventListener("pageshow", () => {
+      button.disabled = false;
+      status.textContent = "";
+    });
+
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      status.textContent = "CONECTANDO À API...";
 
       try {
         const response = await fetch("/api/status", {
-          method: "GET",
-          headers: {
-            "Accept": "application/json"
-          },
           cache: "no-store"
         });
 
-        if (!response.ok) {
-          throw new Error("A API retornou um erro HTTP.");
+        if (!response.ok || (await response.json()).status !== "ok") {
+          throw new Error("API indisponível");
         }
 
-        const data = await response.json();
-
-        if (data.status !== "ok") {
-          throw new Error("A API não confirmou o funcionamento.");
-        }
-
-        apiStatus.textContent = "CONEXÃO OK! ABRINDO ESTÚDIO...";
-
+        status.textContent = "CONEXÃO OK! ABRINDO ESTÚDIO...";
         window.location.href = "voz.html";
-      } catch (error) {
-        apiStatus.textContent =
-          "ERRO AO CONECTAR À API. TENTE NOVAMENTE.";
-
-        startButton.disabled = false;
+      } catch {
+        status.textContent = "ERRO AO CONECTAR À API. TENTE NOVAMENTE.";
+        button.disabled = false;
       }
     });
   </script>
