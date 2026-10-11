@@ -52,6 +52,16 @@ input[type=range]::-moz-range-thumb{width:12px;height:22px;background:var(--bg);
 input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-range-thumb{background:var(--fg)}
 .back-wrap{display:flex;justify-content:center;margin-top:28px}
 #back{min-width:140px}
+
+.mode-tabs{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px}
+.mode-tabs button{font-size:9px;flex:1 1 180px}
+.mode-tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+#fileMode fieldset{margin-bottom:18px}
+#fileMode input[type=file]{max-width:100%;font-family:Arial,sans-serif;font-size:14px}
+#fileMode audio{display:block;max-width:100%}
+#downloadResult{display:inline-block;margin-top:14px;color:var(--fg);border:3px solid var(--line);padding:12px;text-decoration:none;font-size:9px}
+#downloadResult:hover{background:var(--fg);color:var(--bg)}
+
 </style>
 </head>
 <body>
@@ -65,6 +75,32 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
   </div>
   <p id="msg" role="status">Permita o acesso ao microfone quando solicitado.</p>
 
+  <div class="mode-tabs" role="group" aria-label="Modo do estúdio">
+    <button type="button" id="modeLive" aria-pressed="true">Voz em tempo real</button>
+    <button type="button" id="modeFile" aria-pressed="false">Áudio gravado</button>
+  </div>
+
+  <section id="fileMode" hidden>
+    <fieldset>
+      <legend>Gravar ou importar</legend>
+      <button type="button" id="recordStart">Começar gravação</button>
+      <button type="button" id="recordStop" disabled>Parar gravação</button>
+      <p class="small" id="recordStatus">Grave sua voz ou selecione um áudio existente.</p>
+      <label for="audioFile" style="display:block;margin-top:14px">Importar arquivo de áudio</label>
+      <input id="audioFile" type="file" accept="audio/*">
+    </fieldset>
+    <fieldset>
+      <legend>Prévia do áudio</legend>
+      <audio id="sourceAudio" controls style="width:100%"></audio>
+      <p class="small">Depois de carregar ou gravar, ajuste os efeitos abaixo e clique em “Aplicar efeitos e exportar”.</p>
+      <button type="button" id="processFile">Aplicar efeitos e exportar</button>
+      <p id="fileStatus" class="small" role="status"></p>
+      <audio id="resultAudio" controls style="width:100%;margin-top:12px" hidden></audio>
+      <a id="downloadResult" hidden download="voz-modificada.wav">Baixar áudio modificado</a>
+    </fieldset>
+  </section>
+
+  <section id="liveControls">
   <section class="device-box">
     <label for="outputDevice">Saída do áudio processado</label>
     <select id="outputDevice"><option value="">Saída padrão do Windows</option></select>
@@ -85,6 +121,8 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
   <fieldset><legend>Chorus</legend><label for="chorus">Mistura <b id="v-chorus">0%</b></label><input id="chorus" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset><legend>Reverb</legend><label for="reverb">Mistura <b id="v-reverb">0%</b></label><input id="reverb" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset><legend>Volume</legend><label for="vol">Saída <b id="v-vol">100%</b></label><input id="vol" type="range" min="0" max="150" value="100"></fieldset>
+  </section>
+
   <div class="back-wrap"><button id="back" type="button">Voltar</button></div>
 </main>
 
@@ -92,6 +130,177 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script>
 const $ = id => document.getElementById(id);
+
+const $file = id => document.getElementById(id);
+let activeMode = 'live';
+let recorder = null, recordedChunks = [], recordedBlob = null, importedBuffer = null, resultUrl = null;
+
+function setMode(mode){
+  activeMode = mode;
+  $file('modeLive').setAttribute('aria-pressed', String(mode === 'live'));
+  $file('modeFile').setAttribute('aria-pressed', String(mode === 'file'));
+  $file('liveControls').hidden = mode !== 'live';
+  $file('fileMode').hidden = mode !== 'file';
+  $file('go').hidden = mode !== 'live';
+  $file('lvl').hidden = mode !== 'live';
+  if(mode === 'file' && running) stop();
+  msg(mode === 'live' ? 'Modo ao vivo: fale no microfone e ajuste os efeitos.' : 'Modo áudio gravado: grave ou importe um arquivo, ajuste os efeitos e exporte.');
+}
+$file('modeLive').addEventListener('click', () => setMode('live'));
+$file('modeFile').addEventListener('click', () => setMode('file'));
+
+$file('recordStart').addEventListener('click', async () => {
+  try {
+    const recStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    recordedChunks = [];
+    recorder = new MediaRecorder(recStream);
+    recorder.ondataavailable = e => { if(e.data && e.data.size) recordedChunks.push(e.data); };
+    recorder.onstop = () => {
+      recordedBlob = new Blob(recordedChunks, {type: recorder.mimeType || 'audio/webm'});
+      const url = URL.createObjectURL(recordedBlob);
+      $file('sourceAudio').src = url;
+      $file('recordStatus').textContent = 'Gravação pronta. Ouça a prévia e aplique os efeitos.';
+      recStream.getTracks().forEach(t => t.stop());
+    };
+    recorder.start();
+    $file('recordStart').disabled = true;
+    $file('recordStop').disabled = false;
+    $file('recordStatus').textContent = 'Gravando… fale normalmente.';
+  } catch(e) {
+    $file('recordStatus').textContent = 'Não foi possível gravar. Permita o acesso ao microfone e tente novamente.';
+  }
+});
+$file('recordStop').addEventListener('click', () => {
+  if(recorder && recorder.state !== 'inactive') recorder.stop();
+  $file('recordStart').disabled = false;
+  $file('recordStop').disabled = true;
+});
+
+$file('audioFile').addEventListener('change', async e => {
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  recordedBlob = file;
+  $file('sourceAudio').src = URL.createObjectURL(file);
+  $file('recordStatus').textContent = `Arquivo carregado: ${file.name}`;
+  $file('fileStatus').textContent = '';
+  $file('resultAudio').hidden = true;
+  $file('downloadResult').hidden = true;
+});
+
+function decodeBlob(blob){
+  return new Promise(async (resolve, reject) => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const arr = await blob.arrayBuffer();
+      const buffer = await ctx.decodeAudioData(arr.slice(0));
+      await ctx.close();
+      resolve(buffer);
+    } catch(e) { reject(e); }
+  });
+}
+function audioBufferToWav(buffer){
+  const channels = buffer.numberOfChannels, sampleRate = buffer.sampleRate;
+  const frames = buffer.length, bytesPerSample = 2;
+  const out = new ArrayBuffer(44 + frames * channels * bytesPerSample);
+  const view = new DataView(out);
+  const write = (offset, str) => { for(let i=0;i<str.length;i++) view.setUint8(offset+i,str.charCodeAt(i)); };
+  write(0,'RIFF'); view.setUint32(4,36+frames*channels*bytesPerSample,true);
+  write(8,'WAVE'); write(12,'fmt '); view.setUint32(16,16,true);
+  view.setUint16(20,1,true); view.setUint16(22,channels,true);
+  view.setUint32(24,sampleRate,true); view.setUint32(28,sampleRate*channels*bytesPerSample,true);
+  view.setUint16(32,channels*bytesPerSample,true); view.setUint16(34,16,true);
+  write(36,'data'); view.setUint32(40,frames*channels*bytesPerSample,true);
+  let offset = 44;
+  for(let i=0;i<frames;i++){
+    for(let ch=0;ch<channels;ch++){
+      let s = Math.max(-1,Math.min(1,buffer.getChannelData(ch)[i]));
+      view.setInt16(offset, s < 0 ? s*0x8000 : s*0x7fff, true); offset += 2;
+    }
+  }
+  return new Blob([out], {type:'audio/wav'});
+}
+$file('processFile').addEventListener('click', async () => {
+  if(!recordedBlob) {
+    $file('fileStatus').textContent = 'Primeiro grave sua voz ou importe um arquivo de áudio.';
+    return;
+  }
+  const btn = $file('processFile');
+  btn.disabled = true;
+  $file('fileStatus').textContent = 'Processando áudio no navegador…';
+  try {
+    const input = await decodeBlob(recordedBlob);
+    const pitch = +$('pitch').value;
+    const drive = +$('drive').value/100;
+    const chorus = +$('chorus').value/100;
+    const reverb = +$('reverb').value/100;
+    const volume = +$('vol').value/100;
+
+    // Offline graph: pitch via playback-rate resampling, distortion, chorus delay and reverb-like tail.
+    // This is entirely client-side; no upload to the server.
+    const rate = Math.pow(2, pitch/12);
+    const outLength = Math.ceil(input.length / rate) + Math.ceil(input.sampleRate * 2.5);
+    const offline = new OfflineAudioContext(input.numberOfChannels, outLength, input.sampleRate);
+    const source = offline.createBufferSource();
+    source.buffer = input;
+    source.playbackRate.value = rate;
+
+    const gain = offline.createGain();
+    gain.gain.value = volume;
+    const shaper = offline.createWaveShaper();
+    const curve = new Float32Array(44100);
+    const amount = 1 + drive * 40;
+    for(let i=0;i<curve.length;i++){
+      const x = i*2/(curve.length-1)-1;
+      curve[i] = (1+amount)*x/(1+amount*Math.abs(x));
+    }
+    shaper.curve = curve;
+    shaper.oversample = '4x';
+
+    const dry = offline.createGain();
+    const wet = offline.createGain();
+    wet.gain.value = chorus * 0.55;
+    const delay = offline.createDelay(0.08);
+    delay.delayTime.value = 0.025;
+    const lfo = offline.createOscillator();
+    const lfoGain = offline.createGain();
+    lfo.frequency.value = 0.35;
+    lfoGain.gain.value = chorus * 0.008;
+    lfo.connect(lfoGain); lfoGain.connect(delay.delayTime);
+    lfo.start();
+
+    const reverbDelay = offline.createDelay(1);
+    reverbDelay.delayTime.value = 0.17;
+    const feedback = offline.createGain();
+    feedback.gain.value = reverb * 0.35;
+    const reverbWet = offline.createGain();
+    reverbWet.gain.value = reverb * 0.45;
+    reverbDelay.connect(feedback); feedback.connect(reverbDelay);
+
+    source.connect(shaper);
+    shaper.connect(dry); dry.connect(gain);
+    shaper.connect(delay); delay.connect(wet); wet.connect(gain);
+    shaper.connect(reverbDelay); reverbDelay.connect(reverbWet); reverbWet.connect(gain);
+    gain.connect(offline.destination);
+    source.start(0);
+
+    const rendered = await offline.startRendering();
+    const wav = audioBufferToWav(rendered);
+    if(resultUrl) URL.revokeObjectURL(resultUrl);
+    resultUrl = URL.createObjectURL(wav);
+    $file('resultAudio').src = resultUrl;
+    $file('resultAudio').hidden = false;
+    $file('downloadResult').href = resultUrl;
+    $file('downloadResult').download = 'voz-modificada.wav';
+    $file('downloadResult').hidden = false;
+    $file('fileStatus').textContent = 'Pronto! Ouça a prévia e clique em “Baixar áudio modificado” para enviar pelo WhatsApp.';
+  } catch(e) {
+    console.error(e);
+    $file('fileStatus').textContent = 'Não consegui processar esse arquivo. Tente outro formato comum, como WAV, MP3 ou M4A.';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 const msg = t => $('msg').textContent = t;
 let fx = null, stream = null, running = false, mediaOut = null;
 const SEG = 20;
@@ -275,6 +484,7 @@ if(navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
 }
 refreshOutputs();
 apply();
+setMode('live');
 </script>
 </body>
 </html>
