@@ -4,42 +4,44 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Estúdio de voz</title>
+<meta name="description" content="Mude o tom da voz e aplique drive, chorus e reverb em tempo real ou em áudios gravados.">
+<meta name="theme-color" content="#000000">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Crect x='4' y='3' width='8' height='10' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="style.css">
 <style>
-:root{--bg:#fff;--fg:#000;--mute:#555;--line:#000;--font:"Press Start 2P","Courier New",monospace;color-scheme:light}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--fg:#fff;--mute:#b5b5b5;--line:#fff;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#000;--fg:#fff;--mute:#b5b5b5;--line:#fff;color-scheme:dark}
-*{box-sizing:border-box}
-[hidden]{display:none!important}
-html{background:var(--bg)}
-body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font);font-size:11px;line-height:1.9;padding:24px 16px 56px}
+body{font-size:11px;line-height:1.9;padding:24px 16px 56px}
 main{max-width:560px;margin-inline:auto}
-.cursor{display:inline-block;width:.6em;height:.95em;margin-left:.3em;background:var(--fg);vertical-align:-.1em;animation:blink 1.06s steps(1) infinite}
-@keyframes blink{50%{opacity:0}}
-@media(prefers-reduced-motion:reduce){.cursor{animation:none}}
-button,select{font-family:var(--font);font-size:11px;line-height:1.5;color:var(--fg);background:var(--bg);border:3px solid var(--line);border-radius:0;padding:12px;max-width:100%}
-button{cursor:pointer;text-transform:uppercase}
-button:hover{background:var(--fg);color:var(--bg)}
-button:focus-visible,input:focus-visible,select:focus-visible{outline:3px dashed var(--fg);outline-offset:4px}
+select{font-family:var(--font-text);font-size:14px;color:var(--fg);background:var(--bg);border:3px solid var(--line);border-radius:0;padding:12px;max-width:100%}
+
+/* textos corridos em fonte legível; pixel font fica em títulos, botões e rótulos */
+.warn,.small,#msg{font-family:var(--font-text);color:var(--mute);font-size:13px;line-height:1.6}
+.warn{margin:0 0 24px;padding:12px 14px;border:3px solid var(--line)}
+#msg{min-height:2.4em;margin:0 0 20px}
+
 #studio h2{margin:0 0 20px;font-weight:400;font-size:clamp(14px,4.4vw,20px);line-height:1.4}
-.warn{margin:0 0 24px;padding:12px 14px;border:3px solid var(--line);color:var(--mute);font-size:10px;line-height:1.9}
 .bar{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 #go{flex:0 0 auto}
 #go.on{background:var(--fg);color:var(--bg)}
 #go.on:hover{background:var(--bg);color:var(--fg)}
 .meter{flex:1 1 140px;min-width:0;display:grid;grid-template-columns:repeat(20,1fr);gap:2px;height:20px;border:3px solid var(--line);padding:2px}
 .meter i{background:transparent}.meter i.on{background:var(--fg)}
-#msg{min-height:2.4em;margin:0 0 20px;font-size:10px;color:var(--mute)}
+
+.mode-tabs{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px}
+.mode-tabs button{font-size:9px;flex:1 1 180px}
+.mode-tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+
 .device-box{border:3px solid var(--line);padding:14px 16px;margin-bottom:24px}
 .device-box label{display:block;margin-bottom:10px}
-.device-box select{display:block;width:100%;padding:12px;font-size:10px}
-.device-box button{margin-top:12px;font-size:9px}
-.small{color:var(--mute);font-size:9px;line-height:1.9}
+.device-box select{display:block;width:100%}
+.device-box button{margin:12px 0;font-size:9px}
+
 .presets{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px}
-.presets button{font-size:10px;padding:12px 14px}
+.presets button{font-size:10px}
 .presets button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+
 fieldset{margin:0 0 20px;padding:14px 16px 20px;border:3px solid var(--line);min-width:0}
 legend{padding:0 8px;font-size:11px;text-transform:uppercase}
 label{display:flex;justify-content:space-between;gap:12px;font-size:10px;color:var(--mute);margin-bottom:12px}
@@ -50,18 +52,18 @@ input[type=range]::-moz-range-track{height:6px;background:var(--fg);border:0}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:28px;margin-top:-11px;background:var(--bg);border:3px solid var(--line);border-radius:0}
 input[type=range]::-moz-range-thumb{width:12px;height:22px;background:var(--bg);border:3px solid var(--line);border-radius:0}
 input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-range-thumb{background:var(--fg)}
+
+#fileMode fieldset{margin-bottom:18px}
+#fileMode .row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+#fileMode button{font-size:9px}
+#fileMode label.file-label{display:block;margin:14px 0 8px}
+#fileMode input[type=file]{max-width:100%;font-family:var(--font-text);font-size:14px;color:var(--fg)}
+#fileMode audio{display:block;width:100%;max-width:100%}
+#fileMode audio + .small{margin:10px 0}
+#downloadResult{margin-top:14px;font-size:9px}
+
 .back-wrap{display:flex;justify-content:center;margin-top:28px}
 #back{min-width:140px}
-
-.mode-tabs{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 22px}
-.mode-tabs button{font-size:9px;flex:1 1 180px}
-.mode-tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
-#fileMode fieldset{margin-bottom:18px}
-#fileMode input[type=file]{max-width:100%;font-family:Arial,sans-serif;font-size:14px}
-#fileMode audio{display:block;max-width:100%}
-#downloadResult{display:inline-block;margin-top:14px;color:var(--fg);border:3px solid var(--line);padding:12px;text-decoration:none;font-size:9px}
-#downloadResult:hover{background:var(--fg);color:var(--bg)}
-
 </style>
 </head>
 <body>
@@ -80,42 +82,44 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
     <button type="button" id="modeFile" aria-pressed="false">Áudio gravado</button>
   </div>
 
+  <section id="liveControls">
+    <div class="device-box">
+      <label for="outputDevice">Saída do áudio processado</label>
+      <select id="outputDevice"><option value="">Saída padrão</option></select>
+      <button id="refreshDevices" type="button">Atualizar dispositivos</button>
+      <p class="small">Para usar em chamadas, escolha “CABLE Input (VB-Audio Virtual Cable)”. Se não aparecer, instale o VB-CABLE, permita o microfone e atualize a lista. Sem cabo virtual, você ainda pode ouvir os efeitos pela saída padrão.</p>
+    </div>
+  </section>
+
   <section id="fileMode" hidden>
     <fieldset>
       <legend>Gravar ou importar</legend>
-      <button type="button" id="recordStart">Começar gravação</button>
-      <button type="button" id="recordStop" disabled>Parar gravação</button>
-      <p class="small" id="recordStatus">Grave sua voz ou selecione um áudio existente.</p>
-      <label for="audioFile" style="display:block;margin-top:14px">Importar arquivo de áudio</label>
+      <div class="row">
+        <button type="button" id="recordStart">Começar gravação</button>
+        <button type="button" id="recordStop" disabled>Parar gravação</button>
+      </div>
+      <p class="small" id="recordStatus" role="status">Grave sua voz ou selecione um áudio existente.</p>
+      <label class="file-label" for="audioFile">Importar arquivo de áudio</label>
       <input id="audioFile" type="file" accept="audio/*">
     </fieldset>
     <fieldset>
       <legend>Prévia do áudio</legend>
-      <audio id="sourceAudio" controls style="width:100%"></audio>
+      <audio id="sourceAudio" controls></audio>
       <p class="small">Depois de carregar ou gravar, ajuste os efeitos abaixo e clique em “Aplicar efeitos e exportar”.</p>
       <button type="button" id="processFile">Aplicar efeitos e exportar</button>
       <p id="fileStatus" class="small" role="status"></p>
-      <audio id="resultAudio" controls style="width:100%;margin-top:12px" hidden></audio>
-      <a id="downloadResult" hidden download="voz-modificada.wav">Baixar áudio modificado</a>
+      <audio id="resultAudio" controls hidden style="margin-top:12px"></audio>
+      <a id="downloadResult" class="btn" hidden download="voz-modificada.wav">Baixar áudio modificado</a>
     </fieldset>
   </section>
 
-  <section id="liveControls">
-  <section class="device-box">
-    <label for="outputDevice">Saída do áudio processado</label>
-    <select id="outputDevice"><option value="">Saída padrão do Windows</option></select>
-    <button id="refreshDevices" type="button">Atualizar dispositivos</button>
-    <p class="small">Para usar em chamadas, escolha “CABLE Input (VB-Audio Virtual Cable)”. Se não aparecer, instale o VB-CABLE, permita o microfone e atualize a lista. Sem cabo virtual, você ainda pode ouvir os efeitos pela saída padrão.</p>
-  </section>
-
-  <div class="presets" id="presets">
+  <div class="presets" id="presets" role="group" aria-label="Predefinições de voz">
     <button type="button" data-p="normal" aria-pressed="true">Normal</button>
     <button type="button" data-p="grave" aria-pressed="false">Voz grave</button>
     <button type="button" data-p="crianca" aria-pressed="false">Voz fina</button>
     <button type="button" data-p="robo" aria-pressed="false">Robô</button>
     <button type="button" data-p="rock" aria-pressed="false">Rock</button>
   </div>
-  </section>
 
   <fieldset><legend>Tom</legend><label for="pitch">Semitons <b id="v-pitch">0</b></label><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></fieldset>
   <fieldset><legend>Drive</legend><label for="drive">Intensidade <b id="v-drive">0%</b></label><input id="drive" type="range" min="0" max="100" value="0"></fieldset>
@@ -127,211 +131,269 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 </main>
 
 <audio id="processedAudio" autoplay playsinline></audio>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<!-- Para travar a versão com segurança, copie o hash SRI desta URL em cdnjs.com e adicione integrity="sha512-..." -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 const $ = id => document.getElementById(id);
+const msg = t => { $('msg').textContent = t; };
 
-const $file = id => document.getElementById(id);
-let activeMode = 'live';
-let recorder = null, recordedChunks = [], recordedBlob = null, importedBuffer = null, resultUrl = null;
+let fx = null, stream = null, running = false, mediaOut = null;
+let recorder = null, recordedChunks = [], sourceBlob = null, sourceUrl = null, resultUrl = null;
+let contextReady = false;
+
+const SEG = 20;
+$('lvl').innerHTML = '<i></i>'.repeat(SEG);
+const segs = $('lvl').children;
+
+/* ---------- Efeitos e predefinições ---------- */
+
+const PRESETS = {
+  normal:  {pitch:0,  drive:0,  chorus:0,  reverb:0},
+  grave:   {pitch:-5, drive:10, chorus:0,  reverb:15},
+  crianca: {pitch:7,  drive:0,  chorus:20, reverb:10},
+  robo:    {pitch:-2, drive:55, chorus:70, reverb:25},
+  rock:    {pitch:0,  drive:70, chorus:25, reverb:35}
+};
+
+function readParams(){
+  return {
+    pitch:  +$('pitch').value,
+    drive:  +$('drive').value / 100,
+    chorus: +$('chorus').value / 100,
+    reverb: +$('reverb').value / 100,
+    volume: +$('vol').value / 100
+  };
+}
+
+function markPreset(key){
+  document.querySelectorAll('#presets button').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.p === key)));
+}
+
+/* Mesma cadeia no ao vivo e na exportação, para o resultado soar igual. */
+function buildChain(p){
+  const nodes = {
+    pitch:   new Tone.PitchShift({pitch:p.pitch, windowSize:0.08, wet:p.pitch === 0 ? 0 : 1}),
+    drive:   new Tone.Distortion({distortion:0.2 + p.drive * 0.8, wet:p.drive}),
+    chorus:  new Tone.Chorus({frequency:1.8, delayTime:3.5, depth:0.7, wet:p.chorus}).start(),
+    reverb:  new Tone.Reverb({decay:2.5, wet:p.reverb}),
+    out:     new Tone.Volume(Tone.gainToDb(Math.max(p.volume, 0.0001))),
+    limiter: new Tone.Limiter(-1)
+  };
+  nodes.pitch.chain(nodes.drive, nodes.chorus, nodes.reverb, nodes.out, nodes.limiter);
+  return nodes;
+}
+
+function apply(){
+  const p = readParams();
+  $('v-pitch').textContent  = (p.pitch > 0 ? '+' : '') + p.pitch;
+  $('v-drive').textContent  = Math.round(p.drive * 100) + '%';
+  $('v-chorus').textContent = Math.round(p.chorus * 100) + '%';
+  $('v-reverb').textContent = Math.round(p.reverb * 100) + '%';
+  $('v-vol').textContent    = Math.round(p.volume * 100) + '%';
+  if(!fx) return;
+  fx.pitch.pitch = p.pitch;
+  fx.pitch.wet.value = p.pitch === 0 ? 0 : 1;
+  fx.drive.distortion = 0.2 + p.drive * 0.8;
+  fx.drive.wet.value = p.drive;
+  fx.chorus.wet.value = p.chorus;
+  fx.reverb.wet.value = p.reverb;
+  fx.out.volume.value = Tone.gainToDb(Math.max(p.volume, 0.0001));
+}
+
+['pitch','drive','chorus','reverb','vol'].forEach(id =>
+  $(id).addEventListener('input', () => { markPreset(null); apply(); }));
+
+$('presets').addEventListener('click', e => {
+  const k = e.target.dataset && e.target.dataset.p;
+  if(!k || !PRESETS[k]) return;
+  Object.entries(PRESETS[k]).forEach(([id, val]) => { $(id).value = val; });
+  markPreset(k);
+  apply();
+});
+
+/* ---------- Modos ---------- */
 
 function setMode(mode){
-  activeMode = mode;
-  $file('modeLive').setAttribute('aria-pressed', String(mode === 'live'));
-  $file('modeFile').setAttribute('aria-pressed', String(mode === 'file'));
-  $file('liveControls').hidden = mode !== 'live';
-  $file('fileMode').hidden = mode !== 'file';
-  $file('go').hidden = mode !== 'live';
-  $file('lvl').hidden = mode !== 'live';
-  if(mode === 'file' && running) stop();
-  msg(mode === 'live' ? 'Modo ao vivo: fale no microfone e ajuste os efeitos.' : 'Modo áudio gravado: grave ou importe um arquivo, ajuste os efeitos e exporte.');
+  const live = mode === 'live';
+  $('modeLive').setAttribute('aria-pressed', String(live));
+  $('modeFile').setAttribute('aria-pressed', String(!live));
+  $('liveControls').hidden = !live;
+  $('fileMode').hidden = live;
+  $('go').hidden = !live;
+  $('lvl').hidden = !live;
+  if(!live && running) stop();
+  msg(live
+    ? 'Modo ao vivo: fale no microfone e ajuste os efeitos.'
+    : 'Modo áudio gravado: grave ou importe um arquivo, ajuste os efeitos e exporte.');
 }
-$file('modeLive').addEventListener('click', () => setMode('live'));
-$file('modeFile').addEventListener('click', () => setMode('file'));
+$('modeLive').addEventListener('click', () => setMode('live'));
+$('modeFile').addEventListener('click', () => setMode('file'));
 
-$file('recordStart').addEventListener('click', async () => {
+/* ---------- Áudio gravado: origem ---------- */
+
+function setSource(blob){
+  if(sourceUrl) URL.revokeObjectURL(sourceUrl);
+  sourceBlob = blob;
+  sourceUrl = URL.createObjectURL(blob);
+  $('sourceAudio').src = sourceUrl;
+  clearResult();
+}
+
+function clearResult(){
+  if(resultUrl) URL.revokeObjectURL(resultUrl);
+  resultUrl = null;
+  $('resultAudio').hidden = true;
+  $('resultAudio').removeAttribute('src');
+  $('downloadResult').hidden = true;
+  $('downloadResult').removeAttribute('href');
+  $('fileStatus').textContent = '';
+}
+
+$('recordStart').addEventListener('click', async () => {
+  if(!window.MediaRecorder || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    $('recordStatus').textContent = 'Seu navegador não suporta gravação. Use Chrome, Edge ou Firefox atualizado, por HTTPS.';
+    return;
+  }
   try {
     const recStream = await navigator.mediaDevices.getUserMedia({audio:true});
     recordedChunks = [];
     recorder = new MediaRecorder(recStream);
     recorder.ondataavailable = e => { if(e.data && e.data.size) recordedChunks.push(e.data); };
     recorder.onstop = () => {
-      recordedBlob = new Blob(recordedChunks, {type: recorder.mimeType || 'audio/webm'});
-      const url = URL.createObjectURL(recordedBlob);
-      $file('sourceAudio').src = url;
-      $file('recordStatus').textContent = 'Gravação pronta. Ouça a prévia e aplique os efeitos.';
       recStream.getTracks().forEach(t => t.stop());
+      setSource(new Blob(recordedChunks, {type: recorder.mimeType || 'audio/webm'}));
+      $('recordStatus').textContent = 'Gravação pronta. Ouça a prévia e aplique os efeitos.';
+      $('audioFile').disabled = false;
+      $('processFile').disabled = false;
     };
     recorder.start();
-    $file('recordStart').disabled = true;
-    $file('recordStop').disabled = false;
-    $file('recordStatus').textContent = 'Gravando… fale normalmente.';
+    $('recordStart').disabled = true;
+    $('recordStop').disabled = false;
+    $('audioFile').disabled = true;
+    $('processFile').disabled = true;
+    $('recordStatus').textContent = 'Gravando… fale normalmente.';
   } catch(e) {
-    $file('recordStatus').textContent = 'Não foi possível gravar. Permita o acesso ao microfone e tente novamente.';
+    $('recordStatus').textContent = 'Não foi possível gravar. Permita o acesso ao microfone e tente novamente.';
   }
 });
-$file('recordStop').addEventListener('click', () => {
+
+$('recordStop').addEventListener('click', () => {
   if(recorder && recorder.state !== 'inactive') recorder.stop();
-  $file('recordStart').disabled = false;
-  $file('recordStop').disabled = true;
+  $('recordStart').disabled = false;
+  $('recordStop').disabled = true;
 });
 
-$file('audioFile').addEventListener('change', async e => {
+$('audioFile').addEventListener('change', e => {
   const file = e.target.files && e.target.files[0];
   if(!file) return;
-  recordedBlob = file;
-  $file('sourceAudio').src = URL.createObjectURL(file);
-  $file('recordStatus').textContent = `Arquivo carregado: ${file.name}`;
-  $file('fileStatus').textContent = '';
-  $file('resultAudio').hidden = true;
-  $file('downloadResult').hidden = true;
+  setSource(file);
+  $('recordStatus').textContent = `Arquivo carregado: ${file.name}`;
 });
 
-function decodeBlob(blob){
-  return new Promise(async (resolve, reject) => {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const arr = await blob.arrayBuffer();
-      const buffer = await ctx.decodeAudioData(arr.slice(0));
-      await ctx.close();
-      resolve(buffer);
-    } catch(e) { reject(e); }
-  });
+/* ---------- Áudio gravado: processamento ---------- */
+
+async function decodeBlob(blob){
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  try {
+    const arr = await blob.arrayBuffer();
+    return await ctx.decodeAudioData(arr);
+  } finally {
+    ctx.close();
+  }
 }
+
+async function renderOffline(input, p){
+  // cauda extra só quando há reverb; folga pequena para a latência do pitch shift
+  const tail = (p.reverb > 0 ? 2.5 : 0) + (p.pitch !== 0 ? 0.1 : 0);
+  const toneBuffer = new Tone.ToneAudioBuffer(input);
+  const rendered = await Tone.Offline(async () => {
+    const player = new Tone.Player(toneBuffer);
+    const chain = buildChain(p);
+    await chain.reverb.generate();
+    player.connect(chain.pitch);
+    chain.limiter.toDestination();
+    player.start(0);
+  }, input.duration + tail, input.numberOfChannels, input.sampleRate);
+  return rendered.get();
+}
+
 function audioBufferToWav(buffer){
   const channels = buffer.numberOfChannels, sampleRate = buffer.sampleRate;
-  const frames = buffer.length, bytesPerSample = 2;
-  const out = new ArrayBuffer(44 + frames * channels * bytesPerSample);
+  const frames = buffer.length, bytes = 2;
+  const out = new ArrayBuffer(44 + frames * channels * bytes);
   const view = new DataView(out);
-  const write = (offset, str) => { for(let i=0;i<str.length;i++) view.setUint8(offset+i,str.charCodeAt(i)); };
-  write(0,'RIFF'); view.setUint32(4,36+frames*channels*bytesPerSample,true);
-  write(8,'WAVE'); write(12,'fmt '); view.setUint32(16,16,true);
-  view.setUint16(20,1,true); view.setUint16(22,channels,true);
-  view.setUint32(24,sampleRate,true); view.setUint32(28,sampleRate*channels*bytesPerSample,true);
-  view.setUint16(32,channels*bytesPerSample,true); view.setUint16(34,16,true);
-  write(36,'data'); view.setUint32(40,frames*channels*bytesPerSample,true);
+  const write = (offset, str) => { for(let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
+  write(0, 'RIFF'); view.setUint32(4, 36 + frames * channels * bytes, true);
+  write(8, 'WAVE'); write(12, 'fmt '); view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); view.setUint16(22, channels, true);
+  view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * channels * bytes, true);
+  view.setUint16(32, channels * bytes, true); view.setUint16(34, 16, true);
+  write(36, 'data'); view.setUint32(40, frames * channels * bytes, true);
+  const data = [];
+  for(let ch = 0; ch < channels; ch++) data.push(buffer.getChannelData(ch));
   let offset = 44;
-  for(let i=0;i<frames;i++){
-    for(let ch=0;ch<channels;ch++){
-      let s = Math.max(-1,Math.min(1,buffer.getChannelData(ch)[i]));
-      view.setInt16(offset, s < 0 ? s*0x8000 : s*0x7fff, true); offset += 2;
+  for(let i = 0; i < frames; i++){
+    for(let ch = 0; ch < channels; ch++){
+      const s = Math.max(-1, Math.min(1, data[ch][i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+      offset += 2;
     }
   }
   return new Blob([out], {type:'audio/wav'});
 }
-$file('processFile').addEventListener('click', async () => {
-  if(!recordedBlob) {
-    $file('fileStatus').textContent = 'Primeiro grave sua voz ou importe um arquivo de áudio.';
+
+$('processFile').addEventListener('click', async () => {
+  if(!sourceBlob){
+    $('fileStatus').textContent = 'Primeiro grave sua voz ou importe um arquivo de áudio.';
     return;
   }
-  const btn = $file('processFile');
+  if(typeof Tone === 'undefined'){
+    $('fileStatus').textContent = 'A biblioteca de áudio não carregou. Verifique a conexão e recarregue a página.';
+    return;
+  }
+  const btn = $('processFile');
   btn.disabled = true;
-  $file('fileStatus').textContent = 'Processando áudio no navegador…';
+  $('recordStart').disabled = true;
+  $('audioFile').disabled = true;
+  $('fileStatus').textContent = 'Processando áudio no navegador…';
   try {
-    const input = await decodeBlob(recordedBlob);
-    const pitch = +$('pitch').value;
-    const drive = +$('drive').value/100;
-    const chorus = +$('chorus').value/100;
-    const reverb = +$('reverb').value/100;
-    const volume = +$('vol').value/100;
-
-    // Offline graph: pitch via playback-rate resampling, distortion, chorus delay and reverb-like tail.
-    // This is entirely client-side; no upload to the server.
-    const rate = Math.pow(2, pitch/12);
-    const outLength = Math.ceil(input.length / rate) + Math.ceil(input.sampleRate * 2.5);
-    const offline = new OfflineAudioContext(input.numberOfChannels, outLength, input.sampleRate);
-    const source = offline.createBufferSource();
-    source.buffer = input;
-    source.playbackRate.value = rate;
-
-    const gain = offline.createGain();
-    gain.gain.value = volume;
-    const shaper = offline.createWaveShaper();
-    const curve = new Float32Array(44100);
-    const amount = 1 + drive * 40;
-    for(let i=0;i<curve.length;i++){
-      const x = i*2/(curve.length-1)-1;
-      curve[i] = (1+amount)*x/(1+amount*Math.abs(x));
-    }
-    shaper.curve = curve;
-    shaper.oversample = '4x';
-
-    const dry = offline.createGain();
-    const wet = offline.createGain();
-    wet.gain.value = chorus * 0.55;
-    const delay = offline.createDelay(0.08);
-    delay.delayTime.value = 0.025;
-    const lfo = offline.createOscillator();
-    const lfoGain = offline.createGain();
-    lfo.frequency.value = 0.35;
-    lfoGain.gain.value = chorus * 0.008;
-    lfo.connect(lfoGain); lfoGain.connect(delay.delayTime);
-    lfo.start();
-
-    const reverbDelay = offline.createDelay(1);
-    reverbDelay.delayTime.value = 0.17;
-    const feedback = offline.createGain();
-    feedback.gain.value = reverb * 0.35;
-    const reverbWet = offline.createGain();
-    reverbWet.gain.value = reverb * 0.45;
-    reverbDelay.connect(feedback); feedback.connect(reverbDelay);
-
-    source.connect(shaper);
-    shaper.connect(dry); dry.connect(gain);
-    shaper.connect(delay); delay.connect(wet); wet.connect(gain);
-    shaper.connect(reverbDelay); reverbDelay.connect(reverbWet); reverbWet.connect(gain);
-    gain.connect(offline.destination);
-    source.start(0);
-
-    const rendered = await offline.startRendering();
+    const input = await decodeBlob(sourceBlob);
+    const rendered = await renderOffline(input, readParams());
     const wav = audioBufferToWav(rendered);
     if(resultUrl) URL.revokeObjectURL(resultUrl);
     resultUrl = URL.createObjectURL(wav);
-    $file('resultAudio').src = resultUrl;
-    $file('resultAudio').hidden = false;
-    $file('downloadResult').href = resultUrl;
-    $file('downloadResult').download = 'voz-modificada.wav';
-    $file('downloadResult').hidden = false;
-    $file('fileStatus').textContent = 'Pronto! Ouça a prévia e clique em “Baixar áudio modificado” para enviar pelo WhatsApp.';
+    $('resultAudio').src = resultUrl;
+    $('resultAudio').hidden = false;
+    $('downloadResult').href = resultUrl;
+    $('downloadResult').download = 'voz-modificada.wav';
+    $('downloadResult').hidden = false;
+    $('fileStatus').textContent = 'Pronto! Ouça a prévia e clique em “Baixar áudio modificado”.';
   } catch(e) {
     console.error(e);
-    $file('fileStatus').textContent = 'Não consegui processar esse arquivo. Tente outro formato comum, como WAV, MP3 ou M4A.';
+    $('fileStatus').textContent = 'Não consegui processar esse arquivo. Tente outro formato comum, como WAV, MP3 ou M4A.';
   } finally {
     btn.disabled = false;
+    $('recordStart').disabled = false;
+    $('audioFile').disabled = false;
   }
 });
 
-const msg = t => $('msg').textContent = t;
-let fx = null, stream = null, running = false, mediaOut = null;
-const SEG = 20;
-$('lvl').innerHTML = '<i></i>'.repeat(SEG);
-const segs = $('lvl').children;
-
-const PRESETS = {
-  normal:{pitch:0,drive:0,chorus:0,reverb:0},
-  grave:{pitch:-5,drive:10,chorus:0,reverb:15},
-  crianca:{pitch:7,drive:0,chorus:20,reverb:10},
-  robo:{pitch:-2,drive:55,chorus:70,reverb:25},
-  rock:{pitch:0,drive:70,chorus:25,reverb:35}
-};
-
-function markPreset(key){
-  document.querySelectorAll('#presets button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.p === key)));
-}
+/* ---------- Dispositivos de saída ---------- */
 
 async function refreshOutputs(){
   const select = $('outputDevice');
   const previous = select.value;
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    select.innerHTML = '<option value="">Saída padrão do Windows</option>';
+    select.innerHTML = '<option value="">Saída padrão</option>';
     devices.filter(d => d.kind === 'audiooutput').forEach((d, i) => {
       const opt = document.createElement('option');
       opt.value = d.deviceId;
       opt.textContent = d.label || `Saída de áudio ${i + 1}`;
       select.appendChild(opt);
     });
-    if ([...select.options].some(o => o.value === previous)) select.value = previous;
+    if([...select.options].some(o => o.value === previous)) select.value = previous;
   } catch(e) {
     msg('Não foi possível listar as saídas de áudio.');
   }
@@ -348,7 +410,7 @@ $('refreshDevices').addEventListener('click', async () => {
 
 $('outputDevice').addEventListener('change', async () => {
   const audio = $('processedAudio');
-  if (typeof audio.setSinkId !== 'function') {
+  if(typeof audio.setSinkId !== 'function'){
     msg('Seu navegador não permite selecionar a saída. Use Chrome ou Edge atualizado.');
     return;
   }
@@ -360,83 +422,61 @@ $('outputDevice').addEventListener('change', async () => {
   }
 });
 
-function apply(){
-  const p = +$('pitch').value, d = +$('drive').value/100, c = +$('chorus').value/100,
-        r = +$('reverb').value/100, v = +$('vol').value/100;
-  $('v-pitch').textContent = (p>0?'+':'')+p;
-  $('v-drive').textContent = Math.round(d*100)+'%';
-  $('v-chorus').textContent = Math.round(c*100)+'%';
-  $('v-reverb').textContent = Math.round(r*100)+'%';
-  $('v-vol').textContent = Math.round(v*100)+'%';
-  if(!fx) return;
-  fx.pitch.pitch = p;
-  fx.pitch.wet.value = p===0 ? 0 : 1;
-  fx.drive.distortion = 0.2 + d*0.8;
-  fx.drive.wet.value = d;
-  fx.chorus.wet.value = c;
-  fx.reverb.wet.value = r;
-  fx.out.volume.value = Tone.gainToDb(Math.max(v,0.0001));
-}
+/* ---------- Microfone ao vivo ---------- */
 
-['pitch','drive','chorus','reverb','vol'].forEach(id => $(id).addEventListener('input', () => { markPreset(null); apply(); }));
-$('presets').addEventListener('click', e => {
-  const k = e.target.dataset.p;
-  if(!k || !PRESETS[k]) return;
-  Object.entries(PRESETS[k]).forEach(([id,val]) => $(id).value = val);
-  markPreset(k);
-  apply();
-});
-
-function paintMeter(n){for(let i=0;i<SEG;i++) segs[i].classList.toggle('on', i<n);}
+function paintMeter(n){ for(let i = 0; i < SEG; i++) segs[i].classList.toggle('on', i < n); }
 
 async function start(){
+  if(typeof Tone === 'undefined'){
+    msg('A biblioteca de áudio não carregou. Verifique a conexão e recarregue a página.');
+    return;
+  }
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
     msg('Acesso ao microfone indisponível. Abra o site por HTTPS no Chrome ou Edge.');
     return;
   }
   $('go').disabled = true;
   try {
+    if(!contextReady){
+      // latência mínima para tempo real; só pode ser definido uma vez, antes de criar os nós
+      Tone.setContext(new Tone.Context({latencyHint:'interactive'}));
+      contextReady = true;
+    }
     await Tone.start();
-    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false, autoGainControl:false}});
     await refreshOutputs();
 
     const ctx = Tone.getContext().rawContext;
     const src = ctx.createMediaStreamSource(stream);
     mediaOut = ctx.createMediaStreamDestination();
 
-    fx = {
-      pitch: new Tone.PitchShift({pitch:0,windowSize:0.08,wet:0}),
-      drive: new Tone.Distortion({distortion:0.2,wet:0}),
-      chorus: new Tone.Chorus({frequency:1.8,delayTime:3.5,depth:0.7,wet:0}).start(),
-      reverb: new Tone.Reverb({decay:2.5,wet:0}),
-      out: new Tone.Volume(0),
-      meter: new Tone.Meter({smoothing:0.8}),
-      src
-    };
+    fx = buildChain({pitch:0, drive:0, chorus:0, reverb:0, volume:1});
+    fx.meter = new Tone.Meter({smoothing:0.8});
+    fx.src = src;
     await fx.reverb.generate();
 
     Tone.connect(src, fx.pitch);
-    fx.pitch.chain(fx.drive, fx.chorus, fx.reverb, fx.out);
-    fx.out.connect(mediaOut);
-    fx.out.connect(fx.meter);
+    fx.limiter.connect(mediaOut);
+    fx.limiter.connect(fx.meter);
 
-    $('processedAudio').srcObject = mediaOut.stream;
-    if(typeof $('processedAudio').setSinkId === 'function') {
-      await $('processedAudio').setSinkId($('outputDevice').value);
-    }
-    await $('processedAudio').play();
+    const audio = $('processedAudio');
+    audio.srcObject = mediaOut.stream;
+    if(typeof audio.setSinkId === 'function') await audio.setSinkId($('outputDevice').value);
+    await audio.play();
 
     running = true;
     $('go').textContent = 'Desligar microfone';
     $('go').classList.add('on');
-    msg($('outputDevice').value ? 'Ao vivo. Voz processada enviada à saída selecionada.' : 'Ao vivo pela saída padrão. Para chamadas, selecione CABLE Input.');
+    msg($('outputDevice').value
+      ? 'Ao vivo. Voz processada enviada à saída selecionada.'
+      : 'Ao vivo pela saída padrão. Para chamadas, selecione CABLE Input.');
     apply();
 
     (function loop(){
       if(!running || !fx) return;
       const db = fx.meter.getValue();
-      const lvl = Math.max(0, Math.min(1, (db+60)/60));
-      paintMeter(Math.round(lvl*SEG));
+      const lvl = Math.max(0, Math.min(1, (db + 60) / 60));
+      paintMeter(Math.round(lvl * SEG));
       requestAnimationFrame(loop);
     })();
   } catch(err) {
@@ -452,12 +492,12 @@ function cleanupAudio(){
   running = false;
   if(stream) stream.getTracks().forEach(t => t.stop());
   stream = null;
-  if(fx) {
+  if(fx){
     try { if(fx.src) fx.src.disconnect(); } catch(e) {}
     Object.values(fx).forEach(n => { try { if(n && typeof n.dispose === 'function') n.dispose(); } catch(e) {} });
     fx = null;
   }
-  if(mediaOut) {
+  if(mediaOut){
     mediaOut.stream.getTracks().forEach(t => t.stop());
     mediaOut = null;
   }
@@ -474,12 +514,19 @@ function stop(){
 }
 
 $('go').addEventListener('click', () => running ? stop() : start());
+
 $('back').addEventListener('click', () => {
   if(running) stop();
   if(window.history.length > 1) window.history.back();
   else window.location.href = 'index.html';
 });
-if(navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+
+window.addEventListener('pagehide', () => {
+  if(sourceUrl) URL.revokeObjectURL(sourceUrl);
+  if(resultUrl) URL.revokeObjectURL(resultUrl);
+});
+
+if(navigator.mediaDevices && navigator.mediaDevices.addEventListener){
   navigator.mediaDevices.addEventListener('devicechange', refreshOutputs);
 }
 refreshOutputs();
