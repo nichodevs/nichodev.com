@@ -288,6 +288,7 @@ async function startLive(){
     $('liveStatus').textContent = 'Ao vivo! Fale e ajuste os efeitos abaixo.';
     applyLiveParams();
   }catch(err){
+    console.error("Erro ao iniciar o microfone:", err);
     stopLive();
     $('liveStatus').textContent = 'Não consegui iniciar o microfone. Permita o acesso nas configurações do navegador e tente novamente.';
   }finally{
