@@ -12,73 +12,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-
-  <style>
-    body {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 30px;
-      padding: 24px;
-    }
-
-    h1 {
-      font-size: clamp(16px, 4vw, 32px);
-      font-weight: 400;
-      text-align: center;
-    }
-
-    .btn {
-      font-size: clamp(9px, 2vw, 11px);
-      border-width: 2px;
-      padding: 14px 18px;
-    }
-  </style>
+  <link rel="stylesheet" href="index.css">
 </head>
 <body>
   <h1>nichodev.com</h1>
 
   <a class="btn" href="voz.html" aria-label="Abrir estúdio de voz" id="startBtn">START</a>
 
-<script>
-document.getElementById("startBtn").addEventListener("click", function () {
-  const AudioContextClass =
-    window.AudioContext || window.webkitAudioContext;
-
-  if (!AudioContextClass) return;
-
-  const audio = new AudioContextClass();
-
-  const notas = [
-    { frequencia: 440, inicio: 0, duracao: 0.08 },
-    { frequencia: 660, inicio: 0.09, duracao: 0.12 }
-  ];
-
-  notas.forEach(nota => {
-    const oscilador = audio.createOscillator();
-    const volume = audio.createGain();
-
-    const inicio = audio.currentTime + nota.inicio;
-    const fim = inicio + nota.duracao;
-
-    oscilador.type = "square";
-    oscilador.frequency.value = nota.frequencia;
-
-    volume.gain.setValueAtTime(0.12, inicio);
-    volume.gain.exponentialRampToValueAtTime(0.001, fim);
-
-    oscilador.connect(volume);
-    volume.connect(audio.destination);
-
-    oscilador.start(inicio);
-    oscilador.stop(fim);
-  });
-
-  setTimeout(() => audio.close(), 500);
-});
-</script>
+<script src="js/index.js" defer></script>
 
 </body>
 </html>

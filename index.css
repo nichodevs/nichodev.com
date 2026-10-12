@@ -1,0 +1,21 @@
+body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 30px;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: clamp(16px, 4vw, 32px);
+      font-weight: 400;
+      text-align: center;
+    }
+
+    .btn {
+      font-size: clamp(9px, 2vw, 11px);
+      border-width: 2px;
+      padding: 14px 18px;
+    }
