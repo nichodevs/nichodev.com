@@ -45,11 +45,17 @@ input[type=range]::-moz-range-thumb{width:12px;height:22px;background:var(--bg);
 input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-range-thumb{background:var(--fg)}
 
 .back-wrap{display:flex;justify-content:center;margin-top:28px}
+
+/* Ajustes visuais: mantém a estética pixelada sem cursor piscando. */
+h2, legend, button, .presets button { font-family: var(--font); }
+fieldset { background: var(--bg); }
+#status, .warn, .small { font-family: var(--font-text); }
+.btn { font-family: var(--font); }
 </style>
 </head>
 <body>
 <main>
-  <h2>estúdio de voz<span class="cursor" aria-hidden="true"></span></h2>
+  <h2>estúdio de voz</h2>
   <p class="warn">Grave sua voz ou importe um áudio (até 5 minutos), escolha os efeitos e exporte. Tudo é processado no seu navegador, sem enviar o áudio para nenhum servidor.</p>
   <noscript><p class="warn">Ative o JavaScript para usar o estúdio.</p></noscript>
   <p id="status" role="status">Grave sua voz ou selecione um áudio existente.</p>
