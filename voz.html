@@ -36,6 +36,9 @@ audio{display:block;width:100%;max-width:100%}
 .presets button{font-size:10px}
 .presets button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
 #recordBtn.on,#liveBtn.on{background:var(--fg);color:var(--bg)}
+.level-meter{height:18px;border:3px solid var(--line);padding:2px;margin:12px 0 6px;background:var(--bg);overflow:hidden}
+#liveMeterFill{height:100%;width:0%;background:var(--fg);transition:width 70ms linear}
+#liveMeterLabel{margin:0;font-family:var(--font-text);font-size:12px;color:var(--mute)}
 
 input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:28px;margin:0;background:transparent;cursor:pointer}
 input[type=range]::-webkit-slider-runnable-track{height:6px;background:var(--fg);border:0}
@@ -58,6 +61,8 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
     <legend>Teste ao vivo</legend>
     <p class="small">Use fones de ouvido. Fale no microfone e escute sua voz com os efeitos aplicados em tempo real.</p>
     <button type="button" id="liveBtn">Ligar microfone</button>
+    <div class="level-meter" role="meter" aria-label="Nível de entrada do microfone" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="liveMeterFill"></div></div>
+    <p id="liveMeterLabel">Nível do microfone: 0%</p>
     <p class="small" id="liveStatus" role="status">Microfone desligado.</p>
   </fieldset>
 
@@ -122,6 +127,7 @@ let busy = false;
 let liveStream = null;
 let liveFx = null;
 let liveRunning = false;
+let liveAnimation = 0;
 
 const say = text => { $('status').textContent = text; };
 
@@ -270,8 +276,12 @@ async function startLive(){
     });
     const ctx = Tone.getContext().rawContext;
     const src = ctx.createMediaStreamSource(liveStream);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    src.connect(analyser); // medição visual, sem enviar o som cru aos fones
     liveFx = {
       src,
+      analyser,
       pitch: new Tone.PitchShift({pitch:0, windowSize:0.08, wet:0}),
       drive: new Tone.Distortion({distortion:0.2, wet:0}),
       chorus: new Tone.Chorus({frequency:1.8, delayTime:3.5, depth:0.7, wet:0}).start(),
@@ -280,6 +290,7 @@ async function startLive(){
       limiter: new Tone.Limiter(-1)
     };
     await liveFx.reverb.generate();
+    // Tone.connect conecta corretamente um AudioNode nativo ao efeito Tone.js.
     Tone.connect(src, liveFx.pitch);
     liveFx.pitch.chain(liveFx.drive, liveFx.chorus, liveFx.reverb, liveFx.volume, liveFx.limiter, Tone.getDestination());
     liveRunning = true;
@@ -287,13 +298,32 @@ async function startLive(){
     $('liveBtn').classList.add('on');
     $('liveStatus').textContent = 'Ao vivo! Fale e ajuste os efeitos abaixo.';
     applyLiveParams();
+    updateLiveMeter();
   }catch(err){
-    console.error("Erro ao iniciar o microfone:", err);
+    console.error('Erro ao iniciar o microfone:', err);
     stopLive();
-    $('liveStatus').textContent = 'Não consegui iniciar o microfone. Permita o acesso nas configurações do navegador e tente novamente.';
+    $('liveStatus').textContent = 'Não consegui iniciar o microfone. Veja o Console (F12) para identificar o erro.';
   }finally{
     $('liveBtn').disabled = false;
   }
+}
+
+function updateLiveMeter(){
+  if(!liveRunning || !liveFx?.analyser) return;
+  const analyser = liveFx.analyser;
+  const samples = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(samples);
+  let sum = 0;
+  for(let i=0;i<samples.length;i++){
+    const value = (samples[i] - 128) / 128;
+    sum += value * value;
+  }
+  const rms = Math.sqrt(sum / samples.length);
+  const percent = Math.max(0, Math.min(100, Math.round(rms * 300)));
+  $('liveMeterFill').style.width = percent + '%';
+  document.querySelector('.level-meter').setAttribute('aria-valuenow', percent);
+  $('liveMeterLabel').textContent = 'Nível do microfone: ' + percent + '%';
+  liveAnimation = requestAnimationFrame(updateLiveMeter);
 }
 
 function applyLiveParams(){
@@ -310,12 +340,18 @@ function applyLiveParams(){
 
 function stopLive(){
   liveRunning = false;
+  if(liveAnimation) cancelAnimationFrame(liveAnimation);
+  liveAnimation = 0;
   if(liveStream){ liveStream.getTracks().forEach(track => track.stop()); liveStream = null; }
   if(liveFx){
     try{ liveFx.src.disconnect(); }catch(e){}
+    try{ liveFx.analyser.disconnect(); }catch(e){}
     Object.values(liveFx).forEach(node => { if(node && typeof node.dispose === 'function') node.dispose(); });
     liveFx = null;
   }
+  $('liveMeterFill').style.width = '0%';
+  document.querySelector('.level-meter').setAttribute('aria-valuenow', '0');
+  $('liveMeterLabel').textContent = 'Nível do microfone: 0%';
   $('liveBtn').textContent = 'Ligar microfone';
   $('liveBtn').classList.remove('on');
   $('liveStatus').textContent = 'Microfone desligado.';
