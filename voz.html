@@ -280,7 +280,7 @@ async function startLive(){
       limiter: new Tone.Limiter(-1)
     };
     await liveFx.reverb.generate();
-    src.connect(liveFx.pitch);
+    Tone.connect(src, liveFx.pitch);
     liveFx.pitch.chain(liveFx.drive, liveFx.chorus, liveFx.reverb, liveFx.volume, liveFx.limiter, Tone.getDestination());
     liveRunning = true;
     $('liveBtn').textContent = 'Desligar microfone';
