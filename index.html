@@ -40,6 +40,45 @@
 <body>
   <h1>nichodev.com</h1>
 
-  <a class="btn" href="voz.html" aria-label="Abrir estúdio de voz">START</a>
+  <a class="btn" href="voz.html" aria-label="Abrir estúdio de voz" id="startBtn">START</a>
+
+<script>
+document.getElementById("startBtn").addEventListener("click", function () {
+  const AudioContextClass =
+    window.AudioContext || window.webkitAudioContext;
+
+  if (!AudioContextClass) return;
+
+  const audio = new AudioContextClass();
+
+  const notas = [
+    { frequencia: 440, inicio: 0, duracao: 0.08 },
+    { frequencia: 660, inicio: 0.09, duracao: 0.12 }
+  ];
+
+  notas.forEach(nota => {
+    const oscilador = audio.createOscillator();
+    const volume = audio.createGain();
+
+    const inicio = audio.currentTime + nota.inicio;
+    const fim = inicio + nota.duracao;
+
+    oscilador.type = "square";
+    oscilador.frequency.value = nota.frequencia;
+
+    volume.gain.setValueAtTime(0.12, inicio);
+    volume.gain.exponentialRampToValueAtTime(0.001, fim);
+
+    oscilador.connect(volume);
+    volume.connect(audio.destination);
+
+    oscilador.start(inicio);
+    oscilador.stop(fim);
+  });
+
+  setTimeout(() => audio.close(), 500);
+});
+</script>
+
 </body>
 </html>
