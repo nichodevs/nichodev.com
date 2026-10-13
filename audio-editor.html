@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NICHODEVS Audio Editor</title>
+  <meta name="description" content="Editor de áudio local do NICHODEVS: forma de onda, seleção, corte de silêncios, volume e exportação WAV.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="audio-editor.css">
+</head>
+<body>
+<main class="audio-editor">
+  <header class="editor-header">
+    <p class="eyebrow">NICHODEVS / AUDIO LAB</p>
+    <h1> AUDIO EDITOR<span class="cursor" aria-hidden="true">_</span></h1>
+    <p class="intro">Importe, selecione, corte e exporte seu áudio. O processamento acontece localmente no navegador.</p>
+  </header>
+
+  <section class="panel">
+    <h2>01 / ARQUIVO</h2>
+    <label class="file-label" for="audioFile">Importar áudio</label>
+    <input id="audioFile" type="file" accept="audio/*">
+    <p id="fileInfo" class="status" role="status">Nenhum áudio carregado.</p>
+    <audio id="player" controls preload="metadata"></audio>
+  </section>
+
+  <section class="panel">
+    <div class="wave-heading">
+      <h2>02 / FORMA DE ONDA</h2>
+      <span id="selectionLabel" class="mono">Seleção: 0.00s – 0.00s</span>
+    </div>
+    <p class="hint">Clique ou arraste sobre a onda para marcar o início e o fim da seleção. A área marcada será destacada.</p>
+    <div class="wave-wrap">
+      <canvas id="waveform" width="1200" height="220" aria-label="Forma de onda. Clique ou arraste para selecionar um trecho." role="img"></canvas>
+      <div class="wave-empty" id="waveEmpty">IMPORTAR ÁUDIO PARA VISUALIZAR A FORMA DE ONDA</div>
+    </div>
+    <div class="time-fields">
+      <label for="selectionStart">Início (s)<input id="selectionStart" type="number" min="0" step="0.01" value="0"></label>
+      <label for="selectionEnd">Fim (s)<input id="selectionEnd" type="number" min="0" step="0.01" value="0"></label>
+    </div>
+    <div class="button-row">
+      <button id="playSelection" type="button" disabled>Ouvir seleção</button>
+      <button id="playAll" type="button" class="secondary" disabled>Ouvir tudo</button>
+      <button id="trimSelection" type="button" disabled>Cortar para seleção</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>03 / LIMPEZA E VOLUME</h2>
+    <label for="silenceThreshold">Limite para detectar silêncio <b id="thresholdValue">-42 dB</b></label>
+    <input id="silenceThreshold" type="range" min="-60" max="-20" step="1" value="-42">
+    <label for="silenceHold">Duração mínima de silêncio <b id="holdValue">0,35 s</b></label>
+    <input id="silenceHold" type="range" min="10" max="100" step="5" value="35">
+    <p class="hint">A remoção de silêncio detecta trechos abaixo do limite e mantém pequenas margens antes/depois da fala. Revise o resultado antes de exportar.</p>
+    <button id="removeSilence" type="button" disabled>Cortar silêncios</button>
+    <label for="volume">Volume de saída <b id="volumeValue">100%</b></label>
+    <input id="volume" type="range" min="0" max="200" step="1" value="100">
+    <button id="applyVolume" type="button" disabled>Aplicar volume ao áudio</button>
+  </section>
+
+  <section class="panel">
+    <h2>04 / EXPORTAR</h2>
+    <p id="exportStatus" class="status" role="status">Importe um arquivo para começar.</p>
+    <div class="button-row">
+      <button id="exportWav" type="button" disabled>Exportar WAV</button>
+      <button id="resetAudio" type="button" class="secondary" disabled>Restaurar original</button>
+    </div>
+    <a id="downloadLink" class="download-link" hidden>Baixar WAV</a>
+  </section>
+
+  <footer><a class="btn" href="voz.html">Voltar ao Voice Studio</a></footer>
+</main>
+<script src="audio-editor.js" defer></script>
+</body>
+</html>
