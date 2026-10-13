@@ -78,6 +78,136 @@ $('presets').addEventListener('click', e => {
   applyPreviewParams();
 });
 
+/* ---------- Presets personalizados: armazenamento local ---------- */
+const CUSTOM_PRESETS_KEY = 'nichodev.customVoicePresets.v1';
+
+function readCustomPresets(){
+  try {
+    const parsed = JSON.parse(localStorage.getItem(CUSTOM_PRESETS_KEY) || '[]');
+    if(!Array.isArray(parsed)) return [];
+    return parsed.filter(item =>
+      item && typeof item.id === 'string' &&
+      typeof item.name === 'string' &&
+      item.values && typeof item.values === 'object'
+    );
+  } catch(e) {
+    return [];
+  }
+}
+
+function writeCustomPresets(items){
+  try {
+    localStorage.setItem(CUSTOM_PRESETS_KEY, JSON.stringify(items));
+    return true;
+  } catch(e) {
+    $('customPresetStatus').textContent = 'Não foi possível salvar. O armazenamento do navegador pode estar indisponível.';
+    return false;
+  }
+}
+
+function currentRawParams(){
+  const values = {};
+  Object.keys(DEFAULTS).forEach(id => { values[id] = Number($(id).value); });
+  return values;
+}
+
+function applyRawParams(values){
+  Object.keys(DEFAULTS).forEach(id => {
+    if(Object.prototype.hasOwnProperty.call(values, id) && Number.isFinite(Number(values[id]))){
+      $(id).value = String(values[id]);
+    }
+  });
+  markPreset(null);
+  updateLabels();
+  applyLiveParams();
+  applyPreviewParams();
+}
+
+function renderCustomPresets(){
+  const list = $('customPresetList');
+  const items = readCustomPresets();
+  list.replaceChildren();
+
+  if(!items.length){
+    $('customPresetStatus').textContent = 'Nenhum preset personalizado salvo ainda.';
+    return;
+  }
+
+  $('customPresetStatus').textContent = `${items.length} preset(s) salvo(s) neste navegador.`;
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'custom-preset-item';
+
+    const name = document.createElement('span');
+    name.className = 'custom-preset-name';
+    name.textContent = item.name;
+
+    const load = document.createElement('button');
+    load.type = 'button';
+    load.textContent = 'Carregar';
+    load.dataset.customAction = 'load';
+    load.dataset.customId = item.id;
+    load.setAttribute('aria-label', `Carregar preset ${item.name}`);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = 'Excluir';
+    remove.dataset.customAction = 'delete';
+    remove.dataset.customId = item.id;
+    remove.setAttribute('aria-label', `Excluir preset ${item.name}`);
+
+    row.append(name, load, remove);
+    list.append(row);
+  });
+}
+
+$('savePresetBtn').addEventListener('click', () => {
+  const nameInput = $('customPresetName');
+  const name = nameInput.value.trim();
+  if(!name){
+    $('customPresetStatus').textContent = 'Digite um nome para salvar seu preset.';
+    nameInput.focus();
+    return;
+  }
+
+  const items = readCustomPresets();
+  if(items.length >= 30){
+    $('customPresetStatus').textContent = 'Limite de 30 presets personalizados atingido. Exclua algum para salvar outro.';
+    return;
+  }
+
+  const item = {
+    id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name: name.slice(0, 32),
+    values: currentRawParams()
+  };
+  items.push(item);
+  if(writeCustomPresets(items)){
+    nameInput.value = '';
+    renderCustomPresets();
+    $('customPresetStatus').textContent = `Preset "${item.name}" salvo neste navegador.`;
+  }
+});
+
+$('customPresetList').addEventListener('click', e => {
+  const button = e.target.closest('button[data-custom-action]');
+  if(!button) return;
+  const id = button.dataset.customId;
+  const items = readCustomPresets();
+  const item = items.find(entry => entry.id === id);
+  if(!item) return;
+
+  if(button.dataset.customAction === 'load'){
+    applyRawParams(item.values);
+    $('customPresetStatus').textContent = `Preset "${item.name}" carregado.`;
+  } else if(button.dataset.customAction === 'delete'){
+    const updated = items.filter(entry => entry.id !== id);
+    if(writeCustomPresets(updated)) renderCustomPresets();
+  }
+});
+
+renderCustomPresets();
+
 /* ---------- Cadeia compartilhada de efeitos ---------- */
 async function createEffectChain(p){
   const fx = {
