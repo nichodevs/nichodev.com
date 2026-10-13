@@ -17,7 +17,7 @@
 <body>
 <main>
   <h2>estúdio de voz<span class="cursor" aria-hidden="true"></span></h2>
-  <p class="warn">Grave ou importe um áudio (até 5 minutos), ajuste o equalizador e os efeitos e exporte. Tudo é processado no seu navegador, sem enviar o áudio para nenhum servidor.</p>
+  <p class="warn">Grave ou importe um áudio (até 5 minutos), ajuste o tom, o timbre, o equalizador e os efeitos e exporte. Tudo é processado no seu navegador, sem enviar o áudio para nenhum servidor.</p>
   <noscript><p class="warn">Ative o JavaScript para usar o estúdio.</p></noscript>
   <p id="status" role="status">Ligue o microfone para testar os efeitos ao vivo, ou grave ou importe um áudio.</p>
 
@@ -87,6 +87,12 @@
   </section>
 
   <fieldset><legend>Tom</legend><label for="pitch">Semitons <b data-for="pitch"></b></label><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></fieldset>
+  <fieldset>
+    <legend>Formantes — timbre</legend>
+    <label for="formant">Timbre <b data-for="formant"></b></label>
+    <input id="formant" type="range" min="-50" max="50" step="1" value="0">
+    <p class="small">Ajuste sutil o caráter da voz: valores negativos tendem a escurecer o timbre; positivos tendem a deixá-lo mais brilhante. É uma aproximação por filtros, não um deslocamento físico completo dos formantes.</p>
+  </fieldset>
   <fieldset><legend>Equalizador — graves, médios e agudos</legend>
     <label for="bass">Graves (dB) <b data-for="bass"></b></label><input id="bass" type="range" min="-12" max="12" step="1" value="0">
     <label for="mid">Médios (dB) <b data-for="mid"></b></label><input id="mid" type="range" min="-12" max="12" step="1" value="0">
