@@ -27,6 +27,10 @@ jobs:
           test -f cursores-retro.css
           test -f js/voz.js
           test -f js/compact-mode.js
+          test -f js/index.js
+          test -f audio-editor.html
+          test -f audio-editor.css
+          test -f audio-editor.js
           test -f robots.txt
 
       - name: Publicar arquivos na Hostinger
@@ -36,18 +40,25 @@ jobs:
           PASS: ${{ secrets.HOSTINGER_PASSWORD }}
         run: |
           set -eu
+          cd "$GITHUB_WORKSPACE"
           lftp -u "$USER","$PASS" "sftp://$HOST:65002" -e "
             set sftp:auto-confirm yes
             set cmd:fail-exit yes
+            lcd $GITHUB_WORKSPACE
             cd domains/nichodev.com/public_html
             mkdir -p js
             put index.html -o index.html
             put voz.html -o voz.html
             put style.css -o style.css
+            put index.css -o index.css
             put voz.css -o voz.css
             put cursores-retro.css -o cursores-retro.css
             put js/voz.js -o js/voz.js
             put js/compact-mode.js -o js/compact-mode.js
+            put js/index.js -o js/index.js
+            put audio-editor.html -o audio-editor.html
+            put audio-editor.css -o audio-editor.css
+            put audio-editor.js -o audio-editor.js
             put robots.txt -o robots.txt
             bye
           "
