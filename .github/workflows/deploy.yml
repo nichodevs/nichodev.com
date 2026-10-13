@@ -1,3 +1,4 @@
+
 name: Publicar site na Hostinger
 
 on:
@@ -9,6 +10,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Baixar arquivos do repositorio
         uses: actions/checkout@v4
@@ -16,49 +18,17 @@ jobs:
       - name: Instalar cliente SFTP
         run: sudo apt-get update && sudo apt-get install -y lftp
 
-      - name: Verificar arquivos
-        shell: bash
-        run: |
-          set -eu
-          test -f index.html
-          test -f voz.html
-          test -f style.css
-          test -f voz.css
-          test -f cursores-retro.css
-          test -f js/voz.js
-          test -f js/compact-mode.js
-          test -f audio-editor.html
-          test -f audio-editor.css
-          test -f audio-editor.js
-          test -f robots.txt
-          
       - name: Publicar arquivos na Hostinger
-        shell: bash
         env:
           HOST: ${{ secrets.HOSTINGER_HOST }}
           USER: ${{ secrets.HOSTINGER_USERNAME }}
           PASS: ${{ secrets.HOSTINGER_PASSWORD }}
         run: |
-          set -eu
           lftp -u "$USER","$PASS" "sftp://$HOST:65002" -e "
             set sftp:auto-confirm yes
-            set cmd:fail-exit yes
-            lcd $GITHUB_WORKSPACE
             cd domains/nichodev.com/public_html
-
             put index.html -o index.html
             put voz.html -o voz.html
-            put style.css -o style.css
-            put voz.css -o voz.css
-            put cursores-retro.css -o cursores-retro.css
-            put audio-editor.html -o audio-editor.html
-            put audio-editor.css -o audio-editor.css
-            put audio-editor.js -o audio-editor.js
             put robots.txt -o robots.txt
-
-            mkdir -p js
-            cd js
-            put js/voz.js -o voz.js
-            put js/compact-mode.js -o compact-mode.js
             bye
           "
