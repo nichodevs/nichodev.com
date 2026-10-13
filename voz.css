@@ -274,3 +274,15 @@ body.compact-mode #presets{margin-bottom:16px}
   .modular-preview{display:block}
   .coming-soon{display:inline-block;margin-top:12px}
 }
+
+
+/* NICHODEVS Live Voice bridge */
+#liveBridgePanel input[type="text"],
+#liveBridgePanel input[type="password"] {
+  display:block; width:100%; min-width:0; margin:0 0 14px; padding:12px;
+  border:2px solid var(--line); border-radius:0; background:var(--bg); color:var(--fg);
+  font:12px/1.5 var(--font-text);
+}
+#liveBridgePanel input:focus-visible { outline:3px dashed var(--fg); outline-offset:3px; }
+#liveBridgeBtn.on { background:var(--fg); color:var(--bg); }
+#liveBridgeStatus { overflow-wrap:anywhere; }
