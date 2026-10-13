@@ -108,3 +108,73 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
     min-width: 0;
   }
 }
+
+
+/* Área de presets personalizados — mantém a estética retrô */
+.custom-presets {
+  margin: 0 0 24px;
+  padding: 14px;
+  border: 3px solid var(--line);
+  min-width: 0;
+}
+.custom-presets h3 {
+  margin: 0 0 10px;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.7;
+}
+.save-preset-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.save-preset-row .file-label {
+  margin: 4px 0 0;
+}
+#customPresetName {
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 12px/1.5 var(--font-text);
+}
+#customPresetName:focus-visible,
+.custom-presets button:focus-visible {
+  outline: 3px dashed var(--fg);
+  outline-offset: 3px;
+}
+.custom-preset-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.custom-preset-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.custom-preset-name {
+  overflow-wrap: anywhere;
+  font-family: var(--font-text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.custom-preset-item button,
+#savePresetBtn {
+  font-size: 9px;
+  padding: 10px;
+}
+@media (max-width: 420px) {
+  .custom-preset-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .custom-preset-name {
+    grid-column: 1 / -1;
+  }
+}
