@@ -28,7 +28,7 @@ jobs:
           test -f js/compact-mode.js
           test -f robots.txt
 
-      - name: Publicar arquivos na Hostinger
+     - name: Publicar arquivos na Hostinger
         env:
           HOST: ${{ secrets.HOSTINGER_HOST }}
           USER: ${{ secrets.HOSTINGER_USERNAME }}
@@ -42,6 +42,7 @@ jobs:
             set cmd:fail-exit yes
             lcd $GITHUB_WORKSPACE
             cd domains/nichodev.com/public_html
+            mkdir -p js
             put index.html -o index.html
             put voz.html -o voz.html
             put style.css -o style.css
