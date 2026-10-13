@@ -54,13 +54,21 @@
     <p class="small fx-tip">Dica: capture A com um som mais limpo, mude drive, chorus, delay ou reverb e capture B. Use “Ouvir com efeitos” na seção de prévia para testar o áudio importado, ou o monitoramento ao vivo com fones.</p>
   </section>
 
-  <section class="modular-preview" aria-labelledby="modularTitle">
-    <div>
-      <p class="eyebrow">PRÓXIMA ETAPA</p>
+  <section id="modularLive" class="modular-live" aria-labelledby="modularTitle">
+    <div class="modular-live-heading">
+      <p class="eyebrow">CADEIA PERSONALIZADA / MICROFONE AO VIVO</p>
       <h3 id="modularTitle">MODULAR FX</h3>
-      <p class="small">Uma futura bancada visual para conectar módulos e construir cadeias de áudio personalizadas — por exemplo, Pitch → Drive → Chorus → Delay → Reverb.</p>
+      <p class="small">Adicione módulos, ajuste os parâmetros e reordene a cadeia. O processamento entra no monitoramento e na gravação ao vivo.</p>
     </div>
-    <span class="coming-soon">EM DESENVOLVIMENTO</span>
+    <div class="modular-live-tools" aria-label="Adicionar módulo de efeito">
+      <button type="button" data-live-fx-add="gain">＋ VOLUME</button>
+      <button type="button" data-live-fx-add="filter">＋ FILTRO</button>
+      <button type="button" data-live-fx-add="delay">＋ DELAY</button>
+      <button type="button" data-live-fx-add="distortion">＋ DISTORÇÃO</button>
+      <button type="button" data-live-fx-add="reverb">＋ REVERB</button>
+    </div>
+    <div id="liveFxChain" class="live-fx-chain" aria-label="Cadeia de efeitos ao vivo"></div>
+    <p id="liveFxStatus" class="small" role="status" aria-live="polite">Sem módulos: o áudio ao vivo passa direto. Ligue o microfone para ouvir.</p>
   </section>
 
   <fieldset>
@@ -198,6 +206,7 @@
 <!-- Para travar a versão com segurança, copie o hash SRI desta URL em cdnjs.com e adicione integrity="sha512-..." -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>window.Tone || document.write('<script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js" crossorigin="anonymous"><\/script>')</script>
+<script src="js/live-modular-fx.js" defer></script>
 <script src="js/voz.js" defer></script>
 </body>
 </html>
