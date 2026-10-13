@@ -1,4 +1,3 @@
-
 name: Publicar site na Hostinger
 
 on:
@@ -18,6 +17,17 @@ jobs:
       - name: Instalar cliente SFTP
         run: sudo apt-get update && sudo apt-get install -y lftp
 
+      - name: Verificar arquivos do site
+        run: |
+          test -f index.html
+          test -f voz.html
+          test -f style.css
+          test -f voz.css
+          test -f cursores-retro.css
+          test -f js/voz.js
+          test -f js/compact-mode.js
+          test -f robots.txt
+
       - name: Publicar arquivos na Hostinger
         env:
           HOST: ${{ secrets.HOSTINGER_HOST }}
@@ -28,7 +38,6 @@ jobs:
             set sftp:auto-confirm yes
             set cmd:fail-exit yes
             cd domains/nichodev.com/public_html
-            mkdir -p js
             put index.html -o index.html
             put voz.html -o voz.html
             put style.css -o style.css
