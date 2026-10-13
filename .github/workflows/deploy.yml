@@ -1,3 +1,4 @@
+```yaml
 name: Publicar site na Hostinger
 
 on:
@@ -23,17 +24,16 @@ jobs:
           test -f index.html
           test -f voz.html
           test -f style.css
+          test -f index.css
           test -f voz.css
           test -f cursores-retro.css
           test -f js/voz.js
           test -f js/compact-mode.js
-          test -f js/index.js
           test -f audio-editor.html
           test -f audio-editor.css
           test -f audio-editor.js
           test -f robots.txt
 
-      
       - name: Publicar arquivos na Hostinger
         env:
           HOST: ${{ secrets.HOSTINGER_HOST }}
@@ -53,16 +53,14 @@ jobs:
             put index.css -o index.css
             put voz.css -o voz.css
             put cursores-retro.css -o cursores-retro.css
-
-            cd js
-            put js/voz.js -o voz.js
-            put js/compact-mode.js -o compact-mode.js
-            put js/index.js -o index.js
-
-            cd ..
             put audio-editor.html -o audio-editor.html
             put audio-editor.css -o audio-editor.css
             put audio-editor.js -o audio-editor.js
             put robots.txt -o robots.txt
+
+            cd js
+            put voz.js -o voz.js
+            put compact-mode.js -o compact-mode.js
             bye
           "
+```
