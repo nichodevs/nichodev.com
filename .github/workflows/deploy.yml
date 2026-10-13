@@ -28,19 +28,47 @@ jobs:
           test -f js/compact-mode.js
           test -f robots.txt
 
-     - name: Publicar arquivos na Hostinger
+name: Publicar site na Hostinger
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar arquivos do repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar cliente SFTP
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Verificar arquivos do site
+        run: |
+          set -eu
+          test -f index.html
+          test -f voz.html
+          test -f style.css
+          test -f voz.css
+          test -f cursores-retro.css
+          test -f js/voz.js
+          test -f js/compact-mode.js
+          test -f robots.txt
+
+      - name: Publicar arquivos na Hostinger
         env:
           HOST: ${{ secrets.HOSTINGER_HOST }}
           USER: ${{ secrets.HOSTINGER_USERNAME }}
           PASS: ${{ secrets.HOSTINGER_PASSWORD }}
         run: |
           set -eu
-          cd "$GITHUB_WORKSPACE"
-
           lftp -u "$USER","$PASS" "sftp://$HOST:65002" -e "
             set sftp:auto-confirm yes
             set cmd:fail-exit yes
-            lcd $GITHUB_WORKSPACE
             cd domains/nichodev.com/public_html
             mkdir -p js
             put index.html -o index.html
