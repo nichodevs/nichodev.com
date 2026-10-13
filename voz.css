@@ -1,3 +1,58 @@
+body{font-size:11px;line-height:1.9;padding:24px 16px 56px}
+main{max-width:560px;margin-inline:auto}
+h2{margin:0 0 20px;font-weight:400;font-size:clamp(14px,4.4vw,20px);line-height:1.4}
+
+/* textos corridos em fonte legível; pixel font fica em títulos, botões e rótulos */
+.warn,.small,#status{font-family:var(--font-text);font-size:13px;line-height:1.6}
+.warn,.small{color:var(--mute)}
+.warn{margin:0 0 16px;padding:12px 14px;border:3px solid var(--line)}
+#status{min-height:3.2em;margin:0 0 16px}
+
+fieldset{margin:0 0 20px;padding:14px 16px 20px;border:3px solid var(--line);min-width:0}
+legend{padding:0 8px;font-size:11px;text-transform:uppercase}
+fieldset button{font-size:9px}
+label{display:flex;justify-content:space-between;gap:12px;font-size:10px;color:var(--mute);margin-bottom:12px}
+label b{font-weight:400;color:var(--fg)}
+label.file-label{display:block;margin:14px 0 8px}
+input[type=file]{max-width:100%;font-family:var(--font-text);font-size:14px;color:var(--fg)}
+audio{display:block;width:100%;max-width:100%}
+#resultAudio{margin-bottom:14px}
+
+.presets{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px}
+.presets button{font-size:10px}
+.presets button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+#recordBtn.on,#liveBtn.on{background:var(--fg);color:var(--bg)}
+.level-meter{height:18px;border:3px solid var(--line);padding:2px;margin:12px 0 6px;background:var(--bg);overflow:hidden}
+#liveMeterFill{height:100%;width:0%;background:var(--fg);transition:width 70ms linear}
+#liveMeterLabel{margin:0;font-family:var(--font-text);font-size:12px;color:var(--mute)}
+
+input[type=range]{-webkit-appearance:none;appearance:none;display:block;width:100%;height:28px;margin:0;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:6px;background:var(--fg);border:0}
+input[type=range]::-moz-range-track{height:6px;background:var(--fg);border:0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:28px;margin-top:-11px;background:var(--bg);border:3px solid var(--line);border-radius:0}
+input[type=range]::-moz-range-thumb{width:12px;height:22px;background:var(--bg);border:3px solid var(--line);border-radius:0}
+input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-range-thumb{background:var(--fg)}
+
+.back-wrap{display:flex;justify-content:center;margin-top:28px}
+
+.record-monitor{margin:16px 0 4px;padding:12px;border:2px dashed var(--line)}
+.record-time-label{margin:0;color:var(--mute);font-size:9px}
+.record-time{margin:4px 0 14px;font-size:clamp(22px,7vw,32px);line-height:1.4;letter-spacing:2px}
+.record-meter{margin-top:8px}
+#recordMeterFill{height:100%;width:0%;background:var(--fg);transition:width 60ms linear}
+#recordMeterLabel{margin:0;font-family:var(--font-text);font-size:12px;color:var(--mute)}
+
+
+.preview-controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+#previewStatus{margin:10px 0 0}
+.export-loader{margin-top:16px;padding:14px;border:3px dashed var(--line);text-align:center}
+.export-loader p{margin:8px 0}
+.loader-track{height:18px;border:3px solid var(--line);padding:2px;overflow:hidden}
+.loader-fill{height:100%;width:35%;background:var(--fg);animation:export-slide 1.1s steps(8,end) infinite}
+#exportLoaderText{font-size:10px;letter-spacing:1px}
+@keyframes export-slide{0%{transform:translateX(-110%)}100%{transform:translateX(310%)}}
+@media(prefers-reduced-motion:reduce){.loader-fill{animation:none;width:100%}}
+
 body{font-size:12px;line-height:1.9;padding:24px 16px 56px}
 main{width:100%;max-width:760px;margin-inline:auto}
 h2{margin:0 0 20px;font-weight:400;font-size:clamp(14px,4.4vw,20px);line-height:1.4}
@@ -180,51 +235,18 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 }
 
 
-/* Controle de formantes aproximados */
-#formant {
-  accent-color: var(--fg);
-}
-
-
-/* Alternância entre interface compacta e avançada — preserva o estilo retrô */
-.mode-switch {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 8px;
-  padding: 10px;
-  border: 3px solid var(--line);
-}
-.mode-switch-label {
-  margin-right: auto;
-  font-size: 9px;
-  color: var(--mute);
-}
-.mode-switch button {
-  min-height: 36px;
-  padding: 9px 12px;
-  font-size: 9px;
-}
-.mode-switch button[aria-pressed="true"] {
-  background: var(--fg);
-  color: var(--bg);
-}
-.mode-help { margin: 0 0 18px; }
-body.compact-mode .advanced-only { display: none !important; }
-body.advanced-mode .advanced-only { display: revert; }
-@media (max-width: 420px) {
-  .mode-switch-label { width: 100%; margin-bottom: 2px; }
-  .mode-switch button { flex: 1 1 calc(50% - 8px); }
-}
-
-/* Menu retrô expansível: não interfere nos nós de áudio nem no estado dos controles. */
-.effects-menu { margin: 0 0 20px; border: 3px solid var(--line); background: var(--bg); color: var(--fg); }
-.effects-menu > summary { display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; padding: 16px; font-size: 11px; user-select: none; }
-.effects-menu > summary::-webkit-details-marker { display: none; }
-.effects-menu > summary:focus-visible { outline: 3px dashed var(--fg); outline-offset: -6px; }
-.effects-menu > summary:hover { background: var(--fg); color: var(--bg); }
-.effects-arrow::after { content: '+'; font-size: 16px; line-height: 1; }
-.effects-menu[open] .effects-arrow::after { content: '−'; }
-.effects-menu-content { padding: 0 12px 4px; }
-.effects-menu-content fieldset { margin-bottom: 14px; }
+/* Voice Studio 2.0 additions */
+.waveform-frame{margin:16px 0;padding:12px;border:2px dashed var(--line)}
+.waveform-heading{font-size:9px;line-height:1.8;margin-bottom:8px}
+#liveWaveform{display:block;width:100%;height:112px;border:1px solid var(--line);background:var(--bg)}
+.waveform-caption{font-family:var(--font-text);font-size:12px;color:var(--mute);margin:8px 0 0}
+.processed-record-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.processed-record-actions button{font-size:9px}
+#stopProcessedBtn{background:var(--bg);color:var(--fg)}
+.mode-switch{border:3px solid var(--line);padding:12px;margin:20px 0;font-size:9px}
+.mode-switch>span{display:block;margin-bottom:10px}
+.mode-switch .small{margin:10px 0 0}
+.advanced-control{transition:opacity .15s ease}
+body.compact-mode .advanced-control{display:none}
+body.compact-mode #presets{margin-bottom:16px}
+@media(max-width:480px){.processed-record-actions button{flex:1 1 100%}}
