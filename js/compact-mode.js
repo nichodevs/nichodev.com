@@ -14,8 +14,8 @@
     compactBtn.setAttribute('aria-pressed', String(!advanced));
     advancedBtn.setAttribute('aria-pressed', String(advanced));
     help.textContent = advanced
-      ? 'Modo avançado: todos os controles e efeitos estão disponíveis.'
-      : 'Modo compacto: controles essenciais à vista. Ative Avançado para acessar todos os efeitos.';
+      ? 'Modo avançado: todos os recursos estão disponíveis. Abra EFEITOS para ajustar o som.'
+      : 'Modo compacto: controles essenciais à vista. Abra EFEITOS para ajustar o som; ative Avançado para gerenciar seus presets.';
     if (save) {
       try { localStorage.setItem(STORAGE_KEY, mode); } catch (_) { /* preferência opcional */ }
     }
