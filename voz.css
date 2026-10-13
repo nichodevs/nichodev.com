@@ -256,8 +256,8 @@ body.compact-mode #presets{margin-bottom:16px}
 .studio-nav{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}
 .studio-nav-link{display:inline-block;padding:10px 12px;border:2px solid var(--line);color:var(--fg);text-decoration:none;font-size:9px}
 .studio-nav-link:hover,.studio-nav-link.active{background:var(--fg);color:var(--bg)}
-.fx-lab,.modular-preview{border:3px solid var(--line);padding:16px;margin:0 0 20px;min-width:0}
-.fx-lab-heading h3,.modular-preview h3{font-size:clamp(12px,3vw,16px);font-weight:400;margin:0 0 12px}
+.fx-lab,.modular-live{border:3px solid var(--line);padding:16px;margin:0 0 20px;min-width:0}
+.fx-lab-heading h3,.modular-live-heading h3{font-size:clamp(12px,3vw,16px);font-weight:400;margin:0 0 12px}
 .eyebrow,.ab-label{font-size:9px;letter-spacing:.08em;margin:0 0 8px;color:var(--mute)}
 .ab-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}
 .ab-card{border:2px dashed var(--line);padding:12px;min-width:0}
@@ -266,13 +266,24 @@ body.compact-mode #presets{margin-bottom:16px}
 .fx-lab-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .fx-lab-actions .small{margin:0;flex:1 1 220px}
 .fx-tip{margin:14px 0 0}
-.modular-preview{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
-.modular-preview p:last-child{margin-bottom:0}
-.coming-soon{flex:0 0 auto;border:2px solid var(--line);padding:7px 8px;font-size:8px;line-height:1.6}
+.modular-live-heading p:last-child{margin-bottom:0}
+.modular-live-tools{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.modular-live-tools button,.live-fx-actions button{font-size:9px;padding:8px}
+.live-fx-chain{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;align-items:start}
+.live-fx-module{border:2px dashed var(--line);min-width:0}
+.live-fx-module>header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-bottom:1px solid var(--line);font-size:9px}
+.live-fx-actions{display:flex;gap:4px}
+.live-fx-actions button{min-width:28px;padding:5px}
+.live-fx-module-body{padding:10px}
+.live-fx-module-body label{display:grid;grid-template-columns:1fr auto;gap:5px 8px;margin:0 0 10px;font-size:9px}
+.live-fx-module-body label:last-child{margin-bottom:0}
+.live-fx-module-body output{font:11px var(--font-text)}
+.live-fx-module-body input{grid-column:1/-1;width:100%;margin:0;accent-color:var(--fg)}
+.live-fx-empty{grid-column:1/-1;margin:0;padding:16px;border:1px dashed var(--line);font:12px/1.6 var(--font-text);color:var(--mute)}
+#liveFxStatus{margin:12px 0 0}
 @media(max-width:520px){
   .ab-grid{grid-template-columns:1fr}
-  .modular-preview{display:block}
-  .coming-soon{display:inline-block;margin-top:12px}
+  .live-fx-chain{grid-template-columns:1fr}
 }
 
 
