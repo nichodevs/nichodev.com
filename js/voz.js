@@ -15,7 +15,13 @@ const PRESETS = {
   grave:   {...DEFAULTS, pitch:-5, bass:3, treble:-2, drive:10, reverb:15},
   crianca: {...DEFAULTS, pitch:7, chorus:20, reverb:10},
   robo:    {...DEFAULTS, pitch:-2, drive:55, chorus:70, reverb:25, phaser:25},
-  rock:    {...DEFAULTS, drive:45, distortion:55, fuzz:25, chorus:25, reverb:35}
+  rock:     {...DEFAULTS, drive:45, distortion:55, fuzz:25, chorus:25, reverb:35},
+  radio:    {...DEFAULTS, bass:-5, mid:3, treble:-5, drive:12, distortion:8, reverb:4},
+  telefone: {...DEFAULTS, bass:-9, mid:5, treble:-8, drive:8, distortion:5},
+  catedral: {...DEFAULTS, bass:1, mid:0, treble:2, chorus:8, reverb:82, delay:8},
+  espacial: {...DEFAULTS, pitch:2, chorus:42, reverb:48, delay:28, phaser:22, vibrato:8},
+  eco:      {...DEFAULTS, delay:48, reverb:24, chorus:8},
+  monstro:  {...DEFAULTS, pitch:-7, octave:-1, bass:5, mid:1, treble:-4, drive:38, distortion:28, fuzz:18, reverb:12}
 };
 
 let source = null;                  // {blob, name}
