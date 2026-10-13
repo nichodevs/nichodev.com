@@ -1,150 +1,579 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Estúdio de voz</title>
-<meta name="description" content="Grave ou importe um áudio, mude o tom da voz e aplique drive, chorus e reverb.">
-<meta name="theme-color" content="#000000">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Crect x='4' y='3' width='8' height='10' fill='%23fff'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="voz-compacto.css">
-<link rel="stylesheet" href="cursores-retro.css">
-</head>
-<body>
-<main>
-  <h2>estúdio de voz<span class="cursor" aria-hidden="true"></span></h2>
-  <p class="warn">Grave ou importe um áudio (até 5 minutos), ajuste o equalizador e os efeitos e exporte. Tudo é processado no seu navegador, sem enviar o áudio para nenhum servidor.</p>
-  <noscript><p class="warn">Ative o JavaScript para usar o estúdio.</p></noscript>
-  <p id="status" role="status">Ligue o microfone para testar os efeitos ao vivo, ou grave ou importe um áudio.</p>
+"use strict";
 
-  <fieldset>
-    <legend>Teste ao vivo</legend>
-    <p class="small">Use fones de ouvido. Fale no microfone e escute sua voz com os efeitos aplicados em tempo real.</p>
-    <button type="button" id="liveBtn">Ligar microfone</button>
-    <div class="level-meter" role="meter" aria-label="Nível de entrada do microfone" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="liveMeterFill"></div></div>
-    <p id="liveMeterLabel">Nível do microfone: 0%</p>
-    <p class="small" id="liveStatus" role="status">Microfone desligado.</p>
-  </fieldset>
+const $ = id => document.getElementById(id);
 
-  <fieldset>
-    <legend>Gravar ou importar</legend>
-    <button type="button" id="recordBtn">Começar gravação</button>
-    <div id="recordMonitor" class="record-monitor" hidden aria-live="polite">
-      <p class="record-time-label">TEMPO DE GRAVAÇÃO</p>
-      <p id="recordTime" class="record-time" role="timer" aria-label="Tempo de gravação">00:00</p>
-      <p class="record-time-label">INTENSIDADE DO MICROFONE</p>
-      <div class="level-meter record-meter" role="meter" aria-label="Intensidade do microfone durante a gravação" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="recordMeterFill"></div></div>
-      <p id="recordMeterLabel">Nível do microfone: 0%</p>
-    </div>
-    <label class="file-label" for="audioFile">Importar arquivo de áudio</label>
-    <input id="audioFile" type="file" accept="audio/*">
-  </fieldset>
+const MAX_SECONDS = 300;            // duração máxima (gravação e importação)
+const MAX_FILE_MB = 100;            // tamanho máximo do arquivo importado
 
-  <fieldset>
-    <legend>Prévia do áudio</legend>
-    <audio id="sourceAudio" controls></audio>
-    <p class="small">O player acima toca o áudio original. Use o botão abaixo para ouvir com os efeitos; você pode ajustar os controles durante a reprodução.</p>
-    <div class="preview-controls">
-      <button type="button" id="effectPreviewBtn" disabled>Ouvir com efeitos</button>
-      <button type="button" id="stopPreviewBtn" disabled>Parar prévia</button>
-    </div>
-    <p id="previewStatus" class="small" role="status">Grave ou importe um áudio para habilitar a prévia com efeitos.</p>
-  </fieldset>
+const DEFAULTS = {
+  pitch:0, bass:0, mid:0, treble:0, drive:0, chorus:0, reverb:0,
+  tremolo:0, phaser:0, delay:0, octave:0, distortion:0, wah:0,
+  fuzz:0, octafuzz:0, vibrato:0, vol:100
+};
+const PRESETS = {
+  normal:  {...DEFAULTS},
+  grave:   {...DEFAULTS, pitch:-5, bass:3, treble:-2, drive:10, reverb:15},
+  crianca: {...DEFAULTS, pitch:7, chorus:20, reverb:10},
+  robo:    {...DEFAULTS, pitch:-2, drive:55, chorus:70, reverb:25, phaser:25},
+  rock:    {...DEFAULTS, drive:45, distortion:55, fuzz:25, chorus:25, reverb:35}
+};
 
-  <div class="presets" id="presets" role="group" aria-label="Predefinições de voz">
-    <button type="button" data-p="normal" aria-pressed="true">Normal</button>
-    <button type="button" data-p="grave" aria-pressed="false">Voz grave</button>
-    <button type="button" data-p="crianca" aria-pressed="false">Voz fina</button>
-    <button type="button" data-p="robo" aria-pressed="false">Robô</button>
-    <button type="button" data-p="rock" aria-pressed="false">Rock</button>
-  </div>
+let source = null;                  // {blob, name}
+let sourceUrl = null, resultUrl = null;
+let recorder = null;
+let busy = false;
+let liveStream = null;
+let liveFx = null;
+let previewFx = null;
+let previewStarting = false;
+let liveRunning = false;
+let liveAnimation = 0;
+let recordingAnimation = 0;
+let recordingStartedAt = 0;
+let recordingAudioContext = null;
 
-  <details class="control-panel">
-    <summary>Tom</summary>
-    <div class="control-content"><label for="pitch">Semitons <b data-for="pitch"></b></label><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Equalizador — graves, médios e agudos</summary>
-    <div class="control-content"><label for="bass">Graves (dB) <b data-for="bass"></b></label><input id="bass" type="range" min="-12" max="12" step="1" value="0">
-    <label for="mid">Médios (dB) <b data-for="mid"></b></label><input id="mid" type="range" min="-12" max="12" step="1" value="0">
-    <label for="treble">Agudos (dB) <b data-for="treble"></b></label><input id="treble" type="range" min="-12" max="12" step="1" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Drive</summary>
-    <div class="control-content"><label for="drive">Intensidade <b data-for="drive"></b></label><input id="drive" type="range" min="0" max="100" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Chorus</summary>
-    <div class="control-content"><label for="chorus">Mistura <b data-for="chorus"></b></label><input id="chorus" type="range" min="0" max="100" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Reverb</summary>
-    <div class="control-content"><label for="reverb">Mistura <b data-for="reverb"></b></label><input id="reverb" type="range" min="0" max="100" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Tremolo</summary>
-    <div class="control-content"><label for="tremolo">Intensidade <b data-for="tremolo"></b></label><input id="tremolo" type="range" min="0" max="100" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Phaser</summary>
-    <div class="control-content"><label for="phaser">Intensidade <b data-for="phaser"></b></label><input id="phaser" type="range" min="0" max="100" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Delay</summary>
-    <div class="control-content"><label for="delay">Repetição <b data-for="delay"></b></label><input id="delay" type="range" min="0" max="100" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Oitava</summary>
-    <div class="control-content"><label for="octave">Tom de oitava <b data-for="octave"></b></label><input id="octave" type="range" min="-1" max="1" step="1" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Distorção</summary>
-    <div class="control-content"><label for="distortion">Intensidade <b data-for="distortion"></b></label><input id="distortion" type="range" min="0" max="100" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Wah Wah</summary>
-    <div class="control-content"><label for="wah">Intensidade <b data-for="wah"></b></label><input id="wah" type="range" min="0" max="100" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Fuzz</summary>
-    <div class="control-content"><label for="fuzz">Intensidade <b data-for="fuzz"></b></label><input id="fuzz" type="range" min="0" max="100" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Octafuzz</summary>
-    <div class="control-content"><label for="octafuzz">Intensidade <b data-for="octafuzz"></b></label><input id="octafuzz" type="range" min="0" max="100" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Vibrato</summary>
-    <div class="control-content"><label for="vibrato">Intensidade <b data-for="vibrato"></b></label><input id="vibrato" type="range" min="0" max="100" value="0"></div>
-  </details>
-  <details class="control-panel">
-    <summary>Volume</summary>
-    <div class="control-content"><label for="vol">Saída <b data-for="vol"></b></label><input id="vol" type="range" min="0" max="150" value="100"></div>
-  </details>
+const say = text => { $('status').textContent = text; };
 
-  <fieldset>
-    <legend>Exportar</legend>
-    <button type="button" id="processBtn" disabled>Aplicar efeitos e exportar</button>
-    <div id="exportLoader" class="export-loader" hidden role="status" aria-live="polite">
-      <div class="loader-track"><div class="loader-fill"></div></div>
-      <p id="exportLoaderText">PROCESSANDO ÁUDIO...</p>
-      <p class="small">Não feche esta página. Áudios longos podem levar algum tempo.</p>
-    </div>
-    <p class="small" id="resultHint" hidden>Ouça o resultado e baixe quando estiver bom.</p>
-    <audio id="resultAudio" controls hidden></audio>
-    <a id="downloadResult" class="btn" hidden>Baixar áudio modificado</a>
-  </fieldset>
+/* ---------- Efeitos ---------- */
 
-  <div class="back-wrap"><a class="btn" href="index.html">Voltar</a></div>
-</main>
+function readParams(){
+  const p = {};
+  Object.keys(DEFAULTS).forEach(id => p[id] = +$(id).value);
+  for(const id of ['drive','chorus','reverb','tremolo','phaser','delay','distortion','wah','fuzz','octafuzz','vibrato']) p[id] /= 100;
+  p.volume = p.vol / 100;
+  return p;
+}
 
-<!-- Para travar a versão com segurança, copie o hash SRI desta URL em cdnjs.com e adicione integrity="sha512-..." -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script>window.Tone || document.write('<script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js" crossorigin="anonymous"><\/script>')</script>
-<script src="js/voz.js" defer></script>
-</body>
-</html>
+function updateLabels(){
+  document.querySelectorAll('input[type=range]').forEach(r => {
+    const v = +r.value;
+    const signed = ['pitch','bass','mid','treble'].includes(r.id);
+    let label = signed ? ((v > 0 ? '+' : '') + v + (['bass','mid','treble'].includes(r.id) ? ' dB' : '')) : v + '%';
+    if(r.id === 'octave') label = v === 0 ? 'Desligado' : (v > 0 ? '+1 oitava' : '-1 oitava');
+    document.querySelector(`b[data-for="${r.id}"]`).textContent = label;
+  });
+}
+
+function markPreset(key){
+  document.querySelectorAll('#presets button').forEach(b =>
+    b.setAttribute('aria-pressed', String(b.dataset.p === key)));
+}
+
+document.querySelectorAll('input[type=range]').forEach(r =>
+  r.addEventListener('input', () => { markPreset(null); updateLabels(); applyLiveParams(); applyPreviewParams(); }));
+
+$('presets').addEventListener('click', e => {
+  const preset = PRESETS[e.target.dataset.p];
+  if(!preset) return;
+  Object.entries(preset).forEach(([id, value]) => { if($(id)) $(id).value = value; });
+  markPreset(e.target.dataset.p);
+  updateLabels();
+  applyLiveParams();
+  applyPreviewParams();
+});
+
+/* ---------- Cadeia compartilhada de efeitos ---------- */
+async function createEffectChain(p){
+  const fx = {
+    pitch: new Tone.PitchShift({pitch:p.pitch, windowSize:0.08, wet:p.pitch === 0 ? 0 : 1}),
+    octave: new Tone.PitchShift({pitch:p.octave * 12, windowSize:0.08, wet:p.octave === 0 ? 0 : 1}),
+    eq: new Tone.EQ3({low:p.bass, mid:p.mid, high:p.treble}),
+    drive: new Tone.Distortion({distortion:0.2 + p.drive * 0.8, wet:p.drive}),
+    distortion: new Tone.Distortion({distortion:0.95, wet:p.distortion}),
+    fuzz: new Tone.Distortion({distortion:0.98, wet:p.fuzz}),
+    octafuzzPitch: new Tone.PitchShift({pitch:12, windowSize:0.08, wet:p.octafuzz}),
+    octafuzz: new Tone.Distortion({distortion:0.98, wet:p.octafuzz}),
+    wah: new Tone.AutoWah({baseFrequency:100, octaves:6, sensitivity:0, Q:2, gain:2, wet:p.wah}),
+    tremolo: new Tone.Tremolo(9, 0.8).start(),
+    phaser: new Tone.Phaser({frequency:0.5, octaves:3, stages:10, Q:8, baseFrequency:350, wet:p.phaser}),
+    delay: new Tone.FeedbackDelay(0.25, 0.3),
+    vibrato: new Tone.Vibrato(5, 0.1),
+    chorus: new Tone.Chorus({frequency:1.8, delayTime:3.5, depth:0.7, wet:p.chorus}).start(),
+    reverb: new Tone.Reverb({decay:2.5, wet:p.reverb}),
+    volume: new Tone.Volume(Tone.gainToDb(Math.max(p.volume, 0.0001))),
+    limiter: new Tone.Limiter(-1)
+  };
+  await fx.reverb.generate();
+  applyChainParams(fx,p);
+  fx.nodes = [fx.pitch, fx.octave, fx.eq, fx.drive, fx.distortion, fx.fuzz, fx.octafuzzPitch, fx.octafuzz, fx.wah, fx.tremolo, fx.phaser, fx.delay, fx.vibrato, fx.chorus, fx.reverb, fx.volume, fx.limiter];
+  return fx;
+}
+
+function applyChainParams(fx,p){
+  if(!fx) return;
+  fx.pitch.pitch = p.pitch; fx.pitch.wet.value = p.pitch === 0 ? 0 : 1;
+  fx.octave.pitch = p.octave * 12; fx.octave.wet.value = p.octave === 0 ? 0 : 1;
+  fx.eq.low.value = p.bass; fx.eq.mid.value = p.mid; fx.eq.high.value = p.treble;
+  fx.drive.distortion = 0.2 + p.drive * 0.8; fx.drive.wet.value = p.drive;
+  fx.distortion.wet.value = p.distortion;
+  fx.fuzz.wet.value = p.fuzz;
+  fx.octafuzzPitch.wet.value = p.octafuzz;
+  fx.octafuzz.wet.value = p.octafuzz;
+  fx.wah.wet.value = p.wah;
+  fx.tremolo.wet.value = p.tremolo;
+  fx.phaser.wet.value = p.phaser;
+  fx.delay.wet.value = p.delay;
+  fx.vibrato.wet.value = p.vibrato;
+  fx.chorus.wet.value = p.chorus;
+  fx.reverb.wet.value = p.reverb;
+  fx.volume.volume.value = Tone.gainToDb(Math.max(p.volume, 0.0001));
+}
+
+function connectChain(sourceNode, fx){ sourceNode.chain(...fx.nodes, Tone.getDestination()); }
+
+/* ---------- Estado da interface ---------- */
+
+function setBusy(on){
+  busy = on;
+  $('recordBtn').disabled = on;
+  $('audioFile').disabled = on || !!recorder;
+  $('processBtn').disabled = on || !source || !!recorder;
+  $('effectPreviewBtn').disabled = on || !source || previewStarting;
+}
+
+function clearResult(){
+  if(resultUrl) URL.revokeObjectURL(resultUrl);
+  resultUrl = null;
+  ['resultAudio', 'resultHint', 'downloadResult'].forEach(id => { $(id).hidden = true; });
+  $('resultAudio').removeAttribute('src');
+  $('downloadResult').removeAttribute('href');
+}
+
+function setSource(blob, name){
+  if(sourceUrl) URL.revokeObjectURL(sourceUrl);
+  sourceUrl = URL.createObjectURL(blob);
+  source = {blob, name};
+  $('sourceAudio').src = sourceUrl;
+  clearResult();
+  setBusy(false);
+  $('effectPreviewBtn').disabled = false;
+  $('previewStatus').textContent = 'Áudio pronto. Clique em “Ouvir com efeitos” para testar os ajustes.';
+  stopEffectPreview();
+}
+
+/* ---------- Gravar ou importar ---------- */
+
+async function toggleRecording(){
+  if(recorder){ recorder.stop(); return; }
+  if(liveRunning){
+    say('Desligue o microfone ao vivo antes de começar uma gravação.');
+    return;
+  }
+
+  if(!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia){
+    say('Seu navegador não suporta gravação. Use Chrome, Edge ou Firefox atualizado, por HTTPS.');
+    return;
+  }
+  $('recordBtn').disabled = true;
+  let mic;
+  try {
+    mic = await navigator.mediaDevices.getUserMedia({audio:true});
+  } catch(e) {
+    $('recordBtn').disabled = false;
+    say('Não foi possível usar o microfone. Permita o acesso e tente novamente.');
+    return;
+  }
+
+  const chunks = [];
+  let analyser = null;
+  try {
+    recordingAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const micSource = recordingAudioContext.createMediaStreamSource(mic);
+    analyser = recordingAudioContext.createAnalyser();
+    analyser.fftSize = 512;
+    micSource.connect(analyser); // mede o microfone sem reproduzi-lo nos alto-falantes
+  } catch(e) {
+    recordingAudioContext = null;
+  }
+  const rec = new MediaRecorder(mic);
+  const timer = setTimeout(() => { if(rec.state !== 'inactive') rec.stop(); }, MAX_SECONDS * 1000);
+
+  rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+  rec.onerror = () => { if(rec.state !== 'inactive') rec.stop(); };
+  rec.onstop = async () => {
+    clearTimeout(timer);
+    cancelAnimationFrame(recordingAnimation);
+    recordingAnimation = 0;
+    mic.getTracks().forEach(t => t.stop());
+    if(recordingAudioContext){
+      try { await recordingAudioContext.close(); } catch(e) {}
+      recordingAudioContext = null;
+    }
+    $('recordMonitor').hidden = true;
+    $('recordMeterFill').style.width = '0%';
+    $('recordMeterLabel').textContent = 'Nível do microfone: 0%';
+    $('recordTime').textContent = '00:00';
+    document.querySelector('.record-meter').setAttribute('aria-valuenow', '0');
+    recorder = null;
+    $('recordBtn').textContent = 'Começar gravação';
+    $('recordBtn').classList.remove('on');
+    if(chunks.length){
+      setSource(new Blob(chunks, {type: rec.mimeType || 'audio/webm'}), 'gravacao');
+      say('Gravação pronta. Ouça a prévia, ajuste os efeitos e exporte.');
+    } else {
+      setBusy(false);
+      say('Nenhum áudio foi gravado. Tente novamente.');
+    }
+  };
+
+  recorder = rec;
+  rec.start();
+  recordingStartedAt = performance.now();
+  $('recordMonitor').hidden = false;
+  updateRecordingMonitor(analyser);
+  $('recordBtn').textContent = 'Parar gravação';
+  $('recordBtn').classList.add('on');
+  setBusy(false);
+  say('Gravando… o tempo e a intensidade do microfone são atualizados em tempo real.');
+}
+
+function updateRecordingMonitor(analyser){
+  if(!recorder || recorder.state === 'inactive') return;
+  const elapsed = Math.min((performance.now() - recordingStartedAt) / 1000, MAX_SECONDS);
+  const seconds = Math.floor(elapsed);
+  $('recordTime').textContent = String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+  let percent = 0;
+  if(analyser){
+    const samples = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(samples);
+    let sum = 0;
+    for(let i = 0; i < samples.length; i++){
+      const value = (samples[i] - 128) / 128;
+      sum += value * value;
+    }
+    const rms = Math.sqrt(sum / samples.length);
+    percent = Math.min(100, Math.round(rms * 280));
+  }
+  $('recordMeterFill').style.width = percent + '%';
+  document.querySelector('.record-meter').setAttribute('aria-valuenow', String(percent));
+  $('recordMeterLabel').textContent = 'Nível do microfone: ' + percent + '%';
+  recordingAnimation = requestAnimationFrame(() => updateRecordingMonitor(analyser));
+}
+
+$('recordBtn').addEventListener('click', toggleRecording);
+
+$('audioFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  e.target.value = '';              // permite escolher o mesmo arquivo de novo
+  if(!file) return;
+  if(file.size > MAX_FILE_MB * 1024 * 1024){
+    say(`Arquivo muito grande. O limite é ${MAX_FILE_MB} MB.`);
+    return;
+  }
+  setSource(file, file.name.replace(/\.[^.]+$/, '') || 'audio');
+  say(`Arquivo carregado: ${file.name}`);
+});
+
+
+/* ---------- Monitoramento ao vivo ---------- */
+
+async function startLive(){
+  if(previewFx || previewStarting){
+    $('liveStatus').textContent = 'Pare a prévia do áudio antes de ligar o microfone ao vivo.';
+    return;
+  }
+  if(recorder){
+    $('liveStatus').textContent = 'Pare a gravação antes de ligar o teste ao vivo.';
+    return;
+  }
+  if(typeof Tone === 'undefined'){
+    $('liveStatus').textContent = 'A biblioteca de áudio não carregou. Confira a conexão e recarregue a página.';
+    return;
+  }
+  if(!navigator.mediaDevices?.getUserMedia){
+    $('liveStatus').textContent = 'O navegador não liberou o microfone. Abra o site por HTTPS no Chrome ou Edge.';
+    return;
+  }
+  $('liveBtn').disabled = true;
+  try{
+    await Tone.start();
+    liveStream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+    });
+    const ctx = Tone.getContext().rawContext;
+    const src = ctx.createMediaStreamSource(liveStream);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    src.connect(analyser); // medição visual, sem enviar o som cru aos fones
+    const chain = await createEffectChain(readParams());
+    liveFx = {...chain, src, analyser};
+    // Tone.connect conecta corretamente um AudioNode nativo ao primeiro efeito Tone.js.
+    Tone.connect(src, liveFx.pitch);
+    liveFx.nodes[0].chain(...liveFx.nodes.slice(1), Tone.getDestination());
+    liveRunning = true;
+    $('liveBtn').textContent = 'Desligar microfone';
+    $('liveBtn').classList.add('on');
+    $('liveStatus').textContent = 'Ao vivo! Fale e ajuste os efeitos abaixo.';
+    applyLiveParams();
+    updateLiveMeter();
+  }catch(err){
+    console.error('Erro ao iniciar o microfone:', err);
+    stopLive();
+    $('liveStatus').textContent = 'Não consegui iniciar o microfone. Veja o Console (F12) para identificar o erro.';
+  }finally{
+    $('liveBtn').disabled = false;
+  }
+}
+
+function drawLiveWaveform(analyser){
+  const canvas = $('liveWaveform');
+  if(!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  if(!rect.width || !rect.height) return;
+
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const width = Math.round(rect.width * dpr);
+  const height = Math.round(rect.height * dpr);
+  if(canvas.width !== width || canvas.height !== height){
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  const ctx = canvas.getContext('2d');
+  if(!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const w = rect.width, h = rect.height;
+  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#fff';
+  ctx.fillRect(0, 0, w, h);
+
+  /* Grade discreta em estilo retrô */
+  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--line').trim() || '#000';
+  ctx.globalAlpha = 0.28;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for(let x = 8; x < w; x += 16){ ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+  for(let y = 8; y < h; y += 16){ ctx.moveTo(0, y); ctx.lineTo(w, y); }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  const samples = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(samples);
+  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--fg').trim() || '#000';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'miter';
+  ctx.lineCap = 'square';
+  ctx.beginPath();
+  for(let i = 0; i < samples.length; i++){
+    const x = (i / (samples.length - 1)) * w;
+    const y = (samples[i] / 255) * h;
+    if(i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function clearLiveWaveform(){
+  const canvas = $('liveWaveform');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if(!ctx) return;
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  canvas.width = Math.max(1, Math.round(rect.width * dpr));
+  canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#fff';
+  ctx.fillRect(0, 0, rect.width, rect.height);
+  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--line').trim() || '#000';
+  ctx.globalAlpha = 0.35;
+  ctx.beginPath();
+  ctx.moveTo(0, rect.height / 2);
+  ctx.lineTo(rect.width, rect.height / 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function updateLiveMeter(){
+  if(!liveRunning || !liveFx?.analyser) return;
+  const analyser = liveFx.analyser;
+  drawLiveWaveform(analyser);
+  const samples = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(samples);
+  let sum = 0;
+  for(let i=0;i<samples.length;i++){
+    const value = (samples[i] - 128) / 128;
+    sum += value * value;
+  }
+  const rms = Math.sqrt(sum / samples.length);
+  const percent = Math.max(0, Math.min(100, Math.round(rms * 300)));
+  $('liveMeterFill').style.width = percent + '%';
+  document.querySelector('.level-meter').setAttribute('aria-valuenow', percent);
+  $('liveMeterLabel').textContent = 'Nível do microfone: ' + percent + '%';
+  liveAnimation = requestAnimationFrame(updateLiveMeter);
+}
+
+function applyLiveParams(){ if(liveFx) applyChainParams(liveFx, readParams()); }
+
+function stopLive(){
+  liveRunning = false;
+  if(liveAnimation) cancelAnimationFrame(liveAnimation);
+  liveAnimation = 0;
+  if(liveStream){ liveStream.getTracks().forEach(track => track.stop()); liveStream = null; }
+  if(liveFx){
+    try{ liveFx.src.disconnect(); }catch(e){}
+    try{ liveFx.analyser.disconnect(); }catch(e){}
+    Object.values(liveFx).forEach(node => { if(node && typeof node.dispose === 'function') node.dispose(); });
+    liveFx = null;
+  }
+  $('liveMeterFill').style.width = '0%';
+  document.querySelector('.level-meter').setAttribute('aria-valuenow', '0');
+  $('liveMeterLabel').textContent = 'Nível do microfone: 0%';
+  clearLiveWaveform();
+  $('liveBtn').textContent = 'Ligar microfone';
+  $('liveBtn').classList.remove('on');
+  $('liveStatus').textContent = 'Microfone desligado.';
+}
+
+$('liveBtn').addEventListener('click', () => liveRunning ? stopLive() : startLive());
+
+/* ---------- Processamento ---------- */
+
+async function decode(blob){
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  try {
+    return await ctx.decodeAudioData(await blob.arrayBuffer());
+  } finally {
+    ctx.close();
+  }
+}
+
+// Mesma cadeia que o resultado final usa: tom → drive → chorus → reverb → volume → limitador.
+async function render(input, p){
+  const tail = (p.reverb > 0 ? 2.5 : 0) + (p.delay > 0 ? 1.5 : 0) + ((p.pitch !== 0 || p.octave !== 0 || p.octafuzz > 0) ? 0.15 : 0);
+  const channels = Math.min(input.numberOfChannels, 2);
+  const buffer = new Tone.ToneAudioBuffer(input);
+  const rendered = await Tone.Offline(async () => {
+    const player = new Tone.Player(buffer);
+    const fx = await createEffectChain(p);
+    connectChain(player, fx);
+    player.start(0);
+  }, input.duration + tail, channels, input.sampleRate);
+  return rendered.get();
+}
+
+function toWav(buf){
+  const ch = buf.numberOfChannels, n = buf.length, rate = buf.sampleRate;
+  const pcm = new Int16Array(n * ch);
+  for(let c = 0; c < ch; c++){
+    const data = buf.getChannelData(c);
+    for(let i = 0; i < n; i++){
+      const s = Math.max(-1, Math.min(1, data[i]));
+      pcm[i * ch + c] = s < 0 ? s * 0x8000 : s * 0x7fff;
+    }
+  }
+  const head = new DataView(new ArrayBuffer(44));
+  const text = (offset, str) => { for(let i = 0; i < str.length; i++) head.setUint8(offset + i, str.charCodeAt(i)); };
+  text(0, 'RIFF'); head.setUint32(4, 36 + pcm.byteLength, true); text(8, 'WAVEfmt ');
+  head.setUint32(16, 16, true); head.setUint16(20, 1, true); head.setUint16(22, ch, true);
+  head.setUint32(24, rate, true); head.setUint32(28, rate * ch * 2, true);
+  head.setUint16(32, ch * 2, true); head.setUint16(34, 16, true);
+  text(36, 'data'); head.setUint32(40, pcm.byteLength, true);
+  return new Blob([head, pcm], {type:'audio/wav'});
+}
+
+async function process(){
+  if(busy || recorder || !source) return;
+  if(typeof Tone === 'undefined'){
+    say('A biblioteca de áudio não carregou. Verifique a conexão e recarregue a página.');
+    return;
+  }
+  setBusy(true);
+  clearResult();
+  $('exportLoader').hidden = false;
+  $('exportLoaderText').textContent = 'PROCESSANDO ÁUDIO...';
+  say('Processando áudio no navegador…');
+  try {
+    const input = await decode(source.blob);
+    if(input.duration > MAX_SECONDS){
+      say(`O áudio tem mais de ${MAX_SECONDS / 60} minutos. Use um trecho menor.`);
+      return;
+    }
+    const wav = toWav(await render(input, readParams()));
+    resultUrl = URL.createObjectURL(wav);
+    $('resultAudio').src = resultUrl;
+    $('downloadResult').href = resultUrl;
+    $('downloadResult').download = `${source.name}-modificado.wav`;
+    ['resultAudio', 'resultHint', 'downloadResult'].forEach(id => { $(id).hidden = false; });
+    say('Pronto! Ouça o resultado e baixe o arquivo.');
+  } catch(e) {
+    console.error(e);
+    say('Não consegui processar esse arquivo. Tente outro formato comum, como WAV, MP3 ou M4A.');
+  } finally {
+    $('exportLoader').hidden = true;
+    setBusy(false);
+  }
+}
+
+/* ---------- Prévia processada em tempo real ---------- */
+
+function disposePreview(){
+  if(!previewFx) return;
+  try { previewFx.player.stop(); } catch(e) {}
+  Object.values(previewFx).forEach(node => {
+    if(node && typeof node.dispose === 'function') { try { node.dispose(); } catch(e) {} }
+  });
+  previewFx = null;
+  $('stopPreviewBtn').disabled = true;
+  $('effectPreviewBtn').textContent = 'Ouvir com efeitos';
+}
+
+function stopEffectPreview(){
+  disposePreview();
+  if(source) $('effectPreviewBtn').disabled = false;
+  $('previewStatus').textContent = source ? 'Prévia parada.' : 'Grave ou importe um áudio para habilitar a prévia com efeitos.';
+}
+
+async function startEffectPreview(){
+  if(!source || previewStarting || busy) return;
+  if(liveRunning || recorder){
+    $('previewStatus').textContent = 'Desligue o microfone ao vivo e pare a gravação antes da prévia.';
+    return;
+  }
+  if(typeof Tone === 'undefined'){
+    $('previewStatus').textContent = 'A biblioteca de áudio não carregou. Recarregue a página e tente novamente.';
+    return;
+  }
+  previewStarting = true;
+  $('effectPreviewBtn').disabled = true;
+  $('previewStatus').textContent = 'Preparando prévia com efeitos…';
+  try{
+    await Tone.start();
+    const decoded = await decode(source.blob);
+    const buffer = new Tone.ToneAudioBuffer(decoded);
+    const p = readParams();
+    const player = new Tone.Player(buffer);
+    const chain = await createEffectChain(p);
+    connectChain(player, chain);
+    previewFx = {player, ...chain};
+    player.onstop = () => {
+      if(previewFx?.player === player){
+        disposePreview();
+        $('previewStatus').textContent = 'Prévia finalizada.';
+        $('effectPreviewBtn').disabled = !source;
+      }
+    };
+    player.start();
+    $('stopPreviewBtn').disabled = false;
+    $('effectPreviewBtn').textContent = 'Reiniciar prévia';
+    $('previewStatus').textContent = 'Reproduzindo com efeitos. Ajuste os controles para ouvir as mudanças.';
+  }catch(e){
+    console.error('Erro na prévia com efeitos:', e);
+    disposePreview();
+    $('previewStatus').textContent = 'Não foi possível iniciar a prévia. Tente outro arquivo de áudio.';
+  }finally{
+    previewStarting = false;
+    $('effectPreviewBtn').disabled = !source || busy;
+  }
+}
+
+function applyPreviewParams(){ if(previewFx) applyChainParams(previewFx, readParams()); }
+
+$('effectPreviewBtn').addEventListener('click', () => {
+  if(previewFx) stopEffectPreview();
+  else startEffectPreview();
+});
+$('stopPreviewBtn').addEventListener('click', stopEffectPreview);
+$('processBtn').addEventListener('click', process);
+window.addEventListener('pagehide', () => { stopLive(); stopEffectPreview(); });
+
+updateLabels();
