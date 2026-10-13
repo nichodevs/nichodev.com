@@ -26,9 +26,15 @@ jobs:
         run: |
           lftp -u "$USER","$PASS" "sftp://$HOST:65002" -e "
             set sftp:auto-confirm yes
+            set cmd:fail-exit yes
             cd domains/nichodev.com/public_html
             put index.html -o index.html
             put voz.html -o voz.html
+            put style.css -o style.css
+            put voz.css -o voz.css
+            put cursores-retro.css -o cursores-retro.css
+            put js/voz.js -o js/voz.js
+            put js/compact-mode.js -o js/compact-mode.js
             put robots.txt -o robots.txt
             bye
           "
