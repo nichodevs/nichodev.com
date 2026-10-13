@@ -29,6 +29,10 @@ jobs:
             cd domains/nichodev.com/public_html
             put index.html -o index.html
             put voz.html -o voz.html
+            put modular-fx.html -o modular-fx.html
+            put modular-fx.css -o modular-fx.css
+            mkdir -p js
+            put js/modular-fx.js -o js/modular-fx.js
             put robots.txt -o robots.txt
             bye
           "
