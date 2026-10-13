@@ -6,7 +6,7 @@ const MAX_SECONDS = 300;            // duração máxima (gravação e importaç
 const MAX_FILE_MB = 100;            // tamanho máximo do arquivo importado
 
 const DEFAULTS = {
-  pitch:0, bass:0, mid:0, treble:0, drive:0, chorus:0, reverb:0,
+  pitch:0, formant:0, bass:0, mid:0, treble:0, drive:0, chorus:0, reverb:0,
   tremolo:0, phaser:0, delay:0, octave:0, distortion:0, wah:0,
   fuzz:0, octafuzz:0, vibrato:0, vol:100
 };
@@ -56,6 +56,7 @@ function updateLabels(){
     const signed = ['pitch','bass','mid','treble'].includes(r.id);
     let label = signed ? ((v > 0 ? '+' : '') + v + (['bass','mid','treble'].includes(r.id) ? ' dB' : '')) : v + '%';
     if(r.id === 'octave') label = v === 0 ? 'Desligado' : (v > 0 ? '+1 oitava' : '-1 oitava');
+    if(r.id === 'formant') label = v === 0 ? 'Neutro' : (v > 0 ? '+' + v + ' (brilhante)' : v + ' (escuro)');
     document.querySelector(`b[data-for="${r.id}"]`).textContent = label;
   });
 }
@@ -213,6 +214,9 @@ async function createEffectChain(p){
   const fx = {
     pitch: new Tone.PitchShift({pitch:p.pitch, windowSize:0.08, wet:p.pitch === 0 ? 0 : 1}),
     octave: new Tone.PitchShift({pitch:p.octave * 12, windowSize:0.08, wet:p.octave === 0 ? 0 : 1}),
+    formant1: new Tone.Filter({frequency:500, type:"peaking", Q:1.2, gain:0}),
+    formant2: new Tone.Filter({frequency:1500, type:"peaking", Q:1.2, gain:0}),
+    formant3: new Tone.Filter({frequency:2600, type:"peaking", Q:1.2, gain:0}),
     eq: new Tone.EQ3({low:p.bass, mid:p.mid, high:p.treble}),
     drive: new Tone.Distortion({distortion:0.2 + p.drive * 0.8, wet:p.drive}),
     distortion: new Tone.Distortion({distortion:0.95, wet:p.distortion}),
@@ -231,7 +235,7 @@ async function createEffectChain(p){
   };
   await fx.reverb.generate();
   applyChainParams(fx,p);
-  fx.nodes = [fx.pitch, fx.octave, fx.eq, fx.drive, fx.distortion, fx.fuzz, fx.octafuzzPitch, fx.octafuzz, fx.wah, fx.tremolo, fx.phaser, fx.delay, fx.vibrato, fx.chorus, fx.reverb, fx.volume, fx.limiter];
+  fx.nodes = [fx.pitch, fx.octave, fx.formant1, fx.formant2, fx.formant3, fx.eq, fx.drive, fx.distortion, fx.fuzz, fx.octafuzzPitch, fx.octafuzz, fx.wah, fx.tremolo, fx.phaser, fx.delay, fx.vibrato, fx.chorus, fx.reverb, fx.volume, fx.limiter];
   return fx;
 }
 
@@ -239,6 +243,14 @@ function applyChainParams(fx,p){
   if(!fx) return;
   fx.pitch.pitch = p.pitch; fx.pitch.wet.value = p.pitch === 0 ? 0 : 1;
   fx.octave.pitch = p.octave * 12; fx.octave.wet.value = p.octave === 0 ? 0 : 1;
+  const formantRatio = Math.pow(2, (p.formant || 0) / 100);
+  const formantAmount = Math.abs(p.formant || 0) / 50;
+  fx.formant1.frequency.value = 500 * formantRatio;
+  fx.formant2.frequency.value = 1500 * formantRatio;
+  fx.formant3.frequency.value = 2600 * formantRatio;
+  fx.formant1.gain.value = 3.5 * formantAmount;
+  fx.formant2.gain.value = 2.5 * formantAmount;
+  fx.formant3.gain.value = 1.5 * formantAmount;
   fx.eq.low.value = p.bass; fx.eq.mid.value = p.mid; fx.eq.high.value = p.treble;
   fx.drive.distortion = 0.2 + p.drive * 0.8; fx.drive.wet.value = p.drive;
   fx.distortion.wet.value = p.distortion;
