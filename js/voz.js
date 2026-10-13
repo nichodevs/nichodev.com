@@ -315,9 +315,78 @@ async function startLive(){
   }
 }
 
+function drawLiveWaveform(analyser){
+  const canvas = $('liveWaveform');
+  if(!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+  if(!rect.width || !rect.height) return;
+
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  const width = Math.round(rect.width * dpr);
+  const height = Math.round(rect.height * dpr);
+  if(canvas.width !== width || canvas.height !== height){
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  const ctx = canvas.getContext('2d');
+  if(!ctx) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const w = rect.width, h = rect.height;
+  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#fff';
+  ctx.fillRect(0, 0, w, h);
+
+  /* Grade discreta em estilo retrô */
+  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--line').trim() || '#000';
+  ctx.globalAlpha = 0.28;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for(let x = 8; x < w; x += 16){ ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+  for(let y = 8; y < h; y += 16){ ctx.moveTo(0, y); ctx.lineTo(w, y); }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  const samples = new Uint8Array(analyser.fftSize);
+  analyser.getByteTimeDomainData(samples);
+  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--fg').trim() || '#000';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'miter';
+  ctx.lineCap = 'square';
+  ctx.beginPath();
+  for(let i = 0; i < samples.length; i++){
+    const x = (i / (samples.length - 1)) * w;
+    const y = (samples[i] / 255) * h;
+    if(i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+}
+
+function clearLiveWaveform(){
+  const canvas = $('liveWaveform');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if(!ctx) return;
+  const rect = canvas.getBoundingClientRect();
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  canvas.width = Math.max(1, Math.round(rect.width * dpr));
+  canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#fff';
+  ctx.fillRect(0, 0, rect.width, rect.height);
+  ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--line').trim() || '#000';
+  ctx.globalAlpha = 0.35;
+  ctx.beginPath();
+  ctx.moveTo(0, rect.height / 2);
+  ctx.lineTo(rect.width, rect.height / 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
 function updateLiveMeter(){
   if(!liveRunning || !liveFx?.analyser) return;
   const analyser = liveFx.analyser;
+  drawLiveWaveform(analyser);
   const samples = new Uint8Array(analyser.fftSize);
   analyser.getByteTimeDomainData(samples);
   let sum = 0;
@@ -349,6 +418,7 @@ function stopLive(){
   $('liveMeterFill').style.width = '0%';
   document.querySelector('.level-meter').setAttribute('aria-valuenow', '0');
   $('liveMeterLabel').textContent = 'Nível do microfone: 0%';
+  clearLiveWaveform();
   $('liveBtn').textContent = 'Ligar microfone';
   $('liveBtn').classList.remove('on');
   $('liveStatus').textContent = 'Microfone desligado.';
