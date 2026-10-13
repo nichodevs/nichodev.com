@@ -37,6 +37,7 @@ let liveAnimation = 0;
 let recordingAnimation = 0;
 let recordingStartedAt = 0;
 let recordingAudioContext = null;
+let processedRecording = false;
 
 const say = text => { $('status').textContent = text; };
 
@@ -274,6 +275,7 @@ function connectChain(sourceNode, fx){ sourceNode.chain(...fx.nodes, Tone.getDes
 function setBusy(on){
   busy = on;
   $('recordBtn').disabled = on;
+  $('processedRecordBtn').disabled = on;
   $('audioFile').disabled = on || !!recorder;
   $('processBtn').disabled = on || !source || !!recorder;
   $('effectPreviewBtn').disabled = on || !source || previewStarting;
@@ -302,7 +304,7 @@ function setSource(blob, name){
 /* ---------- Gravar ou importar ---------- */
 
 async function toggleRecording(){
-  if(recorder){ recorder.stop(); return; }
+  if(recorder){ if(!processedRecording) recorder.stop(); return; }
   if(liveRunning){
     say('Desligue o microfone ao vivo antes de começar uma gravação.');
     return;
@@ -353,17 +355,34 @@ async function toggleRecording(){
     $('recordTime').textContent = '00:00';
     document.querySelector('.record-meter').setAttribute('aria-valuenow', '0');
     recorder = null;
-    $('recordBtn').textContent = 'Começar gravação';
+    $('recordBtn').textContent = 'Gravar voz original';
+    $('processedRecordBtn').textContent = 'Gravar voz modificada';
     $('recordBtn').classList.remove('on');
+    $('processedRecordBtn').classList.remove('on');
     if(chunks.length){
-      setSource(new Blob(chunks, {type: rec.mimeType || 'audio/webm'}), 'gravacao');
-      say('Gravação pronta. Ouça a prévia, ajuste os efeitos e exporte.');
+      const recordedBlob = new Blob(chunks, {type: rec.mimeType || 'audio/webm'});
+      if(processedRecording){
+        if(resultUrl) URL.revokeObjectURL(resultUrl);
+        resultUrl = URL.createObjectURL(recordedBlob);
+        $('resultAudio').src = resultUrl;
+        $('downloadResult').href = resultUrl;
+        $('downloadResult').download = 'nichodev-voz-modificada.' + (rec.mimeType.includes('ogg') ? 'ogg' : 'webm');
+        $('resultAudio').hidden = false;
+        $('resultHint').hidden = false;
+        $('downloadResult').hidden = false;
+        $('resultHint').textContent = 'Esta gravação já contém os efeitos aplicados em tempo real. Baixe diretamente para evitar aplicar os efeitos novamente.';
+        say('Gravação modificada pronta. Ouça e baixe o arquivo já processado.');
+      } else {
+        setSource(recordedBlob, 'gravacao');
+        say('Gravação pronta. Ouça a prévia, ajuste os efeitos e exporte.');
+      }
     } else {
       setBusy(false);
       say('Nenhum áudio foi gravado. Tente novamente.');
     }
   };
 
+  processedRecording = false;
   recorder = rec;
   rec.start();
   recordingStartedAt = performance.now();
@@ -399,6 +418,121 @@ function updateRecordingMonitor(analyser){
 }
 
 $('recordBtn').addEventListener('click', toggleRecording);
+
+/* ---------- Gravação direta da voz já processada ---------- */
+async function toggleProcessedRecording(){
+  if(recorder){
+    if(processedRecording) recorder.stop();
+    return;
+  }
+  if(liveRunning){
+    say('Desligue o teste ao vivo antes de iniciar uma gravação modificada.');
+    return;
+  }
+  if(previewFx || previewStarting){
+    say('Pare a prévia antes de iniciar uma gravação modificada.');
+    return;
+  }
+  if(typeof Tone === 'undefined' || !window.MediaRecorder || !navigator.mediaDevices?.getUserMedia){
+    say('A gravação modificada requer Chrome, Edge ou Firefox atualizado e acesso ao microfone por HTTPS.');
+    return;
+  }
+  $('processedRecordBtn').disabled = true;
+  $('recordBtn').disabled = true;
+  let mic = null;
+  let chain = null;
+  let mediaDestination = null;
+  try{
+    await Tone.start();
+    mic = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+    });
+    const ctx = Tone.getContext().rawContext;
+    const src = ctx.createMediaStreamSource(mic);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 512;
+    src.connect(analyser);
+    chain = await createEffectChain(readParams());
+    Tone.connect(src, chain.pitch);
+    mediaDestination = ctx.createMediaStreamDestination();
+    chain.nodes[0].chain(...chain.nodes.slice(1), Tone.getDestination());
+    Tone.connect(chain.limiter, mediaDestination);
+    const preferred = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'];
+    const mimeType = preferred.find(type => MediaRecorder.isTypeSupported(type));
+    const rec = new MediaRecorder(mediaDestination.stream, mimeType ? {mimeType} : undefined);
+    const chunks = [];
+    const timer = setTimeout(() => { if(rec.state !== 'inactive') rec.stop(); }, MAX_SECONDS * 1000);
+    rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
+    rec.onerror = () => { if(rec.state !== 'inactive') rec.stop(); };
+    rec.onstop = () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(recordingAnimation);
+      recordingAnimation = 0;
+      mic.getTracks().forEach(track => track.stop());
+      mediaDestination.stream.getTracks().forEach(track => track.stop());
+      try { src.disconnect(); } catch(e) {}
+      try { analyser.disconnect(); } catch(e) {}
+      if(chain) Object.values(chain).forEach(node => { if(node && typeof node.dispose === 'function') node.dispose(); });
+      $('recordMonitor').hidden = true;
+      $('recordMeterFill').style.width = '0%';
+      $('recordMeterLabel').textContent = 'Nível do microfone: 0%';
+      $('recordTime').textContent = '00:00';
+      document.querySelector('.record-meter').setAttribute('aria-valuenow', '0');
+      recorder = null;
+      processedRecording = false;
+      $('recordBtn').disabled = false;
+      $('processedRecordBtn').disabled = false;
+      $('audioFile').disabled = false;
+      $('recordBtn').textContent = 'Gravar voz original';
+      $('processedRecordBtn').textContent = 'Gravar voz modificada';
+      $('recordBtn').classList.remove('on');
+      $('processedRecordBtn').classList.remove('on');
+      if(chunks.length){
+        if(resultUrl) URL.revokeObjectURL(resultUrl);
+        const blob = new Blob(chunks, {type: rec.mimeType || 'audio/webm'});
+        resultUrl = URL.createObjectURL(blob);
+        $('resultAudio').src = resultUrl;
+        $('downloadResult').href = resultUrl;
+        const ext = (rec.mimeType || '').includes('ogg') ? 'ogg' : 'webm';
+        $('downloadResult').download = `nichodev-voz-modificada.${ext}`;
+        $('resultAudio').hidden = false;
+        $('resultHint').hidden = false;
+        $('resultHint').textContent = 'Áudio gravado com os efeitos aplicados em tempo real. Baixe diretamente para preservar o som processado.';
+        $('downloadResult').hidden = false;
+        $('processBtn').disabled = true;
+        $('effectPreviewBtn').disabled = true;
+        $('previewStatus').textContent = 'A gravação já contém os efeitos. Grave ou importe outro áudio para usar a prévia e exportação tradicionais.';
+        say('Voz modificada gravada! Ouça o resultado ou baixe o arquivo.');
+      } else {
+        say('Nenhum áudio foi capturado. Verifique o microfone e tente novamente.');
+      }
+    };
+    recorder = rec;
+    processedRecording = true;
+    rec.start(250);
+    recordingStartedAt = performance.now();
+    $('recordMonitor').hidden = false;
+    $('recordBtn').disabled = true;
+    $('processedRecordBtn').disabled = false;
+    $('processedRecordBtn').textContent = 'Parar gravação modificada';
+    $('processedRecordBtn').classList.add('on');
+    updateRecordingMonitor(analyser);
+    $('audioFile').disabled = true;
+    $('processBtn').disabled = true;
+    $('effectPreviewBtn').disabled = true;
+    say('Gravando a voz já modificada. Os efeitos e os ajustes atuais estão sendo capturados.');
+  } catch(e){
+    if(mic) mic.getTracks().forEach(track => track.stop());
+    if(mediaDestination) mediaDestination.stream.getTracks().forEach(track => track.stop());
+    if(chain) Object.values(chain).forEach(node => { if(node && typeof node.dispose === 'function') node.dispose(); });
+    recorder = null;
+    processedRecording = false;
+    $('recordBtn').disabled = false;
+    $('processedRecordBtn').disabled = false;
+    say('Não foi possível iniciar a gravação modificada. Confira a permissão do microfone e tente novamente.');
+  }
+}
+$('processedRecordBtn').addEventListener('click', toggleProcessedRecording);
 
 $('audioFile').addEventListener('change', e => {
   const file = e.target.files[0];
