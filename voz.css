@@ -184,3 +184,36 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 #formant {
   accent-color: var(--fg);
 }
+
+
+/* Alternância entre interface compacta e avançada — preserva o estilo retrô */
+.mode-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 10px;
+  border: 3px solid var(--line);
+}
+.mode-switch-label {
+  margin-right: auto;
+  font-size: 9px;
+  color: var(--mute);
+}
+.mode-switch button {
+  min-height: 36px;
+  padding: 9px 12px;
+  font-size: 9px;
+}
+.mode-switch button[aria-pressed="true"] {
+  background: var(--fg);
+  color: var(--bg);
+}
+.mode-help { margin: 0 0 18px; }
+body.compact-mode .advanced-only { display: none !important; }
+body.advanced-mode .advanced-only { display: revert; }
+@media (max-width: 420px) {
+  .mode-switch-label { width: 100%; margin-bottom: 2px; }
+  .mode-switch button { flex: 1 1 calc(50% - 8px); }
+}
