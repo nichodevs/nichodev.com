@@ -41,6 +41,10 @@ let liveAnimation = 0;
 let recordingAnimation = 0;
 let recordingStartedAt = 0;
 let recordingAudioContext = null;
+let liveBridgeSocket = null;
+let liveBridgeSource = null;
+let liveBridgeProcessor = null;
+let liveBridgeConnected = false;
 
 const say = text => { $('status').textContent = text; };
 
@@ -460,6 +464,7 @@ async function startLive(){
     $('liveBtn').textContent = 'Desligar microfone';
     $('liveBtn').classList.add('on');
     $('liveStatus').textContent = 'Ao vivo! Fale e ajuste os efeitos abaixo.';
+    $('liveBridgeBtn').disabled = false;
     applyLiveParams();
     updateLiveMeter();
   }catch(err){
@@ -560,7 +565,112 @@ function updateLiveMeter(){
 
 function applyLiveParams(){ if(liveFx) applyChainParams(liveFx, readParams()); }
 
+/* ---------- NICHODEVS Live Voice: ponte PCM para o Node.js local ---------- */
+function setLiveBridgeStatus(message){
+  const status = $('liveBridgeStatus');
+  if(status) status.textContent = message;
+}
+
+function connectLiveBridge(){
+  if(!liveRunning || !processedDestination){
+    setLiveBridgeStatus('Ligue o microfone ao vivo antes de conectar a ponte.');
+    return;
+  }
+  if(liveBridgeSocket && liveBridgeSocket.readyState === WebSocket.OPEN){
+    disconnectLiveBridge();
+    return;
+  }
+  const token = $('liveBridgeToken').value.trim();
+  const baseUrl = $('liveBridgeUrl').value.trim();
+  if(!token){ setLiveBridgeStatus('Cole o token que aparece no terminal do Live Bridge.'); return; }
+  let url;
+  try{ url = new URL(baseUrl); }catch(e){ setLiveBridgeStatus('Endereço inválido. Use ws://127.0.0.1:8787/live-voice.'); return; }
+  if(!['ws:','wss:'].includes(url.protocol)){ setLiveBridgeStatus('O endereço precisa começar com ws:// ou wss://.'); return; }
+  const ctx = Tone.getContext().rawContext;
+  url.searchParams.set('token', token);
+  url.searchParams.set('sampleRate', String(ctx.sampleRate));
+  url.searchParams.set('channels', '1');
+  setLiveBridgeStatus('Conectando ao serviço Node.js local…');
+  let socket;
+  try{ socket = new WebSocket(url.toString()); }catch(err){ setLiveBridgeStatus('Não consegui abrir a conexão local. Confira o endereço e o serviço Node.js.'); return; }
+  socket.binaryType = 'arraybuffer';
+  liveBridgeSocket = socket;
+  socket.onopen = () => {
+    if(liveBridgeSocket !== socket) return;
+    liveBridgeSource = ctx.createMediaStreamSource(processedDestination.stream);
+    liveBridgeProcessor = ctx.createScriptProcessor(4096, 1, 1);
+    liveBridgeProcessor.onaudioprocess = event => {
+      const input = event.inputBuffer.getChannelData(0);
+      const pcm = new Int16Array(input.length);
+      for(let i=0;i<input.length;i++){
+        const sample = Math.max(-1, Math.min(1, input[i]));
+        pcm[i] = sample < 0 ? sample * 32768 : sample * 32767;
+      }
+      if(socket.readyState === WebSocket.OPEN && socket.bufferedAmount < 512 * 1024){
+        socket.send(pcm.buffer);
+      }
+      event.outputBuffer.getChannelData(0).fill(0); // o stream da ponte não deve tocar novamente nos alto-falantes
+    };
+    liveBridgeSource.connect(liveBridgeProcessor);
+    liveBridgeProcessor.connect(ctx.destination);
+    liveBridgeConnected = true;
+    $('liveBridgeBtn').textContent = 'Desconectar Live Bridge';
+    $('liveBridgeBtn').classList.add('on');
+    setLiveBridgeStatus('Conectado. Enviando áudio processado em PCM para o Node.js local. Ao desconectar, o bridge finaliza o arquivo WAV.');
+  };
+  socket.onmessage = event => {
+    try{
+      const data = JSON.parse(event.data);
+      if(data.type === 'bridge-status') setLiveBridgeStatus(`Bridge conectado · ${data.sampleRate} Hz · ${data.seconds || 0}s recebidos · ${data.file || 'gravando WAV'}`);
+    }catch(e){}
+  };
+  socket.onerror = () => setLiveBridgeStatus('Falha na conexão. Confirme que o Live Bridge está rodando e que o token está correto.');
+  socket.onclose = event => {
+    if(liveBridgeSocket === socket){
+      cleanupLiveBridgeNodes();
+      liveBridgeSocket = null;
+      liveBridgeConnected = false;
+      $('liveBridgeBtn').textContent = 'Conectar Live Bridge';
+      $('liveBridgeBtn').classList.remove('on');
+      if(event.code === 1008) setLiveBridgeStatus('Conexão recusada: token ou origem não autorizados.');
+      else if(event.code !== 1000) setLiveBridgeStatus('Conexão encerrada. Confira se o serviço Node.js continua ativo.');
+    }
+  };
+}
+
+function cleanupLiveBridgeNodes(){
+  if(liveBridgeProcessor){
+    liveBridgeProcessor.onaudioprocess = null;
+    try{ liveBridgeProcessor.disconnect(); }catch(e){}
+    liveBridgeProcessor = null;
+  }
+  if(liveBridgeSource){ try{ liveBridgeSource.disconnect(); }catch(e){} liveBridgeSource = null; }
+}
+
+function disconnectLiveBridge(){
+  cleanupLiveBridgeNodes();
+  if(liveBridgeSocket && liveBridgeSocket.readyState < WebSocket.CLOSING){
+    try{ liveBridgeSocket.close(1000, 'Usuário desconectou'); }catch(e){}
+  }
+  liveBridgeSocket = null;
+  liveBridgeConnected = false;
+  $('liveBridgeBtn').textContent = 'Conectar Live Bridge';
+  $('liveBridgeBtn').classList.remove('on');
+  setLiveBridgeStatus('Desconectado. O serviço Node.js finaliza o WAV com os dados recebidos.');
+}
+
+$('liveBridgeBtn').addEventListener('click', () => {
+  if(liveBridgeSocket && liveBridgeSocket.readyState < WebSocket.CLOSING) disconnectLiveBridge();
+  else connectLiveBridge();
+});
+$('liveBridgeForgetBtn').addEventListener('click', () => {
+  $('liveBridgeToken').value = '';
+  setLiveBridgeStatus('Token limpo deste formulário.');
+});
+
 function stopLive(){
+  if(liveBridgeSocket || liveBridgeProcessor || liveBridgeSource) disconnectLiveBridge();
+  $('liveBridgeBtn').disabled = true;
   if(processedRecorder && processedRecorder.state !== 'inactive') processedRecorder.stop();
   liveRunning = false;
   if(liveAnimation) cancelAnimationFrame(liveAnimation);
