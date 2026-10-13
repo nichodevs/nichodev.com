@@ -5,12 +5,17 @@ const $ = id => document.getElementById(id);
 const MAX_SECONDS = 300;            // duração máxima (gravação e importação)
 const MAX_FILE_MB = 100;            // tamanho máximo do arquivo importado
 
+const DEFAULTS = {
+  pitch:0, bass:0, mid:0, treble:0, drive:0, chorus:0, reverb:0,
+  tremolo:0, phaser:0, delay:0, octave:0, distortion:0, wah:0,
+  fuzz:0, octafuzz:0, vibrato:0, vol:100
+};
 const PRESETS = {
-  normal:  {pitch:0,  drive:0,  chorus:0,  reverb:0},
-  grave:   {pitch:-5, drive:10, chorus:0,  reverb:15},
-  crianca: {pitch:7,  drive:0,  chorus:20, reverb:10},
-  robo:    {pitch:-2, drive:55, chorus:70, reverb:25},
-  rock:    {pitch:0,  drive:70, chorus:25, reverb:35}
+  normal:  {...DEFAULTS},
+  grave:   {...DEFAULTS, pitch:-5, bass:3, treble:-2, drive:10, reverb:15},
+  crianca: {...DEFAULTS, pitch:7, chorus:20, reverb:10},
+  robo:    {...DEFAULTS, pitch:-2, drive:55, chorus:70, reverb:25, phaser:25},
+  rock:    {...DEFAULTS, drive:45, distortion:55, fuzz:25, chorus:25, reverb:35}
 };
 
 let source = null;                  // {blob, name}
@@ -32,20 +37,20 @@ const say = text => { $('status').textContent = text; };
 /* ---------- Efeitos ---------- */
 
 function readParams(){
-  return {
-    pitch:  +$('pitch').value,
-    drive:  +$('drive').value / 100,
-    chorus: +$('chorus').value / 100,
-    reverb: +$('reverb').value / 100,
-    volume: +$('vol').value / 100
-  };
+  const p = {};
+  Object.keys(DEFAULTS).forEach(id => p[id] = +$(id).value);
+  for(const id of ['drive','chorus','reverb','tremolo','phaser','delay','distortion','wah','fuzz','octafuzz','vibrato']) p[id] /= 100;
+  p.volume = p.vol / 100;
+  return p;
 }
 
 function updateLabels(){
   document.querySelectorAll('input[type=range]').forEach(r => {
     const v = +r.value;
-    document.querySelector(`b[data-for="${r.id}"]`).textContent =
-      r.id === 'pitch' ? (v > 0 ? '+' : '') + v : v + '%';
+    const signed = ['pitch','bass','mid','treble'].includes(r.id);
+    let label = signed ? ((v > 0 ? '+' : '') + v + (['bass','mid','treble'].includes(r.id) ? ' dB' : '')) : v + '%';
+    if(r.id === 'octave') label = v === 0 ? 'Desligado' : (v > 0 ? '+1 oitava' : '-1 oitava');
+    document.querySelector(`b[data-for="${r.id}"]`).textContent = label;
   });
 }
 
@@ -60,12 +65,61 @@ document.querySelectorAll('input[type=range]').forEach(r =>
 $('presets').addEventListener('click', e => {
   const preset = PRESETS[e.target.dataset.p];
   if(!preset) return;
-  Object.entries(preset).forEach(([id, value]) => { $(id).value = value; });
+  Object.entries(preset).forEach(([id, value]) => { if($(id)) $(id).value = value; });
   markPreset(e.target.dataset.p);
   updateLabels();
   applyLiveParams();
   applyPreviewParams();
 });
+
+/* ---------- Cadeia compartilhada de efeitos ---------- */
+async function createEffectChain(p){
+  const fx = {
+    pitch: new Tone.PitchShift({pitch:p.pitch, windowSize:0.08, wet:p.pitch === 0 ? 0 : 1}),
+    octave: new Tone.PitchShift({pitch:p.octave * 12, windowSize:0.08, wet:p.octave === 0 ? 0 : 1}),
+    eq: new Tone.EQ3({low:p.bass, mid:p.mid, high:p.treble}),
+    drive: new Tone.Distortion({distortion:0.2 + p.drive * 0.8, wet:p.drive}),
+    distortion: new Tone.Distortion({distortion:0.95, wet:p.distortion}),
+    fuzz: new Tone.Distortion({distortion:0.98, wet:p.fuzz}),
+    octafuzzPitch: new Tone.PitchShift({pitch:12, windowSize:0.08, wet:p.octafuzz}),
+    octafuzz: new Tone.Distortion({distortion:0.98, wet:p.octafuzz}),
+    wah: new Tone.AutoWah({baseFrequency:100, octaves:6, sensitivity:0, Q:2, gain:2, wet:p.wah}),
+    tremolo: new Tone.Tremolo(9, 0.8).start(),
+    phaser: new Tone.Phaser({frequency:0.5, octaves:3, stages:10, Q:8, baseFrequency:350, wet:p.phaser}),
+    delay: new Tone.FeedbackDelay(0.25, 0.3),
+    vibrato: new Tone.Vibrato(5, 0.1),
+    chorus: new Tone.Chorus({frequency:1.8, delayTime:3.5, depth:0.7, wet:p.chorus}).start(),
+    reverb: new Tone.Reverb({decay:2.5, wet:p.reverb}),
+    volume: new Tone.Volume(Tone.gainToDb(Math.max(p.volume, 0.0001))),
+    limiter: new Tone.Limiter(-1)
+  };
+  await fx.reverb.generate();
+  applyChainParams(fx,p);
+  fx.nodes = [fx.pitch, fx.octave, fx.eq, fx.drive, fx.distortion, fx.fuzz, fx.octafuzzPitch, fx.octafuzz, fx.wah, fx.tremolo, fx.phaser, fx.delay, fx.vibrato, fx.chorus, fx.reverb, fx.volume, fx.limiter];
+  return fx;
+}
+
+function applyChainParams(fx,p){
+  if(!fx) return;
+  fx.pitch.pitch = p.pitch; fx.pitch.wet.value = p.pitch === 0 ? 0 : 1;
+  fx.octave.pitch = p.octave * 12; fx.octave.wet.value = p.octave === 0 ? 0 : 1;
+  fx.eq.low.value = p.bass; fx.eq.mid.value = p.mid; fx.eq.high.value = p.treble;
+  fx.drive.distortion = 0.2 + p.drive * 0.8; fx.drive.wet.value = p.drive;
+  fx.distortion.wet.value = p.distortion;
+  fx.fuzz.wet.value = p.fuzz;
+  fx.octafuzzPitch.wet.value = p.octafuzz;
+  fx.octafuzz.wet.value = p.octafuzz;
+  fx.wah.wet.value = p.wah;
+  fx.tremolo.wet.value = p.tremolo;
+  fx.phaser.wet.value = p.phaser;
+  fx.delay.wet.value = p.delay;
+  fx.vibrato.wet.value = p.vibrato;
+  fx.chorus.wet.value = p.chorus;
+  fx.reverb.wet.value = p.reverb;
+  fx.volume.volume.value = Tone.gainToDb(Math.max(p.volume, 0.0001));
+}
+
+function connectChain(sourceNode, fx){ sourceNode.chain(...fx.nodes, Tone.getDestination()); }
 
 /* ---------- Estado da interface ---------- */
 
@@ -241,20 +295,11 @@ async function startLive(){
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 512;
     src.connect(analyser); // medição visual, sem enviar o som cru aos fones
-    liveFx = {
-      src,
-      analyser,
-      pitch: new Tone.PitchShift({pitch:0, windowSize:0.08, wet:0}),
-      drive: new Tone.Distortion({distortion:0.2, wet:0}),
-      chorus: new Tone.Chorus({frequency:1.8, delayTime:3.5, depth:0.7, wet:0}).start(),
-      reverb: new Tone.Reverb({decay:2.5, wet:0}),
-      volume: new Tone.Volume(0),
-      limiter: new Tone.Limiter(-1)
-    };
-    await liveFx.reverb.generate();
-    // Tone.connect conecta corretamente um AudioNode nativo ao efeito Tone.js.
+    const chain = await createEffectChain(readParams());
+    liveFx = {...chain, src, analyser};
+    // Tone.connect conecta corretamente um AudioNode nativo ao primeiro efeito Tone.js.
     Tone.connect(src, liveFx.pitch);
-    liveFx.pitch.chain(liveFx.drive, liveFx.chorus, liveFx.reverb, liveFx.volume, liveFx.limiter, Tone.getDestination());
+    liveFx.nodes[0].chain(...liveFx.nodes.slice(1), Tone.getDestination());
     liveRunning = true;
     $('liveBtn').textContent = 'Desligar microfone';
     $('liveBtn').classList.add('on');
@@ -288,17 +333,7 @@ function updateLiveMeter(){
   liveAnimation = requestAnimationFrame(updateLiveMeter);
 }
 
-function applyLiveParams(){
-  if(!liveFx) return;
-  const p = readParams();
-  liveFx.pitch.pitch = p.pitch;
-  liveFx.pitch.wet.value = p.pitch === 0 ? 0 : 1;
-  liveFx.drive.distortion = 0.2 + p.drive * 0.8;
-  liveFx.drive.wet.value = p.drive;
-  liveFx.chorus.wet.value = p.chorus;
-  liveFx.reverb.wet.value = p.reverb;
-  liveFx.volume.volume.value = Tone.gainToDb(Math.max(p.volume, 0.0001));
-}
+function applyLiveParams(){ if(liveFx) applyChainParams(liveFx, readParams()); }
 
 function stopLive(){
   liveRunning = false;
@@ -334,24 +369,15 @@ async function decode(blob){
 
 // Mesma cadeia que o resultado final usa: tom → drive → chorus → reverb → volume → limitador.
 async function render(input, p){
-  // cauda extra só quando há reverb; folga pequena para o atraso do pitch shift
-  const tail = (p.reverb > 0 ? 2.5 : 0) + (p.pitch !== 0 ? 0.1 : 0);
+  const tail = (p.reverb > 0 ? 2.5 : 0) + (p.delay > 0 ? 1.5 : 0) + ((p.pitch !== 0 || p.octave !== 0 || p.octafuzz > 0) ? 0.15 : 0);
   const channels = Math.min(input.numberOfChannels, 2);
   const buffer = new Tone.ToneAudioBuffer(input);
-
   const rendered = await Tone.Offline(async () => {
     const player = new Tone.Player(buffer);
-    const pitch = new Tone.PitchShift({pitch:p.pitch, windowSize:0.08, wet:p.pitch === 0 ? 0 : 1});
-    const drive = new Tone.Distortion({distortion:0.2 + p.drive * 0.8, wet:p.drive});
-    const chorus = new Tone.Chorus({frequency:1.8, delayTime:3.5, depth:0.7, wet:p.chorus}).start();
-    const reverb = new Tone.Reverb({decay:2.5, wet:p.reverb});
-    const volume = new Tone.Volume(Tone.gainToDb(Math.max(p.volume, 0.0001)));
-    const limiter = new Tone.Limiter(-1);
-    await reverb.generate();
-    player.chain(pitch, drive, chorus, reverb, volume, limiter, Tone.getDestination());
+    const fx = await createEffectChain(p);
+    connectChain(player, fx);
     player.start(0);
   }, input.duration + tail, channels, input.sampleRate);
-
   return rendered.get();
 }
 
@@ -446,15 +472,9 @@ async function startEffectPreview(){
     const buffer = new Tone.ToneAudioBuffer(decoded);
     const p = readParams();
     const player = new Tone.Player(buffer);
-    const pitch = new Tone.PitchShift({pitch:p.pitch, windowSize:0.08, wet:p.pitch === 0 ? 0 : 1});
-    const drive = new Tone.Distortion({distortion:0.2 + p.drive * 0.8, wet:p.drive});
-    const chorus = new Tone.Chorus({frequency:1.8, delayTime:3.5, depth:0.7, wet:p.chorus}).start();
-    const reverb = new Tone.Reverb({decay:2.5, wet:p.reverb});
-    const volume = new Tone.Volume(Tone.gainToDb(Math.max(p.volume, 0.0001)));
-    const limiter = new Tone.Limiter(-1);
-    await reverb.generate();
-    player.chain(pitch, drive, chorus, reverb, volume, limiter, Tone.getDestination());
-    previewFx = {player, pitch, drive, chorus, reverb, volume, limiter};
+    const chain = await createEffectChain(p);
+    connectChain(player, chain);
+    previewFx = {player, ...chain};
     player.onstop = () => {
       if(previewFx?.player === player){
         disposePreview();
@@ -476,17 +496,7 @@ async function startEffectPreview(){
   }
 }
 
-function applyPreviewParams(){
-  if(!previewFx) return;
-  const p = readParams();
-  previewFx.pitch.pitch = p.pitch;
-  previewFx.pitch.wet.value = p.pitch === 0 ? 0 : 1;
-  previewFx.drive.distortion = 0.2 + p.drive * 0.8;
-  previewFx.drive.wet.value = p.drive;
-  previewFx.chorus.wet.value = p.chorus;
-  previewFx.reverb.wet.value = p.reverb;
-  previewFx.volume.volume.value = Tone.gainToDb(Math.max(p.volume, 0.0001));
-}
+function applyPreviewParams(){ if(previewFx) applyChainParams(previewFx, readParams()); }
 
 $('effectPreviewBtn').addEventListener('click', () => {
   if(previewFx) stopEffectPreview();

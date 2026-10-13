@@ -16,7 +16,7 @@
 <body>
 <main>
   <h2>estúdio de voz<span class="cursor" aria-hidden="true"></span></h2>
-  <p class="warn">Grave sua voz ou importe um áudio (até 5 minutos), escolha os efeitos e exporte. Tudo é processado no seu navegador, sem enviar o áudio para nenhum servidor.</p>
+  <p class="warn">Grave ou importe um áudio (até 5 minutos), ajuste o equalizador e os efeitos e exporte. Tudo é processado no seu navegador, sem enviar o áudio para nenhum servidor.</p>
   <noscript><p class="warn">Ative o JavaScript para usar o estúdio.</p></noscript>
   <p id="status" role="status">Ligue o microfone para testar os efeitos ao vivo, ou grave ou importe um áudio.</p>
 
@@ -63,9 +63,23 @@
   </div>
 
   <fieldset><legend>Tom</legend><label for="pitch">Semitons <b data-for="pitch"></b></label><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></fieldset>
+  <fieldset><legend>Equalizador — graves, médios e agudos</legend>
+    <label for="bass">Graves (dB) <b data-for="bass"></b></label><input id="bass" type="range" min="-12" max="12" step="1" value="0">
+    <label for="mid">Médios (dB) <b data-for="mid"></b></label><input id="mid" type="range" min="-12" max="12" step="1" value="0">
+    <label for="treble">Agudos (dB) <b data-for="treble"></b></label><input id="treble" type="range" min="-12" max="12" step="1" value="0">
+  </fieldset>
   <fieldset><legend>Drive</legend><label for="drive">Intensidade <b data-for="drive"></b></label><input id="drive" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset><legend>Chorus</legend><label for="chorus">Mistura <b data-for="chorus"></b></label><input id="chorus" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset><legend>Reverb</legend><label for="reverb">Mistura <b data-for="reverb"></b></label><input id="reverb" type="range" min="0" max="100" value="0"></fieldset>
+  <fieldset><legend>Tremolo</legend><label for="tremolo">Intensidade <b data-for="tremolo"></b></label><input id="tremolo" type="range" min="0" max="100" value="0"></fieldset>
+  <fieldset><legend>Phaser</legend><label for="phaser">Intensidade <b data-for="phaser"></b></label><input id="phaser" type="range" min="0" max="100" value="0"></fieldset>
+  <fieldset><legend>Delay</legend><label for="delay">Repetição <b data-for="delay"></b></label><input id="delay" type="range" min="0" max="100" value="0"></fieldset>
+  <fieldset><legend>Oitava</legend><label for="octave">Tom de oitava <b data-for="octave"></b></label><input id="octave" type="range" min="-1" max="1" step="1" value="0"></fieldset>
+  <fieldset><legend>Distorção</legend><label for="distortion">Intensidade <b data-for="distortion"></b></label><input id="distortion" type="range" min="0" max="100" value="0"></fieldset>
+  <fieldset><legend>Wah Wah</legend><label for="wah">Intensidade <b data-for="wah"></b></label><input id="wah" type="range" min="0" max="100" value="0"></fieldset>
+  <fieldset><legend>Fuzz</legend><label for="fuzz">Intensidade <b data-for="fuzz"></b></label><input id="fuzz" type="range" min="0" max="100" value="0"></fieldset>
+  <fieldset><legend>Octafuzz</legend><label for="octafuzz">Intensidade <b data-for="octafuzz"></b></label><input id="octafuzz" type="range" min="0" max="100" value="0"></fieldset>
+  <fieldset><legend>Vibrato</legend><label for="vibrato">Intensidade <b data-for="vibrato"></b></label><input id="vibrato" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset><legend>Volume</legend><label for="vol">Saída <b data-for="vol"></b></label><input id="vol" type="range" min="0" max="150" value="100"></fieldset>
 
   <fieldset>
