@@ -4,60 +4,24 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>nichodev.com</title>
-  <meta name="description" content="NICHODEVS Audio Lab: Voice Studio e editor de áudio no navegador.">
+  <meta name="description" content="Estúdio de voz no navegador: mude o tom e aplique efeitos em tempo real ou em áudios gravados.">
   <meta name="theme-color" content="#000000">
+
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Crect x='4' y='3' width='8' height='10' fill='%23fff'/%3E%3C/svg%3E">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="index.css">
   <link rel="stylesheet" href="cursores-retro.css">
-  <style>
-    body {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 22px;
-      padding: 24px;
-    }
-    h1 {
-      font-size: clamp(16px, 4vw, 32px);
-      font-weight: 400;
-      text-align: center;
-      overflow-wrap: anywhere;
-    }
-    .home-actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-    }
-    .home-actions .btn {
-      min-width: 130px;
-      text-align: center;
-      font-size: clamp(9px, 2vw, 11px);
-      border-width: 2px;
-      padding: 14px 18px;
-    }
-    .home-caption {
-      max-width: 440px;
-      text-align: center;
-      font: 12px/1.7 monospace;
-      opacity: .75;
-    }
-  </style>
 </head>
 <body>
   <h1>nichodev.com</h1>
-  <nav class="home-actions" aria-label="Ferramentas NICHODEVS">
-    <a class="btn" href="voz.html" id="startBtn" aria-label="Abrir Voice Studio">START</a>
-    <a class="btn" href="audio-editor.html" id="selectBtn" aria-label="Abrir Audio Editor">SELECT</a>
-  </nav>
-  <p class="home-caption">START — Voice Studio<br>SELECT — Audio Editor</p>
-  <script src="js/index.js" defer></script>
+
+  <a class="btn" href="voz.html" aria-label="Abrir estúdio de voz" id="startBtn">
+    START
+  </a>
 </body>
 </html>
