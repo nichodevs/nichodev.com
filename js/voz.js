@@ -781,7 +781,53 @@ $('stopPreviewBtn').addEventListener('click', stopEffectPreview);
 $('processBtn').addEventListener('click', process);
 window.addEventListener('pagehide', () => { stopLive(); stopEffectPreview(); });
 
-updateLabels();
+/* ---------- FX Lab: snapshots A/B para experimentar e comparar ---------- */
+const FX_LAB_KEY = 'nichodev.fxLab.snapshots.v1';
+let fxSnapshots = { A: null, B: null };
+let lastAB = 'A';
+
+function loadFxSnapshots(){
+  try {
+    const saved = JSON.parse(localStorage.getItem(FX_LAB_KEY) || '{}');
+    for (const key of ['A','B']) {
+      if (saved[key] && typeof saved[key] === 'object') fxSnapshots[key] = saved[key];
+    }
+  } catch (_) { /* snapshots são opcionais */ }
+}
+function persistFxSnapshots(){
+  try { localStorage.setItem(FX_LAB_KEY, JSON.stringify(fxSnapshots)); } catch (_) {}
+}
+function updateFxLabUI(){
+  for (const key of ['A','B']) {
+    const exists = Boolean(fxSnapshots[key]);
+    $(`snapshot${key}Status`).textContent = exists
+      ? `Salva · ${new Date(fxSnapshots[key].savedAt || Date.now()).toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'})}`
+      : 'Ainda não capturada.';
+    $(`load${key}Btn`).disabled = !exists;
+  }
+  $('toggleABBtn').disabled = !(fxSnapshots.A && fxSnapshots.B);
+}
+function captureFxSnapshot(key){
+  fxSnapshots[key] = { values: currentRawParams(), savedAt: Date.now() };
+  persistFxSnapshots();
+  updateFxLabUI();
+  $('abStatus').textContent = `Configuração ${key} capturada. Continue ajustando os efeitos para criar a outra versão.`;
+  lastAB = key;
+}
+function applyFxSnapshot(key){
+  const snap = fxSnapshots[key];
+  if (!snap) return;
+  applyRawParams(snap.values || snap);
+  lastAB = key;
+  $('abStatus').textContent = `Configuração ${key} carregada. Use o microfone ao vivo ou a prévia para escutar.`;
+}
+$('captureABtn').addEventListener('click', () => captureFxSnapshot('A'));
+$('captureBBtn').addEventListener('click', () => captureFxSnapshot('B'));
+$('loadABtn').addEventListener('click', () => applyFxSnapshot('A'));
+$('loadBBtn').addEventListener('click', () => applyFxSnapshot('B'));
+$('toggleABBtn').addEventListener('click', () => applyFxSnapshot(lastAB === 'A' ? 'B' : 'A'));
+loadFxSnapshots();
+updateFxLabUI();
 
 /* ---------- Modo compacto / avançado ---------- */
 const COMPACT_MODE_KEY = 'nichodev.voiceStudio.compactMode.v1';
