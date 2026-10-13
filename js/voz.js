@@ -19,8 +19,13 @@ let recorder = null;
 let busy = false;
 let liveStream = null;
 let liveFx = null;
+let previewFx = null;
+let previewStarting = false;
 let liveRunning = false;
 let liveAnimation = 0;
+let recordingAnimation = 0;
+let recordingStartedAt = 0;
+let recordingAudioContext = null;
 
 const say = text => { $('status').textContent = text; };
 
@@ -50,7 +55,7 @@ function markPreset(key){
 }
 
 document.querySelectorAll('input[type=range]').forEach(r =>
-  r.addEventListener('input', () => { markPreset(null); updateLabels(); applyLiveParams(); }));
+  r.addEventListener('input', () => { markPreset(null); updateLabels(); applyLiveParams(); applyPreviewParams(); }));
 
 $('presets').addEventListener('click', e => {
   const preset = PRESETS[e.target.dataset.p];
@@ -59,6 +64,7 @@ $('presets').addEventListener('click', e => {
   markPreset(e.target.dataset.p);
   updateLabels();
   applyLiveParams();
+  applyPreviewParams();
 });
 
 /* ---------- Estado da interface ---------- */
@@ -68,6 +74,7 @@ function setBusy(on){
   $('recordBtn').disabled = on;
   $('audioFile').disabled = on || !!recorder;
   $('processBtn').disabled = on || !source || !!recorder;
+  $('effectPreviewBtn').disabled = on || !source || previewStarting;
 }
 
 function clearResult(){
@@ -85,6 +92,9 @@ function setSource(blob, name){
   $('sourceAudio').src = sourceUrl;
   clearResult();
   setBusy(false);
+  $('effectPreviewBtn').disabled = false;
+  $('previewStatus').textContent = 'Áudio pronto. Clique em “Ouvir com efeitos” para testar os ajustes.';
+  stopEffectPreview();
 }
 
 /* ---------- Gravar ou importar ---------- */
@@ -111,14 +121,35 @@ async function toggleRecording(){
   }
 
   const chunks = [];
+  let analyser = null;
+  try {
+    recordingAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const micSource = recordingAudioContext.createMediaStreamSource(mic);
+    analyser = recordingAudioContext.createAnalyser();
+    analyser.fftSize = 512;
+    micSource.connect(analyser); // mede o microfone sem reproduzi-lo nos alto-falantes
+  } catch(e) {
+    recordingAudioContext = null;
+  }
   const rec = new MediaRecorder(mic);
   const timer = setTimeout(() => { if(rec.state !== 'inactive') rec.stop(); }, MAX_SECONDS * 1000);
 
   rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
   rec.onerror = () => { if(rec.state !== 'inactive') rec.stop(); };
-  rec.onstop = () => {
+  rec.onstop = async () => {
     clearTimeout(timer);
+    cancelAnimationFrame(recordingAnimation);
+    recordingAnimation = 0;
     mic.getTracks().forEach(t => t.stop());
+    if(recordingAudioContext){
+      try { await recordingAudioContext.close(); } catch(e) {}
+      recordingAudioContext = null;
+    }
+    $('recordMonitor').hidden = true;
+    $('recordMeterFill').style.width = '0%';
+    $('recordMeterLabel').textContent = 'Nível do microfone: 0%';
+    $('recordTime').textContent = '00:00';
+    document.querySelector('.record-meter').setAttribute('aria-valuenow', '0');
     recorder = null;
     $('recordBtn').textContent = 'Começar gravação';
     $('recordBtn').classList.remove('on');
@@ -133,10 +164,36 @@ async function toggleRecording(){
 
   recorder = rec;
   rec.start();
+  recordingStartedAt = performance.now();
+  $('recordMonitor').hidden = false;
+  updateRecordingMonitor(analyser);
   $('recordBtn').textContent = 'Parar gravação';
   $('recordBtn').classList.add('on');
   setBusy(false);
-  say('Gravando… fale normalmente. Clique em “Parar gravação” ao terminar.');
+  say('Gravando… o tempo e a intensidade do microfone são atualizados em tempo real.');
+}
+
+function updateRecordingMonitor(analyser){
+  if(!recorder || recorder.state === 'inactive') return;
+  const elapsed = Math.min((performance.now() - recordingStartedAt) / 1000, MAX_SECONDS);
+  const seconds = Math.floor(elapsed);
+  $('recordTime').textContent = String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+  let percent = 0;
+  if(analyser){
+    const samples = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(samples);
+    let sum = 0;
+    for(let i = 0; i < samples.length; i++){
+      const value = (samples[i] - 128) / 128;
+      sum += value * value;
+    }
+    const rms = Math.sqrt(sum / samples.length);
+    percent = Math.min(100, Math.round(rms * 280));
+  }
+  $('recordMeterFill').style.width = percent + '%';
+  document.querySelector('.record-meter').setAttribute('aria-valuenow', String(percent));
+  $('recordMeterLabel').textContent = 'Nível do microfone: ' + percent + '%';
+  recordingAnimation = requestAnimationFrame(() => updateRecordingMonitor(analyser));
 }
 
 $('recordBtn').addEventListener('click', toggleRecording);
@@ -157,6 +214,10 @@ $('audioFile').addEventListener('change', e => {
 /* ---------- Monitoramento ao vivo ---------- */
 
 async function startLive(){
+  if(previewFx || previewStarting){
+    $('liveStatus').textContent = 'Pare a prévia do áudio antes de ligar o microfone ao vivo.';
+    return;
+  }
   if(recorder){
     $('liveStatus').textContent = 'Pare a gravação antes de ligar o teste ao vivo.';
     return;
@@ -322,6 +383,8 @@ async function process(){
   }
   setBusy(true);
   clearResult();
+  $('exportLoader').hidden = false;
+  $('exportLoaderText').textContent = 'PROCESSANDO ÁUDIO...';
   say('Processando áudio no navegador…');
   try {
     const input = await decode(source.blob);
@@ -340,11 +403,97 @@ async function process(){
     console.error(e);
     say('Não consegui processar esse arquivo. Tente outro formato comum, como WAV, MP3 ou M4A.');
   } finally {
+    $('exportLoader').hidden = true;
     setBusy(false);
   }
 }
 
+/* ---------- Prévia processada em tempo real ---------- */
+
+function disposePreview(){
+  if(!previewFx) return;
+  try { previewFx.player.stop(); } catch(e) {}
+  Object.values(previewFx).forEach(node => {
+    if(node && typeof node.dispose === 'function') { try { node.dispose(); } catch(e) {} }
+  });
+  previewFx = null;
+  $('stopPreviewBtn').disabled = true;
+  $('effectPreviewBtn').textContent = 'Ouvir com efeitos';
+}
+
+function stopEffectPreview(){
+  disposePreview();
+  if(source) $('effectPreviewBtn').disabled = false;
+  $('previewStatus').textContent = source ? 'Prévia parada.' : 'Grave ou importe um áudio para habilitar a prévia com efeitos.';
+}
+
+async function startEffectPreview(){
+  if(!source || previewStarting || busy) return;
+  if(liveRunning || recorder){
+    $('previewStatus').textContent = 'Desligue o microfone ao vivo e pare a gravação antes da prévia.';
+    return;
+  }
+  if(typeof Tone === 'undefined'){
+    $('previewStatus').textContent = 'A biblioteca de áudio não carregou. Recarregue a página e tente novamente.';
+    return;
+  }
+  previewStarting = true;
+  $('effectPreviewBtn').disabled = true;
+  $('previewStatus').textContent = 'Preparando prévia com efeitos…';
+  try{
+    await Tone.start();
+    const decoded = await decode(source.blob);
+    const buffer = new Tone.ToneAudioBuffer(decoded);
+    const p = readParams();
+    const player = new Tone.Player(buffer);
+    const pitch = new Tone.PitchShift({pitch:p.pitch, windowSize:0.08, wet:p.pitch === 0 ? 0 : 1});
+    const drive = new Tone.Distortion({distortion:0.2 + p.drive * 0.8, wet:p.drive});
+    const chorus = new Tone.Chorus({frequency:1.8, delayTime:3.5, depth:0.7, wet:p.chorus}).start();
+    const reverb = new Tone.Reverb({decay:2.5, wet:p.reverb});
+    const volume = new Tone.Volume(Tone.gainToDb(Math.max(p.volume, 0.0001)));
+    const limiter = new Tone.Limiter(-1);
+    await reverb.generate();
+    player.chain(pitch, drive, chorus, reverb, volume, limiter, Tone.getDestination());
+    previewFx = {player, pitch, drive, chorus, reverb, volume, limiter};
+    player.onstop = () => {
+      if(previewFx?.player === player){
+        disposePreview();
+        $('previewStatus').textContent = 'Prévia finalizada.';
+        $('effectPreviewBtn').disabled = !source;
+      }
+    };
+    player.start();
+    $('stopPreviewBtn').disabled = false;
+    $('effectPreviewBtn').textContent = 'Reiniciar prévia';
+    $('previewStatus').textContent = 'Reproduzindo com efeitos. Ajuste os controles para ouvir as mudanças.';
+  }catch(e){
+    console.error('Erro na prévia com efeitos:', e);
+    disposePreview();
+    $('previewStatus').textContent = 'Não foi possível iniciar a prévia. Tente outro arquivo de áudio.';
+  }finally{
+    previewStarting = false;
+    $('effectPreviewBtn').disabled = !source || busy;
+  }
+}
+
+function applyPreviewParams(){
+  if(!previewFx) return;
+  const p = readParams();
+  previewFx.pitch.pitch = p.pitch;
+  previewFx.pitch.wet.value = p.pitch === 0 ? 0 : 1;
+  previewFx.drive.distortion = 0.2 + p.drive * 0.8;
+  previewFx.drive.wet.value = p.drive;
+  previewFx.chorus.wet.value = p.chorus;
+  previewFx.reverb.wet.value = p.reverb;
+  previewFx.volume.volume.value = Tone.gainToDb(Math.max(p.volume, 0.0001));
+}
+
+$('effectPreviewBtn').addEventListener('click', () => {
+  if(previewFx) stopEffectPreview();
+  else startEffectPreview();
+});
+$('stopPreviewBtn').addEventListener('click', stopEffectPreview);
 $('processBtn').addEventListener('click', process);
-window.addEventListener('pagehide', stopLive);
+window.addEventListener('pagehide', () => { stopLive(); stopEffectPreview(); });
 
 updateLabels();

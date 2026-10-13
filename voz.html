@@ -32,6 +32,13 @@
   <fieldset>
     <legend>Gravar ou importar</legend>
     <button type="button" id="recordBtn">Começar gravação</button>
+    <div id="recordMonitor" class="record-monitor" hidden aria-live="polite">
+      <p class="record-time-label">TEMPO DE GRAVAÇÃO</p>
+      <p id="recordTime" class="record-time" role="timer" aria-label="Tempo de gravação">00:00</p>
+      <p class="record-time-label">INTENSIDADE DO MICROFONE</p>
+      <div class="level-meter record-meter" role="meter" aria-label="Intensidade do microfone durante a gravação" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="recordMeterFill"></div></div>
+      <p id="recordMeterLabel">Nível do microfone: 0%</p>
+    </div>
     <label class="file-label" for="audioFile">Importar arquivo de áudio</label>
     <input id="audioFile" type="file" accept="audio/*">
   </fieldset>
@@ -39,6 +46,12 @@
   <fieldset>
     <legend>Prévia do áudio</legend>
     <audio id="sourceAudio" controls></audio>
+    <p class="small">O player acima toca o áudio original. Use o botão abaixo para ouvir com os efeitos; você pode ajustar os controles durante a reprodução.</p>
+    <div class="preview-controls">
+      <button type="button" id="effectPreviewBtn" disabled>Ouvir com efeitos</button>
+      <button type="button" id="stopPreviewBtn" disabled>Parar prévia</button>
+    </div>
+    <p id="previewStatus" class="small" role="status">Grave ou importe um áudio para habilitar a prévia com efeitos.</p>
   </fieldset>
 
   <div class="presets" id="presets" role="group" aria-label="Predefinições de voz">
@@ -58,6 +71,11 @@
   <fieldset>
     <legend>Exportar</legend>
     <button type="button" id="processBtn" disabled>Aplicar efeitos e exportar</button>
+    <div id="exportLoader" class="export-loader" hidden role="status" aria-live="polite">
+      <div class="loader-track"><div class="loader-fill"></div></div>
+      <p id="exportLoaderText">PROCESSANDO ÁUDIO...</p>
+      <p class="small">Não feche esta página. Áudios longos podem levar algum tempo.</p>
+    </div>
     <p class="small" id="resultHint" hidden>Ouça o resultado e baixe quando estiver bom.</p>
     <audio id="resultAudio" controls hidden></audio>
     <a id="downloadResult" class="btn" hidden>Baixar áudio modificado</a>
