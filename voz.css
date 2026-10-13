@@ -217,3 +217,14 @@ body.advanced-mode .advanced-only { display: revert; }
   .mode-switch-label { width: 100%; margin-bottom: 2px; }
   .mode-switch button { flex: 1 1 calc(50% - 8px); }
 }
+
+/* Menu retrô expansível: não interfere nos nós de áudio nem no estado dos controles. */
+.effects-menu { margin: 0 0 20px; border: 3px solid var(--line); background: var(--bg); color: var(--fg); }
+.effects-menu > summary { display: flex; align-items: center; justify-content: space-between; cursor: pointer; list-style: none; padding: 16px; font-size: 11px; user-select: none; }
+.effects-menu > summary::-webkit-details-marker { display: none; }
+.effects-menu > summary:focus-visible { outline: 3px dashed var(--fg); outline-offset: -6px; }
+.effects-menu > summary:hover { background: var(--fg); color: var(--bg); }
+.effects-arrow::after { content: '+'; font-size: 16px; line-height: 1; }
+.effects-menu[open] .effects-arrow::after { content: '−'; }
+.effects-menu-content { padding: 0 12px 4px; }
+.effects-menu-content fieldset { margin-bottom: 14px; }
