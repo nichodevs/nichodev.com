@@ -23,11 +23,12 @@ jobs:
           HOST: ${{ secrets.HOSTINGER_HOST }}
           USER: ${{ secrets.HOSTINGER_USERNAME }}
           PASS: ${{ secrets.HOSTINGER_PASSWORD }}
-        run: |
+          run: |
           lftp -u "$USER","$PASS" "sftp://$HOST:65002" -e "
             set sftp:auto-confirm yes
             set cmd:fail-exit yes
             cd domains/nichodev.com/public_html
+            mkdir -p js
             put index.html -o index.html
             put voz.html -o voz.html
             put style.css -o style.css
