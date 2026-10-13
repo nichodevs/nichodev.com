@@ -1,5 +1,5 @@
-body{font-size:11px;line-height:1.9;padding:24px 16px 56px}
-main{max-width:560px;margin-inline:auto}
+body{font-size:12px;line-height:1.9;padding:24px 16px 56px}
+main{width:100%;max-width:760px;margin-inline:auto}
 h2{margin:0 0 20px;font-weight:400;font-size:clamp(14px,4.4vw,20px);line-height:1.4}
 
 /* textos corridos em fonte legível; pixel font fica em títulos, botões e rótulos */
