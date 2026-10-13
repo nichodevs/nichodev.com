@@ -83,3 +83,28 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
   font-size: 11px;
   line-height: 1.5;
 }
+
+
+/* Presets extras: botões compactos que quebram linha em telas menores */
+.presets {
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.presets button {
+  min-height: 38px;
+  padding: 10px 12px;
+  line-height: 1.5;
+}
+.presets button:focus-visible {
+  outline: 3px dashed var(--fg);
+  outline-offset: 3px;
+}
+@media (max-width: 480px) {
+  .presets {
+    gap: 7px;
+  }
+  .presets button {
+    flex: 1 1 calc(50% - 7px);
+    min-width: 0;
+  }
+}
