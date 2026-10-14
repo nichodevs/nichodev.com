@@ -63,6 +63,5 @@ jobs:
             put robots.txt -o robots.txt
             put index.html -o index.html
             put voz.html -o voz.html
-            rm -f modular-fx.html modular-fx.css js/modular-fx.js
             bye
           "
