@@ -246,9 +246,6 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 .mode-switch{border:3px solid var(--line);padding:12px;margin:20px 0;font-size:9px}
 .mode-switch>span{display:block;margin-bottom:10px}
 .mode-switch .small{margin:10px 0 0}
-.advanced-control{transition:opacity .15s ease}
-body.compact-mode .advanced-control{display:none}
-body.compact-mode #presets{margin-bottom:16px}
 @media(max-width:480px){.processed-record-actions button{flex:1 1 100%}}
 
 
@@ -285,3 +282,21 @@ body.compact-mode #presets{margin-bottom:16px}
   .ab-grid{grid-template-columns:1fr}
   .live-fx-chain{grid-template-columns:1fr}
 }
+
+
+/* Interface retrô reorganizada: seções recolhíveis */
+.fold-section{margin:0 0 12px;border:3px solid var(--line);min-width:0;background:var(--bg)}
+.fold-section>summary{display:flex;align-items:center;gap:12px;min-height:48px;padding:14px 12px;cursor:pointer;list-style:none;font-family:"Press Start 2P",monospace;font-size:9px;line-height:1.8;color:var(--fg);overflow-wrap:anywhere}
+.fold-section>summary::-webkit-details-marker{display:none}
+.fold-section>summary::before{content:"+";display:inline-grid;place-items:center;flex:0 0 22px;width:22px;height:22px;border:2px solid var(--line);font:12px/1 monospace}
+.fold-section[open]>summary{border-bottom:2px solid var(--line)}
+.fold-section[open]>summary::before{content:"−"}
+.fold-section>summary:hover,.fold-section>summary:focus-visible{background:var(--fg);color:var(--bg)}
+.fold-section>summary:focus-visible{outline:3px dashed var(--fg);outline-offset:3px}
+.fold-section>.fx-lab,.fold-section>.modular-live{margin:0;border:0;padding:14px}
+.fold-section>fieldset{margin:12px;border-width:2px}
+.fold-section>.presets,.fold-section>.custom-presets{margin:12px}
+.fold-description{margin:12px 14px 16px}
+#fxLab .fx-lab-heading h3,#modularLive .modular-live-heading h3{display:none}
+#fxLab .fx-tip{margin-bottom:0}
+@media(max-width:480px){.fold-section>summary{font-size:8px;padding:12px 10px}.fold-section>fieldset{margin:8px;padding:12px}}
