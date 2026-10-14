@@ -21,39 +21,7 @@
   <noscript><p class="warn">Ative o JavaScript para usar o estúdio.</p></noscript>
   <p id="status" role="status">Ligue o microfone para testar os efeitos ao vivo, ou grave ou importe um áudio.</p>
 
-  <details id="fxLab" class="fold-section">
-    <summary>FX LAB — comparar configurações</summary>
-    <section class="fx-lab" aria-labelledby="fxLabTitle">
-    <div class="fx-lab-heading">
-      <p class="eyebrow">EXPERIMENTE / COMPARE / CRIE</p>
-      <h3 id="fxLabTitle">FX LAB<span class="cursor" aria-hidden="true"></span></h3>
-      <p class="small">Combine os controles do estúdio, salve seus sons e compare duas configurações sem precisar escolher apenas um efeito pronto.</p>
-    </div>
-    <div class="ab-grid">
-      <article class="ab-card">
-        <p class="ab-label">CONFIGURAÇÃO A</p>
-        <p id="snapshotAStatus" class="small">Ainda não capturada.</p>
-        <button type="button" id="captureABtn">Capturar A</button>
-        <button type="button" id="loadABtn" disabled>Carregar A</button>
-      </article>
-      <article class="ab-card">
-        <p class="ab-label">CONFIGURAÇÃO B</p>
-        <p id="snapshotBStatus" class="small">Ainda não capturada.</p>
-        <button type="button" id="captureBBtn">Capturar B</button>
-        <button type="button" id="loadBBtn" disabled>Carregar B</button>
-      </article>
-    </div>
-    <div class="fx-lab-actions">
-      <button type="button" id="toggleABBtn" disabled>Alternar A / B</button>
-      <span id="abStatus" class="small" role="status" aria-live="polite">Ajuste os efeitos e capture A e B para comparar.</span>
-    </div>
-    <p class="small fx-tip">Dica: capture A com um som mais limpo, mude drive, chorus, delay ou reverb e capture B. Use “Ouvir com efeitos” na seção de prévia para testar o áudio importado, ou o monitoramento ao vivo com fones.</p>
-    </section>
-  </details>
-
-  <details class="fold-section" open>
-    <summary>MICROFONE AO VIVO</summary>
-    <fieldset>
+  <fieldset>
     <legend>Teste ao vivo</legend>
     <p class="small">Use fones de ouvido. Fale no microfone e escute sua voz com os efeitos aplicados em tempo real.</p>
     <button type="button" id="liveBtn">Ligar microfone</button>
@@ -70,12 +38,9 @@
       <p class="waveform-caption">A onda acompanha a entrada do microfone.</p>
     </div>
     <p class="small" id="liveStatus" role="status">Microfone desligado.</p>
-    </fieldset>
-  </details>
+  </fieldset>
 
-  <details id="audioControls" class="fold-section">
-    <summary>GRAVAR OU IMPORTAR</summary>
-    <fieldset>
+  <fieldset>
     <legend>Gravar ou importar</legend>
     <button type="button" id="recordBtn">Começar gravação</button>
     <div id="recordMonitor" class="record-monitor" hidden aria-live="polite">
@@ -87,12 +52,9 @@
     </div>
     <label class="file-label" for="audioFile">Importar arquivo de áudio</label>
     <input id="audioFile" type="file" accept="audio/*">
-    </fieldset>
-  </details>
+  </fieldset>
 
-  <details class="fold-section">
-    <summary>PRÉVIA DO ÁUDIO</summary>
-    <fieldset>
+  <fieldset>
     <legend>Prévia do áudio</legend>
     <audio id="sourceAudio" controls></audio>
     <p class="small">O player acima toca o áudio original. Use o botão abaixo para ouvir com os efeitos; você pode ajustar os controles durante a reprodução.</p>
@@ -101,12 +63,15 @@
       <button type="button" id="stopPreviewBtn" disabled>Parar prévia</button>
     </div>
     <p id="previewStatus" class="small" role="status">Grave ou importe um áudio para habilitar a prévia com efeitos.</p>
-    </fieldset>
-  </details>
+  </fieldset>
 
-  <details class="fold-section">
-    <summary>PRESETS E MEUS EFEITOS</summary>
-    <div class="presets" id="presets" role="group" aria-label="Predefinições de voz">
+  <section class="mode-switch" aria-label="Modo do estúdio">
+    <span>INTERFACE</span>
+    <button type="button" id="compactModeBtn" aria-pressed="false">Ativar modo compacto</button>
+    <p class="small">O modo compacto oculta os controles detalhados; os efeitos ativos continuam aplicados.</p>
+  </section>
+
+  <div class="presets" id="presets" role="group" aria-label="Predefinições de voz">
     <button type="button" data-p="normal" aria-pressed="true">Normal</button>
     <button type="button" data-p="grave" aria-pressed="false">Voz grave</button>
     <button type="button" data-p="crianca" aria-pressed="false">Voz fina</button>
@@ -131,11 +96,7 @@
     <p id="customPresetStatus" class="small" role="status" aria-live="polite">Nenhum preset personalizado salvo ainda.</p>
     <div id="customPresetList" class="custom-preset-list" aria-label="Meus presets salvos"></div>
   </section>
-  </details>
 
-  <details class="fold-section">
-    <summary>AJUSTES DE VOZ E EFEITOS</summary>
-    <p class="small fold-description">Os controles avançados ficam aqui para manter a tela principal limpa. Os ajustes continuam disponíveis durante a prévia e o monitoramento ao vivo.</p>
   <fieldset class="advanced-control"><legend>Tom</legend><label for="pitch">Semitons <b data-for="pitch"></b></label><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></fieldset>
   <fieldset class="advanced-control">
     <legend>Formantes — timbre</legend>
@@ -161,11 +122,8 @@
   <fieldset class="advanced-control"><legend>Octafuzz</legend><label for="octafuzz">Intensidade <b data-for="octafuzz"></b></label><input id="octafuzz" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Vibrato</legend><label for="vibrato">Intensidade <b data-for="vibrato"></b></label><input id="vibrato" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Volume</legend><label for="vol">Saída <b data-for="vol"></b></label><input id="vol" type="range" min="0" max="150" value="100"></fieldset>
-  </details>
 
-  <details class="fold-section">
-    <summary>EXPORTAR ÁUDIO</summary>
-    <fieldset>
+  <fieldset>
     <legend>Exportar</legend>
     <button type="button" id="processBtn" disabled>Aplicar efeitos e exportar</button>
     <div id="exportLoader" class="export-loader" hidden role="status" aria-live="polite">
@@ -176,8 +134,7 @@
     <p class="small" id="resultHint" hidden>Ouça o resultado e baixe quando estiver bom.</p>
     <audio id="resultAudio" controls hidden></audio>
     <a id="downloadResult" class="btn" hidden>Baixar áudio modificado</a>
-    </fieldset>
-  </details>
+  </fieldset>
 
   <div class="back-wrap"><a class="btn" href="index.html">Voltar</a></div>
 </main>
@@ -185,6 +142,6 @@
 <!-- Para travar a versão com segurança, copie o hash SRI desta URL em cdnjs.com e adicione integrity="sha512-..." -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>window.Tone || document.write('<script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js" crossorigin="anonymous"><\/script>')</script>
-<script src="js/voz.js?v=20261013-fxlab-fix1" defer></script>
+<script src="js/voz.js" defer></script>
 </body>
 </html>

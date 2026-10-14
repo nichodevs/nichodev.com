@@ -451,9 +451,9 @@ async function startLive(){
     liveFx = {...chain, src, analyser};
     // Tone.connect conecta corretamente um AudioNode nativo ao primeiro efeito Tone.js.
     Tone.connect(src, liveFx.pitch);
-    // A cadeia de efeitos segue para o monitoramento e a gravação processada.
-    liveFx.nodes[0].chain(...liveFx.nodes.slice(1));
+    liveFx.nodes[0].chain(...liveFx.nodes.slice(1), Tone.getDestination());
     processedDestination = ctx.createMediaStreamDestination();
+    // Captura a saída já processada, sem alterar a saída normal para fones/alto-falantes.
     liveFx.limiter.output.connect(processedDestination);
     $('recordProcessedBtn').disabled = false;
     liveRunning = true;
@@ -560,7 +560,6 @@ function updateLiveMeter(){
 
 function applyLiveParams(){ if(liveFx) applyChainParams(liveFx, readParams()); }
 
-/* ---------- Encerramento do microfone ao vivo ---------- */
 function stopLive(){
   if(processedRecorder && processedRecorder.state !== 'inactive') processedRecorder.stop();
   liveRunning = false;
@@ -782,52 +781,17 @@ $('stopPreviewBtn').addEventListener('click', stopEffectPreview);
 $('processBtn').addEventListener('click', process);
 window.addEventListener('pagehide', () => { stopLive(); stopEffectPreview(); });
 
-/* ---------- FX Lab: snapshots A/B para experimentar e comparar ---------- */
-const FX_LAB_KEY = 'nichodev.fxLab.snapshots.v1';
-let fxSnapshots = { A: null, B: null };
-let lastAB = 'A';
+updateLabels();
 
-function loadFxSnapshots(){
-  try {
-    const saved = JSON.parse(localStorage.getItem(FX_LAB_KEY) || '{}');
-    for (const key of ['A','B']) {
-      if (saved[key] && typeof saved[key] === 'object') fxSnapshots[key] = saved[key];
-    }
-  } catch (_) { /* snapshots são opcionais */ }
+/* ---------- Modo compacto / avançado ---------- */
+const COMPACT_MODE_KEY = 'nichodev.voiceStudio.compactMode.v1';
+function setCompactMode(enabled){
+  document.body.classList.toggle('compact-mode', enabled);
+  $('compactModeBtn').setAttribute('aria-pressed', String(enabled));
+  $('compactModeBtn').textContent = enabled ? 'Ativar modo avançado' : 'Ativar modo compacto';
+  try { localStorage.setItem(COMPACT_MODE_KEY, enabled ? '1' : '0'); } catch(e) {}
 }
-function persistFxSnapshots(){
-  try { localStorage.setItem(FX_LAB_KEY, JSON.stringify(fxSnapshots)); } catch (_) {}
-}
-function updateFxLabUI(){
-  for (const key of ['A','B']) {
-    const exists = Boolean(fxSnapshots[key]);
-    $(`snapshot${key}Status`).textContent = exists
-      ? `Salva · ${new Date(fxSnapshots[key].savedAt || Date.now()).toLocaleString('pt-BR', {dateStyle:'short', timeStyle:'short'})}`
-      : 'Ainda não capturada.';
-    $(`load${key}Btn`).disabled = !exists;
-  }
-  $('toggleABBtn').disabled = !(fxSnapshots.A && fxSnapshots.B);
-}
-function captureFxSnapshot(key){
-  fxSnapshots[key] = { values: currentRawParams(), savedAt: Date.now() };
-  persistFxSnapshots();
-  updateFxLabUI();
-  $('abStatus').textContent = `Configuração ${key} capturada. Continue ajustando os efeitos para criar a outra versão.`;
-  lastAB = key;
-}
-function applyFxSnapshot(key){
-  const snap = fxSnapshots[key];
-  if (!snap) return;
-  applyRawParams(snap.values || snap);
-  lastAB = key;
-  $('abStatus').textContent = `Configuração ${key} carregada. Use o microfone ao vivo ou a prévia para escutar.`;
-}
-$('captureABtn').addEventListener('click', () => captureFxSnapshot('A'));
-$('captureBBtn').addEventListener('click', () => captureFxSnapshot('B'));
-$('loadABtn').addEventListener('click', () => applyFxSnapshot('A'));
-$('loadBBtn').addEventListener('click', () => applyFxSnapshot('B'));
-$('toggleABBtn').addEventListener('click', () => applyFxSnapshot(lastAB === 'A' ? 'B' : 'A'));
-loadFxSnapshots();
-updateFxLabUI();
-
-/* A interface usa seções recolhíveis nativas; os controles de áudio permanecem sempre disponíveis ao abrir cada seção. */
+$('compactModeBtn').addEventListener('click', () => setCompactMode(!document.body.classList.contains('compact-mode')));
+let compactSaved = false;
+try { compactSaved = localStorage.getItem(COMPACT_MODE_KEY) === '1'; } catch(e) {}
+setCompactMode(compactSaved);
