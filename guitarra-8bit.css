@@ -1,0 +1,75 @@
+:root{--g-bg:#10160f;--g-panel:#1b2418;--g-fg:#eaf2dc;--g-mute:#a8b49a;--g-line:#64734d;--g-lime:#c9f27a;--g-orange:#ffad55;--g-red:#ff5c63;--g-shadow:#050805}
+*{box-sizing:border-box}
+body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-color:var(--g-bg);color:var(--g-fg);font-family:"Press Start 2P",monospace;font-size:10px;line-height:1.8}
+.guitar-app{width:min(1120px,100%);margin:0 auto}
+.guitar-header{position:relative;padding:12px 0 18px}
+.back-link,.guitar-app footer a{color:var(--g-lime);text-decoration:none;border-bottom:2px solid currentColor}
+.back-link{font-size:9px}
+.pixel-kicker{margin:18px 0 8px;color:var(--g-orange);font-size:8px;letter-spacing:1px}
+.guitar-header h1{margin:0 0 14px;font-size:clamp(15px,4vw,25px);line-height:1.6}
+.intro,.notice,.section-heading p,.status,.amp-foot,.amp-led-row,.guitar-nav{font-family:system-ui,sans-serif;font-size:14px;line-height:1.5}
+.intro{max-width:760px}
+.notice{padding:10px 12px;border:2px dashed var(--g-line);color:var(--g-mute)}
+.amp-console{margin:12px auto 20px;max-width:760px;padding:12px;background:#293322;border:4px solid #71825b;box-shadow:8px 8px 0 var(--g-shadow);image-rendering:pixelated}
+.amp-topline,.amp-foot{display:flex;justify-content:space-between;gap:12px;padding:0 6px;color:#d3dfbf;font-size:8px}
+.amp-face{position:relative;display:grid;grid-template-columns:1fr 2fr;gap:14px;align-items:center;margin-top:8px;padding:18px;background:linear-gradient(135deg,#414b34,#222b1d);border:4px solid #10160f;box-shadow:inset 0 0 0 3px #82936a}
+.amp-brand{display:flex;align-items:center;gap:12px}
+.amp-brand h2{font-size:10px;line-height:2}
+.brand-bolt{color:var(--g-lime);font-size:30px}
+.amp-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.amp-control{display:flex;flex-direction:column;gap:5px;color:var(--g-lime);font-size:8px;text-align:center}
+.amp-control input{width:100%;accent-color:var(--g-lime)}
+.amp-control output{font-size:8px}
+.amp-grill{grid-column:1/-1;display:grid;place-items:center;min-height:54px;border:3px solid #141a11;background:repeating-linear-gradient(0deg,#252e20 0 4px,#38452d 4px 7px);color:#8b9b73;font-size:18px;letter-spacing:4px}
+.amp-led-row{grid-column:1/-1;display:flex;align-items:center;gap:8px;color:#d3dfbf;text-transform:uppercase;font-size:10px}
+.led{width:10px;height:10px;border:2px solid #111;background:#293322}
+.led.on{background:var(--g-lime);box-shadow:0 0 10px var(--g-lime)}
+.led.clip{background:var(--g-red);box-shadow:0 0 8px var(--g-red)}
+.power-state{color:var(--g-orange)}
+.guitar-nav{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0}
+.guitar-nav a,.preset-grid button,.guitar-app button,.file-button,.download-link{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:8px 12px;border:2px solid var(--g-line);background:var(--g-panel);color:var(--g-fg);font:inherit;font-size:9px;text-decoration:none;cursor:pointer}
+.guitar-nav a{min-height:34px;color:var(--g-lime);font-size:9px}
+.guitar-app button:hover,.guitar-nav a:hover,.download-link:hover,.file-button:hover{background:var(--g-lime);color:#10160f}
+.guitar-app button:disabled{opacity:.45;cursor:not-allowed}
+.guitar-app button:focus-visible,.guitar-app a:focus-visible,.guitar-app summary:focus-visible,.guitar-app input:focus-visible,.guitar-app select:focus-visible{outline:3px dashed var(--g-orange);outline-offset:3px}
+.guitar-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.g-panel{min-width:0;border:3px solid var(--g-line);background:var(--g-panel);box-shadow:4px 4px 0 var(--g-shadow)}
+.g-panel>summary{padding:12px 14px;color:var(--g-lime);cursor:pointer;font-size:10px;list-style-position:inside}
+.g-panel[open]>summary{border-bottom:2px solid var(--g-line)}
+.panel-body{padding:14px}
+.panel-body label:not(.file-button){display:block;margin:4px 0 7px;color:var(--g-mute);font-family:system-ui,sans-serif;font-size:14px}
+.guitar-app select,.guitar-app input[type=file]{width:100%;max-width:100%;padding:9px;border:2px solid var(--g-line);background:var(--g-bg);color:var(--g-fg);font:14px system-ui,sans-serif}
+.file-button{margin-top:10px;font-size:8px}
+.button-row,.ab-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.status{min-height:1.5em;color:var(--g-mute);margin:10px 0}
+.tuner{text-align:center}
+.tuner-note{color:var(--g-lime);font-size:clamp(28px,6vw,46px);line-height:1.5}
+#tunerFrequency{color:var(--g-mute);font:14px system-ui,sans-serif}
+.tuner-meter{position:relative;height:16px;margin:20px 0 10px;border:2px solid var(--g-line);background:linear-gradient(90deg,#642a31 0 25%,#82743b 25% 45%,#24371e 45% 55%,#82743b 55% 75%,#642a31 75%);overflow:hidden}
+.tuner-meter:after{content:"";position:absolute;left:50%;top:0;height:100%;border-left:2px solid var(--g-fg)}
+#tunerNeedle{position:absolute;z-index:1;left:50%;top:0;width:3px;height:100%;background:var(--g-lime);transform:translateX(-50%);transition:left 80ms linear}
+.preset-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.preset-grid button{font-size:8px}
+.pedalboard-panel{grid-column:1/-1;padding:14px}
+.section-heading h2{margin:0;color:var(--g-lime);font-size:12px}
+.section-heading p{margin:4px 0 12px;color:var(--g-mute)}
+.pedal-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.pedal{--pedal-color:var(--g-line);min-width:0;padding:10px;border:3px solid var(--pedal-color);background:linear-gradient(160deg,#273121,#151c13);box-shadow:inset 0 0 0 2px #0e130d}
+.pedal-green{--pedal-color:#76a945}.pedal-yellow{--pedal-color:#d9c34b}.pedal-blue{--pedal-color:#4f9ab5}.pedal-orange{--pedal-color:#db7b35}.pedal-purple{--pedal-color:#9b76c7}.pedal-pink{--pedal-color:#d579a3}.pedal-white{--pedal-color:#c8d1bf}
+.pedal.is-bypassed{opacity:.72}
+.pedal-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.pedal-title{margin:0;color:var(--pedal-color);font-size:9px}
+.pedal-switch{min-height:30px!important;padding:4px 7px!important;font-size:8px!important;color:var(--g-lime)!important}
+.pedal-switch[aria-checked="false"]{color:var(--g-mute)!important}
+.pedal label{display:flex;justify-content:space-between;gap:8px;margin:6px 0 2px;color:var(--g-mute);font:12px system-ui,sans-serif}
+.pedal input[type=range]{width:100%;accent-color:var(--g-lime)}
+.pedal-actions{display:flex;gap:6px;margin-top:8px}
+.pedal-actions button{flex:1;min-height:30px!important;padding:4px!important;font-size:7px!important}
+.pedalboard-panel>.status{margin-bottom:0}
+.record-time{font-size:22px;color:var(--g-lime);letter-spacing:2px}
+.guitar-app audio{display:block;width:100%;margin-top:12px}
+.guitar-app footer{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:28px;padding-top:14px;border-top:2px solid var(--g-line);font-size:8px;color:var(--g-mute)}
+.download-link[hidden],audio[hidden]{display:none}
+@media(max-width:700px){.guitar-layout{grid-template-columns:1fr}.pedalboard-panel{grid-column:auto}.amp-face{grid-template-columns:1fr}.amp-controls{grid-template-columns:repeat(3,1fr)}.amp-grill,.amp-led-row{grid-column:auto}.guitar-app footer{flex-direction:column;align-items:flex-start}}
+@media(max-width:420px){.amp-face{padding:12px}.preset-grid{grid-template-columns:1fr}.guitar-nav a{flex:1}.pedal-list{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}

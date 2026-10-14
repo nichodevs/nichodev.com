@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const root = path.resolve(__dirname, "..");
-const pages = ["index.html", "voz.html"];
+const pages = ["index.html", "voz.html", "guitarra.html"];
 const errors = [];
 const read = file => fs.readFileSync(path.join(root, file), "utf8");
 const attrs = tag => Object.fromEntries([...tag.matchAll(/([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)].map(m => [m[1].toLowerCase(), m[2] ?? m[3]]));

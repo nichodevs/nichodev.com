@@ -49,6 +49,7 @@ jobs:
             put voz.css -o voz.css
             put voz-compacto.css -o voz-compacto.css
             put cursores-retro.css -o cursores-retro.css
+            put guitarra-8bit.css -o guitarra-8bit.css
             put cursor.png -o cursor.png
             put cursor-pointer.png -o cursor-pointer.png
             put cursor-text.png -o cursor-text.png
@@ -64,10 +65,12 @@ jobs:
             cd js
             put js/index.js -o index.js
             put js/voz.js -o voz.js
+            put js/guitarra.js -o guitarra.js
             cd ..
             put robots.txt -o robots.txt
             put index.html -o index.html
             put voz.html -o voz.html
+            put guitarra.html -o guitarra.html
             rm -f modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
             bye
           "
