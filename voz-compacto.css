@@ -85,3 +85,7 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
   .control-panel > summary { padding: 12px; }
   .control-content { padding: 12px; }
 }
+
+/* Mantém os grupos sem borda dupla dentro do painel recolhível. */
+.control-content fieldset { margin: 0 0 14px; padding: 0; border: 0; }
+.control-content fieldset:last-child { margin-bottom: 0; }
