@@ -12,13 +12,25 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - name: Baixar arquivos do repositorio
         uses: actions/checkout@v4
 
       - name: Validar site antes da publicação
         run: npm run check
+
+      - name: Conferir secrets do SFTP
+        env:
+          HOST: ${{ secrets.HOSTINGER_HOST }}
+          USER: ${{ secrets.HOSTINGER_USERNAME }}
+          PASS: ${{ secrets.HOSTINGER_PASSWORD }}
+          HOST_KEYS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
+        run: |
+          test -n "$HOST" || { echo "::error::Configure o secret HOSTINGER_HOST."; exit 1; }
+          test -n "$USER" || { echo "::error::Configure o secret HOSTINGER_USERNAME."; exit 1; }
+          test -n "$PASS" || { echo "::error::Configure o secret HOSTINGER_PASSWORD."; exit 1; }
+          test -n "$HOST_KEYS" || { echo "::error::Configure o secret HOSTINGER_KNOWN_HOSTS."; exit 1; }
 
       - name: Instalar cliente SFTP
         run: sudo apt-get update && sudo apt-get install -y lftp
@@ -27,7 +39,6 @@ jobs:
         env:
           HOST_KEYS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
         run: |
-          test -n "$HOST_KEYS"
           install -d -m 700 "$HOME/.ssh"
           printf '%s\n' "$HOST_KEYS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
@@ -62,11 +73,9 @@ jobs:
             put cursor-help.png -o cursor-help.png
             put cursor-alt.png -o cursor-alt.png
             mkdir js || true
-            cd js
-            put js/index.js -o index.js
-            put js/voz.js -o voz.js
-            put js/guitarra.js -o guitarra.js
-            cd ..
+            put js/index.js -o js/index.js
+            put js/voz.js -o js/voz.js
+            put js/guitarra.js -o js/guitarra.js
             put robots.txt -o robots.txt
             put index.html -o index.html
             put voz.html -o voz.html
@@ -74,3 +83,30 @@ jobs:
             rm -f modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
             bye
           "
+
+      - name: Conferir páginas e arquivos publicados
+        env:
+          SITE_URL: https://nichodev.com
+        run: |
+          paths=(
+            /
+            /voz.html
+            /guitarra.html
+            /style.css
+            /index.css
+            /voz.css
+            /voz-compacto.css
+            /guitarra-8bit.css
+            /cursores-retro.css
+            /js/index.js
+            /js/voz.js
+            /js/guitarra.js
+            /cursor.png
+            /cursor-pointer.png
+          )
+          for path in "${paths[@]}"; do
+            echo "Conferindo $path"
+            curl --fail --silent --show-error --location \
+              --retry 3 --retry-all-errors --retry-delay 2 --max-time 20 \
+              --output /dev/null "$SITE_URL$path"
+          done
