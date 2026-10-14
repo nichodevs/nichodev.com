@@ -12,6 +12,7 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Baixar arquivos do repositorio
         uses: actions/checkout@v4
@@ -39,6 +40,8 @@ jobs:
         run: |
           lftp --env-password -u "$USER" "sftp://$HOST:65002" -e "
             set sftp:auto-confirm no
+            set net:timeout 20
+            set net:max-retries 2
             set cmd:fail-exit yes
             cd domains/nichodev.com/public_html
             put style.css -o style.css
@@ -57,9 +60,6 @@ jobs:
             put cursor-crosshair.png -o cursor-crosshair.png
             put cursor-help.png -o cursor-help.png
             put cursor-alt.png -o cursor-alt.png
-            set cmd:fail-exit no
-            mkdir -p js
-            set cmd:fail-exit yes
             put js/index.js -o js/index.js
             put js/voz.js -o js/voz.js
             put robots.txt -o robots.txt
