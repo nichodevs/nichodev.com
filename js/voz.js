@@ -596,28 +596,45 @@ function connectLiveBridge(){
   try{ socket = new WebSocket(url.toString()); }catch(err){ setLiveBridgeStatus('Não consegui abrir a conexão local. Confira o endereço e o serviço Node.js.'); return; }
   socket.binaryType = 'arraybuffer';
   liveBridgeSocket = socket;
-  socket.onopen = () => {
+  socket.onopen = async () => {
     if(liveBridgeSocket !== socket) return;
-    liveBridgeSource = ctx.createMediaStreamSource(processedDestination.stream);
-    liveBridgeProcessor = ctx.createScriptProcessor(4096, 1, 1);
-    liveBridgeProcessor.onaudioprocess = event => {
-      const input = event.inputBuffer.getChannelData(0);
-      const pcm = new Int16Array(input.length);
-      for(let i=0;i<input.length;i++){
-        const sample = Math.max(-1, Math.min(1, input[i]));
-        pcm[i] = sample < 0 ? sample * 32768 : sample * 32767;
-      }
-      if(socket.readyState === WebSocket.OPEN && socket.bufferedAmount < 512 * 1024){
+    try{
+      if(!ctx.audioWorklet) throw new Error('AudioWorklet não está disponível neste navegador. Use Chrome ou Edge atualizado em HTTPS.');
+      const workletUrl = new URL('js/live-voice-worklet.js', document.baseURI).href;
+      await ctx.audioWorklet.addModule(workletUrl);
+      if(liveBridgeSocket !== socket || socket.readyState !== WebSocket.OPEN) return;
+      liveBridgeSource = ctx.createMediaStreamSource(processedDestination.stream);
+      liveBridgeProcessor = new AudioWorkletNode(ctx, 'nichodevs-pcm16-bridge', {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        outputChannelCount: [1],
+        channelCount: 1,
+        channelCountMode: 'explicit'
+      });
+      liveBridgeProcessor.port.onmessage = event => {
+        if(socket.readyState !== WebSocket.OPEN) return;
+        // Evita acumular segundos de atraso se o serviço local não acompanhar.
+        if(socket.bufferedAmount > 96 * 1024) return;
+        const input = event.data;
+        const pcm = new Int16Array(input.length);
+        for(let i = 0; i < input.length; i++){
+          const sample = Math.max(-1, Math.min(1, input[i]));
+          pcm[i] = sample < 0 ? sample * 32768 : sample * 32767;
+        }
         socket.send(pcm.buffer);
-      }
-      event.outputBuffer.getChannelData(0).fill(0); // o stream da ponte não deve tocar novamente nos alto-falantes
-    };
-    liveBridgeSource.connect(liveBridgeProcessor);
-    liveBridgeProcessor.connect(ctx.destination);
-    liveBridgeConnected = true;
-    $('liveBridgeBtn').textContent = 'Desconectar Live Bridge';
-    $('liveBridgeBtn').classList.add('on');
-    setLiveBridgeStatus('Conectado. Enviando áudio processado em PCM para o Node.js local. Ao desconectar, o bridge finaliza o arquivo WAV.');
+      };
+      liveBridgeSource.connect(liveBridgeProcessor);
+      // Saída silenciosa: mantém o grafo ativo sem duplicar o áudio nos alto-falantes.
+      liveBridgeProcessor.connect(ctx.destination);
+      liveBridgeConnected = true;
+      $('liveBridgeBtn').textContent = 'Desconectar Live Bridge';
+      $('liveBridgeBtn').classList.add('on');
+      setLiveBridgeStatus('Conectado. Enviando áudio processado em blocos de baixa latência para o Node.js local. A ponte grava o sinal recebido em WAV.');
+    }catch(err){
+      console.error('NICHODEVS Live Voice Bridge:', err);
+      setLiveBridgeStatus('Não foi possível iniciar o processador de áudio em tempo real: ' + (err.message || 'erro desconhecido'));
+      try{ socket.close(1011, 'Falha ao iniciar AudioWorklet'); }catch(e){}
+    }
   };
   socket.onmessage = event => {
     try{
