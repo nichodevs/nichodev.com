@@ -6,33 +6,63 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Baixar arquivos do repositorio
         uses: actions/checkout@v4
 
+      - name: Validar site antes da publicação
+        run: npm run check
+
       - name: Instalar cliente SFTP
         run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: Preparar chave de host SFTP verificada
+        env:
+          HOST_KEYS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
+        run: |
+          test -n "$HOST_KEYS"
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$HOST_KEYS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
 
       - name: Publicar arquivos na Hostinger
         env:
           HOST: ${{ secrets.HOSTINGER_HOST }}
           USER: ${{ secrets.HOSTINGER_USERNAME }}
-          PASS: ${{ secrets.HOSTINGER_PASSWORD }}
+          LFTP_PASSWORD: ${{ secrets.HOSTINGER_PASSWORD }}
         run: |
-          lftp -u "$USER","$PASS" "sftp://$HOST:65002" -e "
-            set sftp:auto-confirm yes
+          lftp --env-password -u "$USER" "sftp://$HOST:65002" -e "
+            set sftp:auto-confirm no
+            set cmd:fail-exit yes
             cd domains/nichodev.com/public_html
-            put index.html -o index.html
-            put voz.html -o voz.html
+            put style.css -o style.css
+            put index.css -o index.css
             put voz.css -o voz.css
             put voz-compacto.css -o voz-compacto.css
+            put cursores-retro.css -o cursores-retro.css
+            put cursor.png -o cursor.png
+            put cursor-pointer.png -o cursor-pointer.png
+            put cursor-text.png -o cursor-text.png
+            put cursor-move.png -o cursor-move.png
+            put cursor-wait.png -o cursor-wait.png
+            put cursor-not-allowed.png -o cursor-not-allowed.png
+            put cursor-resize-h.png -o cursor-resize-h.png
+            put cursor-resize-v.png -o cursor-resize-v.png
+            put cursor-crosshair.png -o cursor-crosshair.png
+            put cursor-help.png -o cursor-help.png
+            put cursor-alt.png -o cursor-alt.png
             mkdir -p js
+            put js/index.js -o js/index.js
             put js/voz.js -o js/voz.js
             put robots.txt -o robots.txt
+            put index.html -o index.html
+            put voz.html -o voz.html
             rm -f modular-fx.html modular-fx.css js/modular-fx.js
             bye
           "
