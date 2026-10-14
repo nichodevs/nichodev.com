@@ -28,7 +28,7 @@ jobs:
         run: |
           test -n "$HOST_KEYS"
           install -d -m 700 "$HOME/.ssh"
-          printf '%s\\n' "$HOST_KEYS" > "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$HOST_KEYS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
       - name: Publicar arquivos na Hostinger
