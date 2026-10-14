@@ -60,8 +60,10 @@ jobs:
             put cursor-crosshair.png -o cursor-crosshair.png
             put cursor-help.png -o cursor-help.png
             put cursor-alt.png -o cursor-alt.png
-            put js/index.js -o js/index.js
-            put js/voz.js -o js/voz.js
+            cd js
+            put js/index.js -o index.js
+            put js/voz.js -o voz.js
+            cd ..
             put robots.txt -o robots.txt
             put index.html -o index.html
             put voz.html -o voz.html
