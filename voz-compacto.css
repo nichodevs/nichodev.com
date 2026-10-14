@@ -120,7 +120,7 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 /* Foco visível em todos os controles e resumos recolhíveis. */
 .studio-nav-link:focus-visible, .control-panel > summary:focus-visible,
 .custom-preset-item button:focus-visible, .preset-transfer-actions button:focus-visible,
-.effect-toggle:focus-visible, #microphoneSelect:focus-visible,
+.effect-switch:focus-visible, #microphoneSelect:focus-visible,
 input:focus-visible, audio:focus-visible {
   outline: 3px dashed var(--fg);
   outline-offset: 3px;

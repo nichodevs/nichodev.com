@@ -265,20 +265,45 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 }
 
 
-/* Controles de ativação individual dos efeitos */
-.effect-toggle {
+/* Interruptores individuais: desligar preserva os valores dos controles. */
+.effect-switch {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
+  min-width: 70px;
   margin: 0 0 8px;
-  padding: 7px 9px;
+  padding: 4px 6px;
   border: 2px solid var(--line);
-  background: var(--fg);
-  color: var(--bg);
+  background: var(--bg);
+  color: var(--fg);
   font: inherit;
   font-size: 9px;
   line-height: 1.4;
   cursor: pointer;
 }
-.effect-toggle.is-off { background: var(--bg); color: var(--mute); }
-.effect-toggle:focus-visible { outline: 3px dashed var(--fg); outline-offset: 3px; }
+.effect-switch-track {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 34px;
+  align-items: center;
+  width: 34px;
+  height: 18px;
+  border: 2px solid var(--line);
+  background: var(--bg);
+  transition: background-color 120ms ease;
+}
+.effect-switch-thumb {
+  width: 10px;
+  height: 10px;
+  margin-left: 2px;
+  background: var(--fg);
+  transition: transform 120ms ease;
+}
+.effect-switch[aria-checked="true"] .effect-switch-track { background: var(--fg); }
+.effect-switch[aria-checked="true"] .effect-switch-thumb { background: var(--bg); transform: translateX(16px); }
+.effect-switch-state { min-width: 22px; font-size: 8px; text-align: center; }
+.effect-switch.is-off { color: var(--mute); }
+.effect-switch:focus-visible { outline: 3px dashed var(--fg); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .effect-switch-track, .effect-switch-thumb { transition: none; }
+}

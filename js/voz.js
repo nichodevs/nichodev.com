@@ -73,11 +73,12 @@ function updateEffectToggleButtons(){
   document.querySelectorAll('[data-effect-toggle]').forEach(button => {
     const effect = button.dataset.effectToggle;
     const enabled = effectEnabled[effect] !== false;
-    const label = button.getAttribute('aria-label').replace(/^(?:Desligar|Ativar) efeito: /, '');
-    button.textContent = enabled ? '● Ligado' : '○ Desligado';
-    button.setAttribute('aria-pressed', String(enabled));
-    button.setAttribute('aria-label', (enabled ? 'Desligar' : 'Ativar') + ' efeito: ' + label);
+    const label = button.getAttribute('aria-label').replace(/^Efeito (.*): (?:ligado|desligado)$/, '$1');
+    button.setAttribute('aria-checked', String(enabled));
+    button.setAttribute('aria-label', 'Efeito ' + label + ': ' + (enabled ? 'ligado' : 'desligado'));
     button.classList.toggle('is-off', !enabled);
+    const state = button.querySelector('.effect-switch-state');
+    if(state) state.textContent = enabled ? 'ON' : 'OFF';
   });
 }
 function applyEffectStates(states){

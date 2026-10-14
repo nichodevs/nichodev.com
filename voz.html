@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="voz.css">
 <link rel="stylesheet" href="cursores-retro.css">
-<link rel="stylesheet" href="voz-compacto.css?v=4">
+<link rel="stylesheet" href="voz-compacto.css?v=5">
 </head>
 <body>
 <main>
@@ -164,26 +164,26 @@
     <summary>Efeitos principais</summary>
     <div class="control-content">
   <fieldset class="advanced-control"><legend>Tom</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="pitch" aria-pressed="true" aria-label="Desligar efeito: Tom">● Ligado</button><label for="pitch">Semitons <b data-for="pitch"></b></label><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="pitch" role="switch" aria-checked="true" aria-label="Efeito Tom: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="pitch">Semitons <b data-for="pitch"></b></label><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></fieldset>
   <fieldset class="advanced-control">
     <legend>Formantes — timbre</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="formant" aria-pressed="true" aria-label="Desligar efeito: Timbre">● Ligado</button>
+    <button type="button" class="effect-switch" data-effect-toggle="formant" role="switch" aria-checked="true" aria-label="Efeito Timbre: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button>
     <label for="formant">Timbre <b data-for="formant"></b></label>
     <input id="formant" type="range" min="-50" max="50" step="1" value="0">
     <p class="small">valores negativos tendem a escurecer o timbre; positivos tendem a deixá-lo mais brilhante.</p>
   </fieldset>
   <fieldset class="advanced-control"><legend>Equalizador — graves, médios e agudos</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="eq" aria-pressed="true" aria-label="Desligar efeito: Equalizador">● Ligado</button>
+    <button type="button" class="effect-switch" data-effect-toggle="eq" role="switch" aria-checked="true" aria-label="Efeito Equalizador: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button>
     <label for="bass">Graves (dB) <b data-for="bass"></b></label><input id="bass" type="range" min="-12" max="12" step="1" value="0">
     <label for="mid">Médios (dB) <b data-for="mid"></b></label><input id="mid" type="range" min="-12" max="12" step="1" value="0">
     <label for="treble">Agudos (dB) <b data-for="treble"></b></label><input id="treble" type="range" min="-12" max="12" step="1" value="0">
   </fieldset>
   <fieldset class="advanced-control"><legend>Drive</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="drive" aria-pressed="true" aria-label="Desligar efeito: Drive">● Ligado</button><label for="drive">Intensidade <b data-for="drive"></b></label><input id="drive" type="range" min="0" max="100" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="drive" role="switch" aria-checked="true" aria-label="Efeito Drive: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="drive">Intensidade <b data-for="drive"></b></label><input id="drive" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Chorus</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="chorus" aria-pressed="true" aria-label="Desligar efeito: Chorus">● Ligado</button><label for="chorus">Mistura <b data-for="chorus"></b></label><input id="chorus" type="range" min="0" max="100" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="chorus" role="switch" aria-checked="true" aria-label="Efeito Chorus: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="chorus">Mistura <b data-for="chorus"></b></label><input id="chorus" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Reverb</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="reverb" aria-pressed="true" aria-label="Desligar efeito: Reverb">● Ligado</button><label for="reverb">Mistura <b data-for="reverb"></b></label><input id="reverb" type="range" min="0" max="100" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="reverb" role="switch" aria-checked="true" aria-label="Efeito Reverb: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="reverb">Mistura <b data-for="reverb"></b></label><input id="reverb" type="range" min="0" max="100" value="0"></fieldset>
     </div>
   </details>
 
@@ -191,25 +191,25 @@
     <summary>Mais efeitos e volume</summary>
     <div class="control-content">
   <fieldset class="advanced-control"><legend>Tremolo</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="tremolo" aria-pressed="true" aria-label="Desligar efeito: Tremolo">● Ligado</button><label for="tremolo">Intensidade <b data-for="tremolo"></b></label><input id="tremolo" type="range" min="0" max="100" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="tremolo" role="switch" aria-checked="true" aria-label="Efeito Tremolo: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="tremolo">Intensidade <b data-for="tremolo"></b></label><input id="tremolo" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Phaser</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="phaser" aria-pressed="true" aria-label="Desligar efeito: Phaser">● Ligado</button><label for="phaser">Intensidade <b data-for="phaser"></b></label><input id="phaser" type="range" min="0" max="100" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="phaser" role="switch" aria-checked="true" aria-label="Efeito Phaser: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="phaser">Intensidade <b data-for="phaser"></b></label><input id="phaser" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Delay</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="delay" aria-pressed="true" aria-label="Desligar efeito: Delay">● Ligado</button><label for="delay">Repetição <b data-for="delay"></b></label><input id="delay" type="range" min="0" max="100" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="delay" role="switch" aria-checked="true" aria-label="Efeito Delay: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="delay">Repetição <b data-for="delay"></b></label><input id="delay" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Oitava</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="octave" aria-pressed="true" aria-label="Desligar efeito: Oitava">● Ligado</button><label for="octave">Tom de oitava <b data-for="octave"></b></label><input id="octave" type="range" min="-1" max="1" step="1" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="octave" role="switch" aria-checked="true" aria-label="Efeito Oitava: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="octave">Tom de oitava <b data-for="octave"></b></label><input id="octave" type="range" min="-1" max="1" step="1" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Distorção</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="distortion" aria-pressed="true" aria-label="Desligar efeito: Distorção">● Ligado</button><label for="distortion">Intensidade <b data-for="distortion"></b></label><input id="distortion" type="range" min="0" max="100" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="distortion" role="switch" aria-checked="true" aria-label="Efeito Distorção: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="distortion">Intensidade <b data-for="distortion"></b></label><input id="distortion" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Wah Wah</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="wah" aria-pressed="true" aria-label="Desligar efeito: Wah Wah">● Ligado</button><label for="wah">Intensidade <b data-for="wah"></b></label><input id="wah" type="range" min="0" max="100" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="wah" role="switch" aria-checked="true" aria-label="Efeito Wah Wah: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="wah">Intensidade <b data-for="wah"></b></label><input id="wah" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Fuzz</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="fuzz" aria-pressed="true" aria-label="Desligar efeito: Fuzz">● Ligado</button><label for="fuzz">Intensidade <b data-for="fuzz"></b></label><input id="fuzz" type="range" min="0" max="100" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="fuzz" role="switch" aria-checked="true" aria-label="Efeito Fuzz: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="fuzz">Intensidade <b data-for="fuzz"></b></label><input id="fuzz" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Octafuzz</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="octafuzz" aria-pressed="true" aria-label="Desligar efeito: Octafuzz">● Ligado</button><label for="octafuzz">Intensidade <b data-for="octafuzz"></b></label><input id="octafuzz" type="range" min="0" max="100" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="octafuzz" role="switch" aria-checked="true" aria-label="Efeito Octafuzz: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="octafuzz">Intensidade <b data-for="octafuzz"></b></label><input id="octafuzz" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Vibrato</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="vibrato" aria-pressed="true" aria-label="Desligar efeito: Vibrato">● Ligado</button><label for="vibrato">Intensidade <b data-for="vibrato"></b></label><input id="vibrato" type="range" min="0" max="100" value="0"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="vibrato" role="switch" aria-checked="true" aria-label="Efeito Vibrato: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="vibrato">Intensidade <b data-for="vibrato"></b></label><input id="vibrato" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control"><legend>Volume</legend>
-    <button type="button" class="effect-toggle" data-effect-toggle="volume" aria-pressed="true" aria-label="Desligar efeito: Volume">● Ligado</button><label for="vol">Saída <b data-for="vol"></b></label><input id="vol" type="range" min="0" max="150" value="100"></fieldset>
+    <button type="button" class="effect-switch" data-effect-toggle="volume" role="switch" aria-checked="true" aria-label="Efeito Volume: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="vol">Saída <b data-for="vol"></b></label><input id="vol" type="range" min="0" max="150" value="100"></fieldset>
     </div>
   </details>
 
