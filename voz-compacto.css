@@ -91,9 +91,9 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 .control-content fieldset:last-child { margin-bottom: 0; }
 
 /* Menus lado a lado em telas amplas; empilhados em celulares. */
-.studio-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; align-items: start; }
-.studio-panels > .control-panel { width: 100%; }
-@media (max-width: 700px) { .studio-panels { grid-template-columns: minmax(0, 1fr); } }
+.studio-panels { columns: 2; column-gap: 12px; }
+.studio-panels > .control-panel { display: inline-block; width: 100%; vertical-align: top; break-inside: avoid; margin: 0 0 10px; }
+@media (max-width: 700px) { .studio-panels { columns: 1; } }
 
 /* Cursor em bloco do título, piscando como no visual de referência. */
 .cursor { display: inline-block; width: .68em; height: .9em; margin-left: .12em; background: currentColor; vertical-align: -.08em; }
