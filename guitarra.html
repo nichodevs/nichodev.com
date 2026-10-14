@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guitar FX LAB — nichodev.com</title>
+<meta name="description" content="Pedaleira e amplificador de guitarra 8-bit com efeitos em tempo real, presets, afinador e gravação no navegador.">
+<meta name="theme-color" content="#10160f">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2310160f'/%3E%3Crect x='3' y='3' width='10' height='10' fill='%23c9f27a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="cursores-retro.css">
+<link rel="stylesheet" href="guitarra-8bit.css?v=1">
+</head>
+<body class="guitar-page">
+<main class="guitar-app">
+  <header class="guitar-header">
+    <a class="back-link" href="index.html">← MENU</a>
+    <p class="pixel-kicker">NICHODEVS / AUDIO ARCADE</p>
+    <h1>GUITAR FX LAB<span class="cursor" aria-hidden="true"></span></h1>
+    <p class="intro">Ligue a guitarra, escolha seus pedais e transforme o sinal em um amplificador de bolso.</p>
+    <p class="notice">Para tocar em tempo real, conecte a guitarra a uma interface de áudio USB. Use fones para evitar microfonia. O processamento acontece no navegador.</p>
+  </header>
+
+  <section class="amp-console" aria-labelledby="ampTitle">
+    <div class="amp-topline"><span>MODEL: PIXEL-8</span><span id="ampPowerState" class="power-state">STANDBY</span></div>
+    <div class="amp-face">
+      <div class="amp-brand">
+        <span class="brand-bolt" aria-hidden="true">▰</span>
+        <h2 id="ampTitle">NICHODEV<br>ARCADE AMP</h2>
+      </div>
+      <div class="amp-controls">
+        <label class="amp-control" for="masterVolume"><span>MASTER</span><input id="masterVolume" type="range" min="0" max="100" value="75"><output id="masterVolumeValue" for="masterVolume">75%</output></label>
+        <label class="amp-control" for="ampGain"><span>GAIN</span><input id="ampGain" type="range" min="0" max="100" value="42"><output id="ampGainValue" for="ampGain">42%</output></label>
+        <label class="amp-control" for="ampTone"><span>TONE</span><input id="ampTone" type="range" min="0" max="100" value="58"><output id="ampToneValue" for="ampTone">58%</output></label>
+      </div>
+      <div class="amp-grill" aria-hidden="true"><span>▦ ▦ ▦ ▦ ▦ ▦ ▦ ▦</span></div>
+      <div class="amp-led-row"><span class="led" id="inputLed"></span><span id="inputLedLabel">INPUT DESCONECTADA</span><span class="led" id="clipLed"></span><span>CLIP</span></div>
+    </div>
+    <div class="amp-foot">8-BIT SOLID STATE / 44.1 KHZ / 1 PLAYER</div>
+  </section>
+
+  <nav class="guitar-nav" aria-label="Seções do Guitar FX LAB">
+    <a href="#inputPanel">ENTRADA</a><a href="#tunerPanel">AFINADOR</a><a href="#pedalboard">PEDALEIRA</a><a href="#recordPanel">GRAVAR</a>
+  </nav>
+
+  <div class="guitar-layout">
+    <details id="inputPanel" class="g-panel" open>
+      <summary>01 / Entrada de guitarra</summary>
+      <div class="panel-body">
+        <label for="inputSelect">Entrada de áudio</label>
+        <select id="inputSelect" aria-describedby="inputStatus"><option value="">Entrada padrão do navegador</option></select>
+        <div class="button-row"><button id="connectInput" type="button">Conectar guitarra</button><button id="disconnectInput" type="button" disabled>Desconectar</button></div>
+        <p id="inputStatus" class="status" role="status" aria-live="polite">Conecte sua guitarra por uma interface de áudio ou carregue um arquivo.</p>
+        <label class="file-button" for="audioFile">Carregar áudio de guitarra</label>
+        <input id="audioFile" type="file" accept="audio/*">
+        <audio id="audioSource" controls hidden aria-label="Reproduzir arquivo de guitarra carregado"></audio>
+        <div class="button-row"><button id="playFile" type="button" disabled>Ouvir com pedais</button><button id="stopFile" type="button" disabled>Parar arquivo</button></div>
+      </div>
+    </details>
+
+    <details id="tunerPanel" class="g-panel" open>
+      <summary>02 / Afinador cromático</summary>
+      <div class="panel-body tuner">
+        <div id="tunerNote" class="tuner-note" aria-live="polite">--</div>
+        <div id="tunerFrequency">Aguardando sinal</div>
+        <div class="tuner-meter" role="meter" aria-label="Precisão da afinação" aria-valuemin="-50" aria-valuemax="50" aria-valuenow="0"><span id="tunerNeedle"></span></div>
+        <p id="tunerAdvice" class="status" role="status">Toque uma corda para identificar a nota.</p>
+      </div>
+    </details>
+
+    <details class="g-panel" open>
+      <summary>03 / Presets de guitarra</summary>
+      <div class="panel-body">
+        <div class="preset-grid" role="group" aria-label="Presets de guitarra">
+          <button type="button" data-preset="clean">CLEAN PIXEL</button>
+          <button type="button" data-preset="blues">8-BIT BLUES</button>
+          <button type="button" data-preset="crunch">ARCADE CRUNCH</button>
+          <button type="button" data-preset="fuzz">BOSS BATTLE</button>
+          <button type="button" data-preset="space">SPACE DELAY</button>
+        </div>
+      </div>
+    </details>
+
+    <section id="pedalboard" class="g-panel pedalboard-panel" aria-labelledby="pedalboardTitle">
+      <div class="section-heading"><h2 id="pedalboardTitle">04 / PEDALEIRA</h2><p>Ative, ajuste e mova os pedais. OFF preserva o ajuste.</p></div>
+      <div id="pedalList" class="pedal-list" aria-live="polite"></div>
+      <p id="pedalStatus" class="status" role="status" aria-live="polite">A ordem dos pedais é aplicada da esquerda para a direita.</p>
+    </section>
+
+    <details class="g-panel" open>
+      <summary>05 / Comparação A/B</summary>
+      <div class="panel-body">
+        <div class="ab-buttons">
+          <button type="button" id="captureA">Salvar versão A</button><button type="button" id="captureB">Salvar versão B</button>
+          <button type="button" id="toggleAB" disabled>Alternar A/B</button>
+        </div>
+        <p id="abState" class="status" role="status" aria-live="polite">Capture duas configurações para comparar.</p>
+      </div>
+    </details>
+
+    <details id="recordPanel" class="g-panel" open>
+      <summary>06 / Gravação e exportação</summary>
+      <div class="panel-body">
+        <div class="button-row"><button type="button" id="recordBtn" disabled>Gravar saída processada</button><button type="button" id="stopRecordBtn" disabled>Parar gravação</button></div>
+        <p class="record-time">REC <time id="recordTime" role="timer" aria-label="Duração da gravação">00:00</time></p>
+        <p id="recordStatus" class="status" role="status" aria-live="polite">Conecte uma entrada ou carregue um áudio para gravar.</p>
+        <audio id="recordedAudio" controls hidden aria-label="Ouvir gravação processada"></audio>
+        <a id="downloadRecording" class="download-link" hidden>BAIXAR GRAVAÇÃO</a>
+      </div>
+    </details>
+  </div>
+
+  <footer><a href="voz.html">ABRIR VOICE STUDIO</a><span>GUITAR FX LAB / BROWSER EDITION</span></footer>
+</main>
+<script src="js/guitarra.js" defer></script>
+</body>
+</html>
