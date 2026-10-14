@@ -34,7 +34,6 @@ let processedRecordTimer = 0;
 let busy = false;
 let liveStream = null;
 let liveFx = null;
-let liveModular = null;
 let previewFx = null;
 let previewStarting = false;
 let liveRunning = false;
@@ -455,7 +454,7 @@ async function startLive(){
     // A saída do Tone passa pela cadeia Modular FX antes do monitor e da gravação.
     liveFx.nodes[0].chain(...liveFx.nodes.slice(1));
     processedDestination = ctx.createMediaStreamDestination();
-    liveModular = new window.LiveModularFX(ctx, liveFx.limiter.output, processedDestination, $('liveFxChain'), $('liveFxStatus'));
+    liveFx.limiter.output.connect(processedDestination);
     $('recordProcessedBtn').disabled = false;
     liveRunning = true;
     $('liveBtn').textContent = 'Desligar microfone';
@@ -568,7 +567,6 @@ function stopLive(){
   if(liveAnimation) cancelAnimationFrame(liveAnimation);
   liveAnimation = 0;
   if(liveStream){ liveStream.getTracks().forEach(track => track.stop()); liveStream = null; }
-  if(liveModular){ liveModular.destroy(); liveModular = null; }
   if(liveFx){
     try{ liveFx.src.disconnect(); }catch(e){}
     try{ liveFx.analyser.disconnect(); }catch(e){}
