@@ -451,7 +451,7 @@ async function startLive(){
     liveFx = {...chain, src, analyser};
     // Tone.connect conecta corretamente um AudioNode nativo ao primeiro efeito Tone.js.
     Tone.connect(src, liveFx.pitch);
-    // A saída do Tone passa pela cadeia Modular FX antes do monitor e da gravação.
+    // A cadeia de efeitos segue para o monitoramento e a gravação processada.
     liveFx.nodes[0].chain(...liveFx.nodes.slice(1));
     processedDestination = ctx.createMediaStreamDestination();
     liveFx.limiter.output.connect(processedDestination);
