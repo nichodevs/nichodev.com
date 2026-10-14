@@ -10,6 +10,14 @@ const DEFAULTS = {
   tremolo:0, phaser:0, delay:0, octave:0, distortion:0, wah:0,
   fuzz:0, octafuzz:0, vibrato:0, vol:100
 };
+const EFFECT_CONTROL_GROUPS = {
+  pitch:["pitch"], formant:["formant"], eq:["bass","mid","treble"],
+  drive:["drive"], chorus:["chorus"], reverb:["reverb"], tremolo:["tremolo"],
+  phaser:["phaser"], delay:["delay"], octave:["octave"], distortion:["distortion"],
+  wah:["wah"], fuzz:["fuzz"], octafuzz:["octafuzz"], vibrato:["vibrato"], volume:["vol"]
+};
+const effectEnabled = Object.fromEntries(Object.keys(EFFECT_CONTROL_GROUPS).map(id => [id, true]));
+
 const PRESETS = {
   normal:  {...DEFAULTS},
   grave:   {...DEFAULTS, pitch:-5, bass:3, treble:-2, drive:10, reverb:15},
@@ -50,8 +58,32 @@ function readParams(){
   const p = {};
   Object.keys(DEFAULTS).forEach(id => p[id] = +$(id).value);
   for(const id of ['drive','chorus','reverb','tremolo','phaser','delay','distortion','wah','fuzz','octafuzz','vibrato']) p[id] /= 100;
+  for(const [effect, ids] of Object.entries(EFFECT_CONTROL_GROUPS)){
+    if(!effectEnabled[effect]) ids.forEach(id => { p[id] = id === 'vol' ? 100 : 0; });
+  }
   p.volume = p.vol / 100;
   return p;
+}
+
+function currentEffectStates(){ return {...effectEnabled}; }
+function updateEffectToggleButtons(){
+  document.querySelectorAll('[data-effect-toggle]').forEach(button => {
+    const effect = button.dataset.effectToggle;
+    const enabled = effectEnabled[effect] !== false;
+    const label = button.getAttribute('aria-label').replace(/^(?:Desligar|Ativar) efeito: /, '');
+    button.textContent = enabled ? '● Ligado' : '○ Desligado';
+    button.setAttribute('aria-pressed', String(enabled));
+    button.setAttribute('aria-label', (enabled ? 'Desligar' : 'Ativar') + ' efeito: ' + label);
+    button.classList.toggle('is-off', !enabled);
+  });
+}
+function applyEffectStates(states){
+  Object.keys(EFFECT_CONTROL_GROUPS).forEach(effect => { effectEnabled[effect] = !states || states[effect] !== false; });
+  updateEffectToggleButtons();
+}
+function setAllEffectsEnabled(enabled){
+  Object.keys(effectEnabled).forEach(effect => { effectEnabled[effect] = enabled; });
+  updateEffectToggleButtons();
 }
 
 function updateLabels(){
@@ -73,9 +105,20 @@ function markPreset(key){
 document.querySelectorAll('input[type=range]').forEach(r =>
   r.addEventListener('input', () => { markPreset(null); updateLabels(); applyLiveParams(); applyPreviewParams(); }));
 
+document.querySelectorAll('[data-effect-toggle]').forEach(button =>
+  button.addEventListener('click', () => {
+    const effect = button.dataset.effectToggle;
+    effectEnabled[effect] = !effectEnabled[effect];
+    markPreset(null);
+    updateEffectToggleButtons();
+    applyLiveParams();
+    applyPreviewParams();
+  }));
+
 $('presets').addEventListener('click', e => {
   const preset = PRESETS[e.target.dataset.p];
   if(!preset) return;
+  setAllEffectsEnabled(true);
   Object.entries(preset).forEach(([id, value]) => { if($(id)) $(id).value = value; });
   markPreset(e.target.dataset.p);
   updateLabels();
@@ -116,12 +159,13 @@ function currentRawParams(){
   return values;
 }
 
-function applyRawParams(values){
+function applyRawParams(values, states){
   Object.keys(DEFAULTS).forEach(id => {
     if(Object.prototype.hasOwnProperty.call(values, id) && Number.isFinite(Number(values[id]))){
       $(id).value = String(values[id]);
     }
   });
+  applyEffectStates(states);
   markPreset(null);
   updateLabels();
   applyLiveParams();
@@ -184,7 +228,8 @@ $('savePresetBtn').addEventListener('click', () => {
   const item = {
     id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
     name: name.slice(0, 32),
-    values: currentRawParams()
+    values: currentRawParams(),
+    enabled: currentEffectStates()
   };
   items.push(item);
   if(writeCustomPresets(items)){
@@ -203,7 +248,7 @@ $('customPresetList').addEventListener('click', e => {
   if(!item) return;
 
   if(button.dataset.customAction === 'load'){
-    applyRawParams(item.values);
+    applyRawParams(item.values, item.enabled);
     $('customPresetStatus').textContent = `Preset "${item.name}" carregado.`;
   } else if(button.dataset.customAction === 'delete'){
     const updated = items.filter(entry => entry.id !== id);
@@ -808,7 +853,7 @@ function updateFxLabUI(){
   $('toggleABBtn').disabled = !(fxSnapshots.A && fxSnapshots.B);
 }
 function captureFxSnapshot(key){
-  fxSnapshots[key] = { values: currentRawParams(), savedAt: Date.now() };
+  fxSnapshots[key] = { values: currentRawParams(), enabled: currentEffectStates(), savedAt: Date.now() };
   persistFxSnapshots();
   updateFxLabUI();
   $('abStatus').textContent = `Configuração ${key} capturada. Continue ajustando os efeitos para criar a outra versão.`;
@@ -817,7 +862,7 @@ function captureFxSnapshot(key){
 function applyFxSnapshot(key){
   const snap = fxSnapshots[key];
   if (!snap) return;
-  applyRawParams(snap.values || snap);
+  applyRawParams(snap.values || snap, snap.enabled);
   lastAB = key;
   $('abStatus').textContent = `Configuração ${key} carregada. Use o microfone ao vivo ou a prévia para escutar.`;
 }
