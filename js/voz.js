@@ -39,9 +39,12 @@ let processedRecorder = null;
 let processedDestination = null;
 let processedChunks = [];
 let processedRecordTimer = 0;
+let processedRecordTicker = 0;
+let processedRecordStartedAt = 0;
 let busy = false;
 let liveStream = null;
 let liveFx = null;
+let liveMicName = '';
 let previewFx = null;
 let previewStarting = false;
 let liveRunning = false;
@@ -103,27 +106,31 @@ function markPreset(key){
 }
 
 document.querySelectorAll('input[type=range]').forEach(r =>
-  r.addEventListener('input', () => { markPreset(null); updateLabels(); applyLiveParams(); applyPreviewParams(); }));
+  r.addEventListener('input', () => { markPreset(null); currentAB = null; updateLabels(); applyLiveParams(); applyPreviewParams(); updateFxLabUI(); }));
 
 document.querySelectorAll('[data-effect-toggle]').forEach(button =>
   button.addEventListener('click', () => {
     const effect = button.dataset.effectToggle;
     effectEnabled[effect] = !effectEnabled[effect];
     markPreset(null);
+    currentAB = null;
     updateEffectToggleButtons();
     applyLiveParams();
     applyPreviewParams();
+    updateFxLabUI();
   }));
 
 $('presets').addEventListener('click', e => {
   const preset = PRESETS[e.target.dataset.p];
   if(!preset) return;
   setAllEffectsEnabled(true);
+  currentAB = null;
   Object.entries(preset).forEach(([id, value]) => { if($(id)) $(id).value = value; });
   markPreset(e.target.dataset.p);
   updateLabels();
   applyLiveParams();
   applyPreviewParams();
+  updateFxLabUI();
 });
 
 /* ---------- Presets personalizados: armazenamento local ---------- */
@@ -170,94 +177,166 @@ function applyRawParams(values, states){
   updateLabels();
   applyLiveParams();
   applyPreviewParams();
+  currentAB = null;
+  updateFxLabUI();
 }
 
 function renderCustomPresets(){
   const list = $('customPresetList');
   const items = readCustomPresets();
   list.replaceChildren();
-
-  if(!items.length){
-    $('customPresetStatus').textContent = 'Nenhum preset personalizado salvo ainda.';
-    return;
-  }
-
-  $('customPresetStatus').textContent = `${items.length} preset(s) salvo(s) neste navegador.`;
+  $('customPresetStatus').textContent = items.length
+    ? `${items.length} preset(s) salvo(s) neste navegador.`
+    : 'Nenhum preset personalizado salvo ainda.';
   items.forEach(item => {
     const row = document.createElement('div');
     row.className = 'custom-preset-item';
-
     const name = document.createElement('span');
     name.className = 'custom-preset-name';
     name.textContent = item.name;
-
-    const load = document.createElement('button');
-    load.type = 'button';
-    load.textContent = 'Carregar';
-    load.dataset.customAction = 'load';
-    load.dataset.customId = item.id;
-    load.setAttribute('aria-label', `Carregar preset ${item.name}`);
-
-    const remove = document.createElement('button');
-    remove.type = 'button';
-    remove.textContent = 'Excluir';
-    remove.dataset.customAction = 'delete';
-    remove.dataset.customId = item.id;
-    remove.setAttribute('aria-label', `Excluir preset ${item.name}`);
-
-    row.append(name, load, remove);
+    row.append(name);
+    [
+      ['load','Carregar',`Carregar preset ${item.name}`],
+      ['rename','Renomear',`Renomear preset ${item.name}`],
+      ['duplicate','Duplicar',`Duplicar preset ${item.name}`],
+      ['delete','Excluir',`Excluir preset ${item.name}`]
+    ].forEach(([action,label,aria]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = label;
+      button.dataset.customAction = action;
+      button.dataset.customId = item.id;
+      button.setAttribute('aria-label', aria);
+      row.append(button);
+    });
     list.append(row);
   });
+}
+
+function makePresetId(){
+  return (window.crypto && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function updateCustomPresetStatus(message, isError = false){
+  const status = $('customPresetStatus');
+  status.textContent = message;
+  status.dataset.state = isError ? 'error' : 'success';
 }
 
 $('savePresetBtn').addEventListener('click', () => {
   const nameInput = $('customPresetName');
   const name = nameInput.value.trim();
   if(!name){
-    $('customPresetStatus').textContent = 'Digite um nome para salvar seu preset.';
+    updateCustomPresetStatus('Digite um nome para salvar seu preset.', true);
     nameInput.focus();
     return;
   }
-
   const items = readCustomPresets();
   if(items.length >= 30){
-    $('customPresetStatus').textContent = 'Limite de 30 presets personalizados atingido. Exclua algum para salvar outro.';
+    updateCustomPresetStatus('Limite de 30 presets atingido. Exclua ou exporte algum antes de salvar outro.', true);
     return;
   }
-
-  const item = {
-    id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    name: name.slice(0, 32),
-    values: currentRawParams(),
-    enabled: currentEffectStates()
-  };
+  const item = {id:makePresetId(), name:name.slice(0,32), values:currentRawParams(), enabled:currentEffectStates()};
   items.push(item);
   if(writeCustomPresets(items)){
     nameInput.value = '';
     renderCustomPresets();
-    $('customPresetStatus').textContent = `Preset "${item.name}" salvo neste navegador.`;
+    updateCustomPresetStatus(`Preset "${item.name}" salvo neste navegador.`);
   }
 });
 
 $('customPresetList').addEventListener('click', e => {
   const button = e.target.closest('button[data-custom-action]');
   if(!button) return;
-  const id = button.dataset.customId;
   const items = readCustomPresets();
-  const item = items.find(entry => entry.id === id);
-  if(!item) return;
+  const index = items.findIndex(entry => entry.id === button.dataset.customId);
+  if(index < 0) return;
+  const item = items[index];
+  const action = button.dataset.customAction;
 
-  if(button.dataset.customAction === 'load'){
+  if(action === 'load'){
     applyRawParams(item.values, item.enabled);
-    $('customPresetStatus').textContent = `Preset "${item.name}" carregado.`;
-  } else if(button.dataset.customAction === 'delete'){
-    const updated = items.filter(entry => entry.id !== id);
-    if(writeCustomPresets(updated)) renderCustomPresets();
+    updateCustomPresetStatus(`Preset "${item.name}" carregado.`);
+  } else if(action === 'rename'){
+    const proposed = window.prompt('Digite o novo nome do preset:', item.name);
+    if(proposed === null) return;
+    const name = proposed.trim().slice(0,32);
+    if(!name){ updateCustomPresetStatus('O nome não pode ficar vazio.', true); return; }
+    items[index] = {...item, name};
+    if(writeCustomPresets(items)){ renderCustomPresets(); updateCustomPresetStatus(`Preset renomeado para "${name}".`); }
+  } else if(action === 'duplicate'){
+    if(items.length >= 30){ updateCustomPresetStatus('Limite de 30 presets atingido. Exclua ou exporte algum antes de duplicar.', true); return; }
+    const copyName = item.name.slice(0,25) + ' (cópia)';
+    items.splice(index + 1, 0, {...item, id:makePresetId(), name:copyName, values:{...item.values}, enabled:{...(item.enabled || {})}});
+    if(writeCustomPresets(items)){ renderCustomPresets(); updateCustomPresetStatus(`Cópia de "${item.name}" criada.`); }
+  } else if(action === 'delete'){
+    if(!window.confirm(`Excluir o preset "${item.name}"? Essa ação não pode ser desfeita.`)) return;
+    items.splice(index,1);
+    if(writeCustomPresets(items)){ renderCustomPresets(); updateCustomPresetStatus(`Preset "${item.name}" excluído.`); }
+  }
+});
+
+$('exportCustomPresetsBtn').addEventListener('click', () => {
+  const items = readCustomPresets();
+  if(!items.length){ updateCustomPresetStatus('Não há presets personalizados para exportar.', true); return; }
+  const payload = {app:'NICHODEVS FX LAB', version:1, exportedAt:new Date().toISOString(), presets:items};
+  const url = URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)], {type:'application/json'}));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'nichodev-fx-presets.json';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  updateCustomPresetStatus(`${items.length} preset(s) exportado(s) para um arquivo JSON.`);
+});
+
+$('importCustomPresetsBtn').addEventListener('click', () => $('importCustomPresetsFile').click());
+$('importCustomPresetsFile').addEventListener('change', async e => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  if(file.size > 1024 * 1024){
+    updateCustomPresetStatus('O arquivo de presets ultrapassa o limite de 1 MB.', true);
+    return;
+  }
+  try {
+    const parsed = JSON.parse(await file.text());
+    const imported = Array.isArray(parsed) ? parsed : parsed && parsed.presets;
+    if(!Array.isArray(imported)) throw new Error('Formato JSON inválido.');
+    const current = readCustomPresets();
+    const slots = Math.max(0, 30 - current.length);
+    const normalized = imported.map(item => {
+      if(!item || typeof item.name !== 'string' || !item.values || typeof item.values !== 'object') return null;
+      const values = {...DEFAULTS};
+      Object.keys(DEFAULTS).forEach(id => {
+        if(Object.prototype.hasOwnProperty.call(item.values,id) && Number.isFinite(Number(item.values[id]))){
+          const input = $(id), min = Number(input.min), max = Number(input.max);
+          values[id] = Math.min(max,Math.max(min,Number(item.values[id])));
+        }
+      });
+      const enabled = {};
+      Object.keys(EFFECT_CONTROL_GROUPS).forEach(key => { enabled[key] = !item.enabled || item.enabled[key] !== false; });
+      const name = item.name.trim().slice(0,32);
+      return name ? {id:makePresetId(),name,values,enabled} : null;
+    }).filter(Boolean);
+    const accepted = normalized.slice(0,slots);
+    if(!accepted.length){
+      updateCustomPresetStatus(imported.length ? 'Nenhum preset válido foi importado ou o limite de 30 foi atingido.' : 'O arquivo não contém presets.', true);
+      return;
+    }
+    const merged = [...current,...accepted];
+    if(writeCustomPresets(merged)){
+      renderCustomPresets();
+      const skipped = normalized.length - accepted.length;
+      updateCustomPresetStatus(`${accepted.length} preset(s) importado(s).${skipped ? ' ${skipped} não couberam no limite de 30.' : ''}`);
+    }
+  } catch(err) {
+    updateCustomPresetStatus('Arquivo inválido. Selecione um JSON exportado pelo FX LAB.', true);
   }
 });
 
 renderCustomPresets();
-
 /* ---------- Cadeia compartilhada de efeitos ---------- */
 async function createEffectChain(p){
   const fx = {
@@ -325,7 +404,7 @@ function setBusy(on){
   $('recordBtn').disabled = on;
   $('audioFile').disabled = on || !!recorder;
   $('processBtn').disabled = on || !source || !!recorder;
-  $('effectPreviewBtn').disabled = on || !source || previewStarting;
+  $('effectPreviewBtn').disabled = on || !source || previewStarting || liveRunning || !!recorder;
 }
 
 function clearResult(){
@@ -336,7 +415,16 @@ function clearResult(){
   $('downloadResult').removeAttribute('href');
 }
 
-function setSource(blob, name){
+function confirmAudioReplacement(action){
+  if(!source && !resultUrl) return true;
+  const items = [];
+  if(source) items.push('o áudio atual' + (source.name ? ' (' + source.name + ')' : ''));
+  if(resultUrl) items.push('o resultado exportado');
+  return window.confirm(action + ' substituirá ' + items.join(' e ') + '. Continuar?');
+}
+
+function setSource(blob, name, confirmed = false){
+  if(!confirmed && !confirmAudioReplacement('Carregar um novo áudio')) return false;
   if(sourceUrl) URL.revokeObjectURL(sourceUrl);
   sourceUrl = URL.createObjectURL(blob);
   source = {blob, name};
@@ -346,7 +434,86 @@ function setSource(blob, name){
   $('effectPreviewBtn').disabled = false;
   $('previewStatus').textContent = 'Áudio pronto. Clique em “Ouvir com efeitos” para testar os ajustes.';
   stopEffectPreview();
+  return true;
 }
+
+function setMicrophoneControlsLocked(locked){
+  $('microphoneSelect').disabled = locked;
+  if(locked){
+    $('audioFile').disabled = true;
+    $('processBtn').disabled = true;
+    $('effectPreviewBtn').disabled = true;
+  } else {
+    $('audioFile').disabled = busy || !!recorder;
+    $('processBtn').disabled = busy || !source || !!recorder;
+    $('effectPreviewBtn').disabled = busy || !source || previewStarting || liveRunning || !!recorder;
+  }
+}
+
+function selectedAudioConstraints(extra = {}){
+  const deviceId = $('microphoneSelect').value;
+  return {...extra, ...(deviceId ? {deviceId:{exact:deviceId}} : {})};
+}
+
+function microphoneErrorMessage(error){
+  switch(error && error.name){
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return 'O navegador bloqueou o microfone. Permita o acesso nas configurações do site e tente novamente.';
+    case 'NotFoundError':
+      return 'Nenhum microfone foi encontrado. Conecte um microfone e tente novamente.';
+    case 'NotReadableError':
+      return 'O microfone está ocupado ou indisponível. Feche outros aplicativos que o estejam usando.';
+    case 'OverconstrainedError':
+      return 'A entrada selecionada não está disponível. Escolha outro microfone.';
+    default:
+      return 'Não foi possível acessar o microfone. Verifique a conexão e a permissão do navegador.';
+  }
+}
+
+async function refreshMicrophoneDevices(activeDeviceId = ''){
+  const select = $('microphoneSelect');
+  if(!navigator.mediaDevices?.enumerateDevices) return;
+  const previous = activeDeviceId || select.value;
+  try {
+    const devices = (await navigator.mediaDevices.enumerateDevices()).filter(device => device.kind === 'audioinput');
+    select.replaceChildren(new Option('Microfone padrão do navegador',''));
+    devices.forEach((device,index) => {
+      const option = new Option(device.label || `Entrada de áudio ${index + 1}`,device.deviceId);
+      select.append(option);
+    });
+    if(previous && [...select.options].some(option => option.value === previous)) select.value = previous;
+  } catch(error) {
+    $('micDeviceStatus').textContent = 'Não consegui listar as entradas de microfone.';
+  }
+}
+
+async function showConnectedMicrophone(stream){
+  const track = stream && stream.getAudioTracks()[0];
+  const deviceId = track && track.getSettings ? track.getSettings().deviceId : '';
+  await refreshMicrophoneDevices(deviceId || '');
+  const selected = $('microphoneSelect').selectedOptions[0];
+  const name = selected && selected.value ? selected.textContent : 'microfone padrão do navegador';
+  $('micDeviceStatus').textContent = `Microfone conectado: ${name}.`;
+  return name;
+}
+
+function showMicrophoneDisconnected(name = ''){
+  $('micDeviceStatus').textContent = name
+    ? `Microfone desconectado. Entrada usada: ${name}.`
+    : 'Microfone desconectado. A entrada selecionada será usada na próxima gravação.';
+}
+
+$('microphoneSelect').addEventListener('change', () => {
+  const option = $('microphoneSelect').selectedOptions[0];
+  $('micDeviceStatus').textContent = `Entrada selecionada para a próxima gravação: ${option ? option.textContent : 'padrão'}.`;
+});
+if(navigator.mediaDevices){
+  refreshMicrophoneDevices();
+  navigator.mediaDevices.addEventListener?.('devicechange', () => refreshMicrophoneDevices());
+}
+
+
 
 /* ---------- Gravar ou importar ---------- */
 
@@ -356,21 +523,30 @@ async function toggleRecording(){
     say('Desligue o microfone ao vivo antes de começar uma gravação.');
     return;
   }
-
   if(!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia){
-    say('Seu navegador não suporta gravação. Use Chrome, Edge ou Firefox atualizado, por HTTPS.');
+    const message = 'Seu navegador não oferece gravação de áudio. Use uma versão atualizada e abra o site por HTTPS.';
+    say(message);
+    $('recordingState').textContent = message;
+    $('recordingState').dataset.state = 'error';
     return;
   }
-  $('recordBtn').disabled = true;
+  if(!confirmAudioReplacement('A nova gravação')) return;
+  setBusy(true);
+  setMicrophoneControlsLocked(true);
   let mic;
   try {
-    mic = await navigator.mediaDevices.getUserMedia({audio:true});
+    mic = await navigator.mediaDevices.getUserMedia({audio:selectedAudioConstraints()});
   } catch(e) {
-    $('recordBtn').disabled = false;
-    say('Não foi possível usar o microfone. Permita o acesso e tente novamente.');
+    setBusy(false);
+    setMicrophoneControlsLocked(false);
+    const message = microphoneErrorMessage(e);
+    say(message);
+    $('recordingState').textContent = message;
+    $('recordingState').dataset.state = 'error';
+    $('micDeviceStatus').textContent = message;
     return;
   }
-
+  let micName = await showConnectedMicrophone(mic);
   const chunks = [];
   let analyser = null;
   try {
@@ -378,13 +554,24 @@ async function toggleRecording(){
     const micSource = recordingAudioContext.createMediaStreamSource(mic);
     analyser = recordingAudioContext.createAnalyser();
     analyser.fftSize = 512;
-    micSource.connect(analyser); // mede o microfone sem reproduzi-lo nos alto-falantes
+    micSource.connect(analyser);
   } catch(e) {
     recordingAudioContext = null;
   }
-  const rec = new MediaRecorder(mic);
+  let rec;
+  try {
+    rec = new MediaRecorder(mic);
+  } catch(error) {
+    mic.getTracks().forEach(track => track.stop());
+    setBusy(false);
+    setMicrophoneControlsLocked(false);
+    const message = 'Este navegador não conseguiu iniciar a gravação de áudio.';
+    say(message);
+    $('recordingState').textContent = message;
+    $('recordingState').dataset.state = 'error';
+    return;
+  }
   const timer = setTimeout(() => { if(rec.state !== 'inactive') rec.stop(); }, MAX_SECONDS * 1000);
-
   rec.ondataavailable = e => { if(e.data.size) chunks.push(e.data); };
   rec.onerror = () => { if(rec.state !== 'inactive') rec.stop(); };
   rec.onstop = async () => {
@@ -396,27 +583,36 @@ async function toggleRecording(){
       try { await recordingAudioContext.close(); } catch(e) {}
       recordingAudioContext = null;
     }
-    $('recordMonitor').hidden = true;
     $('recordMeterFill').style.width = '0%';
     $('recordMeterLabel').textContent = 'Nível do microfone: 0%';
-    $('recordTime').textContent = '00:00';
     document.querySelector('.record-meter').setAttribute('aria-valuenow', '0');
     recorder = null;
     $('recordBtn').textContent = 'Começar gravação';
     $('recordBtn').classList.remove('on');
+    $('recordBtn').disabled = false;
+    setMicrophoneControlsLocked(false);
+    const duration = $('recordTime').textContent;
     if(chunks.length){
-      setSource(new Blob(chunks, {type: rec.mimeType || 'audio/webm'}), 'gravacao');
+      setSource(new Blob(chunks, {type: rec.mimeType || 'audio/webm'}), 'gravacao', true);
+      $('recordingState').textContent = `Gravação concluída: ${duration}. O áudio está pronto para ouvir e exportar.`;
+      $('recordingState').dataset.state = 'done';
       say('Gravação pronta. Ouça a prévia, ajuste os efeitos e exporte.');
     } else {
       setBusy(false);
+      $('recordingState').textContent = 'Gravação encerrada sem áudio. Tente novamente.';
+      $('recordingState').dataset.state = 'error';
       say('Nenhum áudio foi gravado. Tente novamente.');
     }
+    showMicrophoneDisconnected(micName);
   };
 
   recorder = rec;
   rec.start();
   recordingStartedAt = performance.now();
+  $('recordTime').textContent = '00:00';
   $('recordMonitor').hidden = false;
+  $('recordingState').textContent = 'Gravando… duração máxima de 5 minutos.';
+  $('recordingState').dataset.state = 'recording';
   updateRecordingMonitor(analyser);
   $('recordBtn').textContent = 'Parar gravação';
   $('recordBtn').classList.add('on');
@@ -457,7 +653,14 @@ $('audioFile').addEventListener('change', e => {
     say(`Arquivo muito grande. O limite é ${MAX_FILE_MB} MB.`);
     return;
   }
-  setSource(file, file.name.replace(/\.[^.]+$/, '') || 'audio');
+  if(!setSource(file, file.name.replace(/\.[^.]+$/, '') || 'audio')){
+    say('Importação cancelada. O áudio atual foi preservado.');
+    return;
+  }
+  $('recordMonitor').hidden = true;
+  $('recordTime').textContent = '00:00';
+  $('recordingState').textContent = 'Arquivo importado e pronto para processar.';
+  $('recordingState').dataset.state = 'ready';
   say(`Arquivo carregado: ${file.name}`);
 });
 
@@ -478,22 +681,26 @@ async function startLive(){
     return;
   }
   if(!navigator.mediaDevices?.getUserMedia){
-    $('liveStatus').textContent = 'O navegador não liberou o microfone. Abra o site por HTTPS no Chrome ou Edge.';
+    const message = 'O navegador bloqueou o microfone. Abra o site por HTTPS e permita o acesso nas configurações do navegador.';
+    $('liveStatus').textContent = message;
+    $('micDeviceStatus').textContent = message;
     return;
   }
   $('liveBtn').disabled = true;
   try{
     await Tone.start();
+    setMicrophoneControlsLocked(true);
     liveStream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation:false, noiseSuppression:false, autoGainControl:false }
+      audio: selectedAudioConstraints({echoCancellation:false, noiseSuppression:false, autoGainControl:false})
     });
+    liveMicName = await showConnectedMicrophone(liveStream);
     const ctx = Tone.getContext().rawContext;
     const src = ctx.createMediaStreamSource(liveStream);
     const analyser = ctx.createAnalyser();
     analyser.fftSize = 512;
     src.connect(analyser); // medição visual, sem enviar o som cru aos fones
     const chain = await createEffectChain(readParams());
-    liveFx = {...chain, src, analyser};
+    liveFx = {...chain, src, analyser, microphoneName:liveMicName};
     // Tone.connect conecta corretamente um AudioNode nativo ao primeiro efeito Tone.js.
     Tone.connect(src, liveFx.pitch);
     liveFx.nodes[0].chain(...liveFx.nodes.slice(1), Tone.getDestination());
@@ -504,15 +711,18 @@ async function startLive(){
     liveRunning = true;
     $('liveBtn').textContent = 'Desligar microfone';
     $('liveBtn').classList.add('on');
-    $('liveStatus').textContent = 'Ao vivo! Fale e ajuste os efeitos abaixo.';
+    $('liveStatus').textContent = 'Microfone conectado. Fale e ajuste os efeitos abaixo.';
     applyLiveParams();
     updateLiveMeter();
   }catch(err){
     console.error('Erro ao iniciar o microfone:', err);
     stopLive();
-    $('liveStatus').textContent = 'Não consegui iniciar o microfone. Veja o Console (F12) para identificar o erro.';
+    const message = microphoneErrorMessage(err);
+    $('liveStatus').textContent = message;
+    $('micDeviceStatus').textContent = message;
   }finally{
     $('liveBtn').disabled = false;
+    setMicrophoneControlsLocked(liveRunning);
   }
 }
 
@@ -606,6 +816,7 @@ function updateLiveMeter(){
 function applyLiveParams(){ if(liveFx) applyChainParams(liveFx, readParams()); }
 
 function stopLive(){
+  const disconnectedMicName = liveMicName;
   if(processedRecorder && processedRecorder.state !== 'inactive') processedRecorder.stop();
   liveRunning = false;
   if(liveAnimation) cancelAnimationFrame(liveAnimation);
@@ -629,6 +840,15 @@ function stopLive(){
   $('liveBtn').textContent = 'Ligar microfone';
   $('liveBtn').classList.remove('on');
   $('liveStatus').textContent = 'Microfone desligado.';
+  setMicrophoneControlsLocked(false);
+  showMicrophoneDisconnected(disconnectedMicName);
+  liveMicName = '';
+}
+
+function updateProcessedRecordClock(){
+  if(!processedRecorder || processedRecorder.state === 'inactive') return;
+  const elapsed = Math.min(Math.floor((performance.now() - processedRecordStartedAt) / 1000), MAX_SECONDS);
+  $('processedRecordTime').textContent = String(Math.floor(elapsed / 60)).padStart(2,'0') + ':' + String(elapsed % 60).padStart(2,'0');
 }
 
 function startProcessedRecording(){
@@ -640,6 +860,8 @@ function startProcessedRecording(){
     $('processedRecordStatus').textContent = 'Este navegador não oferece gravação de áudio compatível.';
     return;
   }
+  if(!confirmAudioReplacement('A nova gravação processada')) return;
+  $('recordMonitor').hidden = true;
   try{
     const mime = ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type));
     processedChunks = [];
@@ -648,12 +870,15 @@ function startProcessedRecording(){
     processedRecorder.onerror = () => { $('processedRecordStatus').textContent = 'Erro ao gravar a saída processada.'; };
     processedRecorder.onstop = () => {
       clearTimeout(processedRecordTimer);
+      clearInterval(processedRecordTicker);
+      processedRecordTicker = 0;
       $('stopProcessedBtn').disabled = true;
       $('recordProcessedBtn').disabled = !liveRunning;
+      const duration = $('processedRecordTime').textContent;
       if(processedChunks.length){
         const blob = new Blob(processedChunks, {type: processedRecorder.mimeType || 'audio/webm'});
-        setSource(blob, 'voz-processada');
-        $('processedRecordStatus').textContent = 'Gravação processada pronta. Ouça a prévia ou exporte em WAV usando os efeitos desejados.';
+        setSource(blob, 'voz-processada', true);
+        $('processedRecordStatus').textContent = `Gravação processada concluída: ${duration}. Áudio pronto para ouvir e exportar.`;
         say('Voz processada gravada. Você pode ouvir, ajustar e exportar.');
       } else {
         $('processedRecordStatus').textContent = 'Nenhum dado de áudio foi gravado. Tente novamente.';
@@ -662,9 +887,12 @@ function startProcessedRecording(){
       processedChunks = [];
     };
     processedRecorder.start(250);
+    processedRecordStartedAt = performance.now();
+    $('processedRecordTime').textContent = '00:00';
+    processedRecordTicker = setInterval(updateProcessedRecordClock, 250);
     $('recordProcessedBtn').disabled = true;
     $('stopProcessedBtn').disabled = false;
-    $('processedRecordStatus').textContent = 'Gravando a voz com os efeitos ativos. Limite de 5 minutos.';
+    $('processedRecordStatus').textContent = 'Gravando a voz com efeitos. Limite de 5 minutos.';
     processedRecordTimer = setTimeout(() => { if(processedRecorder && processedRecorder.state !== 'inactive') processedRecorder.stop(); }, MAX_SECONDS * 1000);
   }catch(err){
     console.error('Falha ao gravar saída processada:', err);
@@ -723,6 +951,7 @@ function toWav(buf){
 
 async function process(){
   if(busy || recorder || !source) return;
+  if(resultUrl && !window.confirm('O processamento substituirá o resultado exportado anterior. Continuar?')) return;
   if(typeof Tone === 'undefined'){
     say('A biblioteca de áudio não carregou. Verifique a conexão e recarregue a página.');
     return;
@@ -830,6 +1059,7 @@ window.addEventListener('pagehide', () => { stopLive(); stopEffectPreview(); });
 const FX_LAB_KEY = 'nichodev.fxLab.snapshots.v1';
 let fxSnapshots = { A: null, B: null };
 let lastAB = 'A';
+let currentAB = null;
 
 function loadFxSnapshots(){
   try {
@@ -850,26 +1080,38 @@ function updateFxLabUI(){
       : 'Ainda não capturada.';
     $(`load${key}Btn`).disabled = !exists;
   }
+  const next = currentAB === 'A' ? 'B' : (currentAB === 'B' ? 'A' : (lastAB === 'A' ? 'B' : 'A'));
   $('toggleABBtn').disabled = !(fxSnapshots.A && fxSnapshots.B);
+  $('toggleABBtn').textContent = `Alternar para ${next}`;
+  $('toggleABBtn').setAttribute('aria-label', `Carregar versão ${next} da comparação A/B`);
+  $('abCurrentStatus').textContent = currentAB
+    ? `Versão atual: ${currentAB}. As versões A e B permanecem salvas separadamente.`
+    : 'Ajustes livres. As versões A e B ficam guardadas separadamente.';
 }
 function captureFxSnapshot(key){
   fxSnapshots[key] = { values: currentRawParams(), enabled: currentEffectStates(), savedAt: Date.now() };
   persistFxSnapshots();
-  updateFxLabUI();
-  $('abStatus').textContent = `Configuração ${key} capturada. Continue ajustando os efeitos para criar a outra versão.`;
   lastAB = key;
+  currentAB = key;
+  updateFxLabUI();
+  $('abStatus').textContent = `Configuração ${key} capturada. A outra versão continua guardada.`;
 }
 function applyFxSnapshot(key){
   const snap = fxSnapshots[key];
   if (!snap) return;
   applyRawParams(snap.values || snap, snap.enabled);
   lastAB = key;
-  $('abStatus').textContent = `Configuração ${key} carregada. Use o microfone ao vivo ou a prévia para escutar.`;
+  currentAB = key;
+  updateFxLabUI();
+  $('abStatus').textContent = `Configuração ${key} carregada. A outra versão continua guardada.`;
 }
 $('captureABtn').addEventListener('click', () => captureFxSnapshot('A'));
 $('captureBBtn').addEventListener('click', () => captureFxSnapshot('B'));
 $('loadABtn').addEventListener('click', () => applyFxSnapshot('A'));
 $('loadBBtn').addEventListener('click', () => applyFxSnapshot('B'));
-$('toggleABBtn').addEventListener('click', () => applyFxSnapshot(lastAB === 'A' ? 'B' : 'A'));
+$('toggleABBtn').addEventListener('click', () => {
+  const next = currentAB === 'A' ? 'B' : (currentAB === 'B' ? 'A' : (lastAB === 'A' ? 'B' : 'A'));
+  applyFxSnapshot(next);
+});
 loadFxSnapshots();
 updateFxLabUI();
