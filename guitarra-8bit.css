@@ -54,10 +54,11 @@ body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-col
 .section-heading h2{margin:0;color:var(--g-lime);font-size:12px}
 .section-heading p{margin:4px 0 12px;color:var(--g-mute)}
 .pedal-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
-.pedal{min-width:0;padding:10px;border:3px solid var(--g-line);background:linear-gradient(160deg,#273121,#151c13);box-shadow:inset 0 0 0 2px #0e130d}
+.pedal{--pedal-color:var(--g-line);min-width:0;padding:10px;border:3px solid var(--pedal-color);background:linear-gradient(160deg,#273121,#151c13);box-shadow:inset 0 0 0 2px #0e130d}
+.pedal-green{--pedal-color:#76a945}.pedal-yellow{--pedal-color:#d9c34b}.pedal-blue{--pedal-color:#4f9ab5}.pedal-orange{--pedal-color:#db7b35}.pedal-purple{--pedal-color:#9b76c7}.pedal-pink{--pedal-color:#d579a3}.pedal-white{--pedal-color:#c8d1bf}
 .pedal.is-bypassed{opacity:.72}
 .pedal-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
-.pedal-title{margin:0;color:var(--g-orange);font-size:9px}
+.pedal-title{margin:0;color:var(--pedal-color);font-size:9px}
 .pedal-switch{min-height:30px!important;padding:4px 7px!important;font-size:8px!important;color:var(--g-lime)!important}
 .pedal-switch[aria-checked="false"]{color:var(--g-mute)!important}
 .pedal label{display:flex;justify-content:space-between;gap:8px;margin:6px 0 2px;color:var(--g-mute);font:12px system-ui,sans-serif}
