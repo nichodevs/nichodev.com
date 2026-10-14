@@ -832,15 +832,4 @@ $('toggleABBtn').addEventListener('click', () => applyFxSnapshot(lastAB === 'A' 
 loadFxSnapshots();
 updateFxLabUI();
 
-/* ---------- Modo compacto / avançado ---------- */
-const COMPACT_MODE_KEY = 'nichodev.voiceStudio.compactMode.v1';
-function setCompactMode(enabled){
-  document.body.classList.toggle('compact-mode', enabled);
-  $('compactModeBtn').setAttribute('aria-pressed', String(enabled));
-  $('compactModeBtn').textContent = enabled ? 'Ativar modo avançado' : 'Ativar modo compacto';
-  try { localStorage.setItem(COMPACT_MODE_KEY, enabled ? '1' : '0'); } catch(e) {}
-}
-$('compactModeBtn').addEventListener('click', () => setCompactMode(!document.body.classList.contains('compact-mode')));
-let compactSaved = false;
-try { compactSaved = localStorage.getItem(COMPACT_MODE_KEY) === '1'; } catch(e) {}
-setCompactMode(compactSaved);
+/* A interface usa seções recolhíveis nativas; os controles de áudio permanecem sempre disponíveis ao abrir cada seção. */
