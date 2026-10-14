@@ -16,6 +16,9 @@ jobs:
       - name: Baixar arquivos do repositorio
         uses: actions/checkout@v4
 
+      - name: Remover arquivos antigos do Modular FX do checkout
+        run: rm -f modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
+
       - name: Validar site antes da publicação
         run: npm run check
 
@@ -63,5 +66,6 @@ jobs:
             put robots.txt -o robots.txt
             put index.html -o index.html
             put voz.html -o voz.html
+            rm -f modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
             bye
           "
