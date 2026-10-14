@@ -114,6 +114,17 @@ function disconnectStages(){
   activeStages.forEach(stage=>{stage.oscillators.forEach(o=>{try{o.stop()}catch(e){}});stage.nodes.forEach(n=>{try{n.disconnect()}catch(e){}});});
   activeStages=[];
 }
+function makeAmpCabStage(){
+  const input=ctx.createGain(),output=ctx.createGain(),pre=ctx.createGain(),shaper=ctx.createWaveShaper();
+  const tone=ctx.createBiquadFilter(),highpass=ctx.createBiquadFilter(),lowpass=ctx.createBiquadFilter();
+  const gain=Number($("ampGain").value)/100,toneValue=Number($("ampTone").value)/100;
+  pre.gain.value=1+gain*12;shaper.curve=curveFor("overdrive",gain*.55);shaper.oversample="4x";
+  tone.type="lowpass";tone.frequency.value=1200+toneValue*10500;tone.Q.value=.35;
+  highpass.type="highpass";highpass.frequency.value=65;highpass.Q.value=.7;
+  lowpass.type="lowpass";lowpass.frequency.value=3800+toneValue*1800;lowpass.Q.value=.7;
+  input.connect(pre);pre.connect(shaper);shaper.connect(tone);tone.connect(highpass);highpass.connect(lowpass);lowpass.connect(output);
+  return{input,output,nodes:[input,pre,shaper,tone,highpass,lowpass,output],oscillators:[]};
+}
 function rebuildChain(){
   if(!ctx||!inputNode)return;
   disconnectStages();
@@ -121,7 +132,7 @@ function rebuildChain(){
   inputNode.connect(analyser);
   let previous=inputNode;
   for(const id of order){const stage=makeStage(id);activeStages.push(stage);previous.connect(stage.input);previous=stage.output;}
-  previous.connect(master);
+  const ampCab=makeAmpCabStage();activeStages.push(ampCab);previous.connect(ampCab.input);ampCab.output.connect(master);
   updatePower();
 }
 function setAudioSource(node){
@@ -181,9 +192,10 @@ function startTuner(){
     if(now-tunerLastUpdate<90)return;tunerLastUpdate=now;
     analyser.getFloatTimeDomainData(buffer);
     let rms=0;for(let i=0;i<buffer.length;i++)rms+=buffer[i]*buffer[i];rms=Math.sqrt(rms/buffer.length);
+    $("clipLed").classList.toggle("clip",rms>.62);
     if(rms<.009){$("tunerNote").textContent="--";$("tunerFrequency").textContent="Aguardando sinal";return;}
     let bestLag=0,bestCorr=0;
-    const minLag=Math.floor(ctx.sampleRate/1000),maxLag=Math.min(Math.floor(ctx.sampleRate/65),buffer.length/2);
+    const minLag=Math.floor(ctx.sampleRate/1000),maxLag=Math.min(Math.floor(ctx.sampleRate/40),buffer.length/2);
     for(let lag=minLag;lag<=maxLag;lag++){let corr=0;for(let i=0;i<buffer.length-lag;i+=2)corr+=buffer[i]*buffer[i+lag];if(corr>bestCorr){bestCorr=corr;bestLag=lag;}}
     if(!bestLag)return;
     const hz=ctx.sampleRate/bestLag,midi=Math.round(69+12*Math.log2(hz/440)),noteNames=["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"],note=noteNames[(midi%12+12)%12],target=440*Math.pow(2,(midi-69)/12),cents=Math.max(-50,Math.min(50,1200*Math.log2(hz/target)));
