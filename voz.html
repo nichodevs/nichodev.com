@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="voz.css">
 <link rel="stylesheet" href="cursores-retro.css">
-<link rel="stylesheet" href="voz-compacto.css?v=3">
+<link rel="stylesheet" href="voz-compacto.css?v=4">
 </head>
 <body>
 <main>
@@ -49,7 +49,8 @@
       </article>
     </div>
     <div class="fx-lab-actions">
-      <button type="button" id="toggleABBtn" disabled>Alternar A / B</button>
+      <p id="abCurrentStatus" class="small" role="status" aria-live="polite">Ajustes livres. As versões A e B ficam guardadas separadamente.</p>
+      <button type="button" id="toggleABBtn" disabled>Alternar para B</button>
       <span id="abStatus" class="small" role="status" aria-live="polite">Ajuste os efeitos e capture A e B para comparar.</span>
     </div>
     <p class="small fx-tip">Dica: capture A com um som mais limpo, mude drive, chorus, delay ou reverb e capture B. Use “Ouvir com efeitos” na seção de prévia para testar o áudio importado, ou o monitoramento ao vivo com fones.</p>
@@ -62,12 +63,18 @@
     <div class="control-content">
   <fieldset aria-label="Microfone ao vivo">
     <p class="small">Use fones de ouvido. Fale no microfone e escute sua voz com os efeitos aplicados em tempo real.</p>
+    <label for="microphoneSelect">Entrada de microfone</label>
+    <select id="microphoneSelect" class="microphone-select" aria-describedby="micDeviceStatus">
+      <option value="">Microfone padrão do navegador</option>
+    </select>
+    <p class="small" id="micDeviceStatus" role="status" aria-live="polite">O navegador escolherá o microfone padrão.</p>
     <button type="button" id="liveBtn">Ligar microfone</button>
     <div class="processed-record-actions">
       <button type="button" id="recordProcessedBtn" disabled>Gravar voz processada</button>
       <button type="button" id="stopProcessedBtn" disabled>Parar gravação processada</button>
     </div>
-    <p class="small" id="processedRecordStatus" role="status">Ligue o microfone para gravar a saída com os efeitos aplicados.</p>
+    <p class="small processed-record-time">Duração: <time id="processedRecordTime" role="timer" aria-label="Duração da gravação processada">00:00</time></p>
+    <p class="small" id="processedRecordStatus" role="status" aria-live="polite">Ligue o microfone para gravar a saída com os efeitos aplicados.</p>
     <div class="level-meter" role="meter" aria-label="Nível de entrada do microfone" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="liveMeterFill"></div></div>
     <p id="liveMeterLabel">Nível do microfone: 0%</p>
     <div class="waveform-frame">
@@ -85,6 +92,7 @@
     <div class="control-content">
   <fieldset id="audioControls" aria-label="Gravar ou importar áudio">
     <button type="button" id="recordBtn">Começar gravação</button>
+    <p id="recordingState" class="small recording-state" role="status" aria-live="polite">Pronto para gravar.</p>
     <div id="recordMonitor" class="record-monitor" hidden aria-live="polite">
       <p class="record-time-label">TEMPO DE GRAVAÇÃO</p>
       <p id="recordTime" class="record-time" role="timer" aria-label="Tempo de gravação">00:00</p>
@@ -136,13 +144,18 @@
   <details class="control-panel custom-presets">
     <summary>Meus efeitos salvos</summary>
     <div class="control-content">
-    <p class="small">Salve a combinação atual de controles para usar novamente. Os presets ficam salvos somente neste navegador.</p>
+    <p class="small">Salve, renomeie e duplique combinações. Exporte ou importe um arquivo JSON para levar seus presets a outro navegador.</p>
     <div class="save-preset-row">
       <label class="file-label" for="customPresetName">Nome do preset</label>
       <input id="customPresetName" type="text" maxlength="32" placeholder="Ex.: Minha voz punk" autocomplete="off">
       <button type="button" id="savePresetBtn">Salvar configuração</button>
     </div>
     <p id="customPresetStatus" class="small" role="status" aria-live="polite">Nenhum preset personalizado salvo ainda.</p>
+    <div class="preset-transfer-actions">
+      <button type="button" id="exportCustomPresetsBtn">Exportar presets</button>
+      <button type="button" id="importCustomPresetsBtn">Importar presets</button>
+      <input id="importCustomPresetsFile" type="file" accept="application/json,.json" hidden aria-label="Selecionar arquivo JSON de presets">
+    </div>
     <div id="customPresetList" class="custom-preset-list" aria-label="Meus presets salvos"></div>
     </div>
   </details>
