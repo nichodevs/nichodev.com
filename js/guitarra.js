@@ -150,7 +150,7 @@ async function stopInput(){
   if(inputNode){try{inputNode.disconnect()}catch(e){}}
   inputNode=null;disconnectStages();cancelAnimationFrame(tunerFrame);
   $("disconnectInput").disabled=true;$("recordBtn").disabled=true;$("playFile").disabled=true;$("stopFile").disabled=true;
-  updatePower();announce("inputStatus","Entrada desconectada.");
+  updatePower();$("clipLed").classList.remove("clip");announce("inputStatus","Entrada desconectada.");
 }
 async function connectGuitar(){
   try{
@@ -264,7 +264,9 @@ function syncAmpControls(){
 function startRecording(){
   if(!recordDestination||!inputNode)return;
   if(!window.MediaRecorder){announce("recordStatus","Este navegador não oferece gravação de áudio.");return;}
+  if(recordUrl&&!window.confirm("Começar uma nova gravação substituirá a gravação anterior. Continuar?"))return;
   if(recordUrl)URL.revokeObjectURL(recordUrl);
+  recordUrl=null;$("recordedAudio").removeAttribute("src");$("recordedAudio").hidden=true;$("downloadRecording").removeAttribute("href");$("downloadRecording").hidden=true;$("recordTime").textContent="00:00";
   recordChunks=[];
   const mime=["audio/webm;codecs=opus","audio/ogg;codecs=opus","audio/webm"].find(t=>MediaRecorder.isTypeSupported(t));
   try{recorder=new MediaRecorder(recordDestination.stream,mime?{mimeType:mime}:undefined);}catch(error){announce("recordStatus","Não foi possível iniciar a gravação.");return;}
@@ -274,7 +276,7 @@ function startRecording(){
     const blob=new Blob(recordChunks,{type:recorder.mimeType||"audio/webm"});recordUrl=URL.createObjectURL(blob);
     $("recordedAudio").src=recordUrl;$("recordedAudio").hidden=false;$("downloadRecording").href=recordUrl;
     $("downloadRecording").download="guitar-fx-lab-"+new Date().toISOString().replace(/[:.]/g,"-")+".webm";$("downloadRecording").hidden=false;
-    announce("recordStatus","Gravação processada pronta para ouvir e baixar.");recorder=null;clearInterval(recordTicker);$("recordBtn").disabled=false;$("stopRecordBtn").disabled=true;
+    announce("recordStatus","Gravação processada pronta para ouvir e baixar.");recorder=null;clearInterval(recordTicker);$("recordBtn").disabled=!inputNode;$("stopRecordBtn").disabled=true;
   };
   recorder.start();recordStarted=Date.now();$("recordBtn").disabled=true;$("stopRecordBtn").disabled=false;announce("recordStatus","Gravando saída processada…");
   clearInterval(recordTicker);recordTicker=setInterval(()=>{$("recordTime").textContent=formatTime((Date.now()-recordStarted)/1000);},250);
