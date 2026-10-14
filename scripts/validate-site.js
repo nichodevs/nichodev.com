@@ -27,9 +27,10 @@ for (const page of pages) {
   }
   const scripts = [...html.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi)].map(m => m[1]).filter(s => !/^(?:[a-z]+:|\/\/)/i.test(s));
   for (const file of scripts) {
-    const syntax = spawnSync(process.execPath, ["--check", path.join(root, file)], { encoding: "utf8" });
-    if (syntax.status !== 0) errors.push(`${page}: erro de sintaxe em ${file}: ${(syntax.stderr || syntax.stdout).trim()}`);
-    const js = read(file);
+    const localFile = decodeURIComponent(file.split(/[?#]/, 1)[0]);
+    const syntax = spawnSync(process.execPath, ["--check", path.join(root, localFile)], { encoding: "utf8" });
+    if (syntax.status !== 0) errors.push(`${page}: erro de sintaxe em ${localFile}: ${(syntax.stderr || syntax.stdout).trim()}`);
+    const js = read(localFile);
     const refs = [...js.matchAll(/\$\(\s*["']([^"']+)["']\s*\)|getElementById\(\s*["']([^"']+)["']\s*\)/g)].map(m => m[1] || m[2]);
     for (const id of new Set(refs)) if (!idSet.has(id)) errors.push(`${page}: ${file} usa ID ausente: ${id}`);
   }
