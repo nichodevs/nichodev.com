@@ -90,20 +90,6 @@
     <p class="small" id="liveStatus" role="status">Microfone desligado.</p>
   </fieldset>
 
-  <fieldset id="liveBridgePanel">
-    <legend>NICHODEVS LIVE VOICE / BRIDGE</legend>
-    <p class="small">Conecta a saída já processada pelo estúdio a um serviço Node.js rodando no seu Windows. Nesta primeira etapa, a ponte recebe e salva o áudio em WAV. Ela ainda não cria um dispositivo de microfone no Windows.</p>
-    <label for="liveBridgeToken">Token exibido no terminal do Live Bridge</label>
-    <input id="liveBridgeToken" type="password" autocomplete="off" placeholder="Cole aqui o token do terminal">
-    <label for="liveBridgeUrl">Endereço local</label>
-    <input id="liveBridgeUrl" type="text" value="ws://127.0.0.1:8787/live-voice" spellcheck="false" autocomplete="off">
-    <div class="preview-controls">
-      <button type="button" id="liveBridgeBtn" disabled>Conectar Live Bridge</button>
-      <button type="button" id="liveBridgeForgetBtn">Limpar token</button>
-    </div>
-    <p id="liveBridgeStatus" class="small" role="status">Ligue o microfone acima e inicie o Live Bridge no Windows para conectar.</p>
-  </fieldset>
-
   <fieldset id="audioControls">
     <legend>Gravar ou importar</legend>
     <button type="button" id="recordBtn">Começar gravação</button>
