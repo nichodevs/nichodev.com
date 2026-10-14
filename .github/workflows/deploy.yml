@@ -41,7 +41,6 @@ jobs:
             set sftp:auto-confirm no
             set cmd:fail-exit yes
             cd domains/nichodev.com/public_html
-            rm -f modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
             put style.css -o style.css
             put index.css -o index.css
             put voz.css -o voz.css
@@ -58,10 +57,14 @@ jobs:
             put cursor-crosshair.png -o cursor-crosshair.png
             put cursor-help.png -o cursor-help.png
             put cursor-alt.png -o cursor-alt.png
+            set cmd:fail-exit no
+            mkdir -p js
+            set cmd:fail-exit yes
             put js/index.js -o js/index.js
             put js/voz.js -o js/voz.js
             put robots.txt -o robots.txt
             put index.html -o index.html
             put voz.html -o voz.html
+            rm -f modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
             bye
           "
