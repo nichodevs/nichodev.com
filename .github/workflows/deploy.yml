@@ -1,4 +1,3 @@
-
 name: Publicar site na Hostinger
 
 on:
@@ -29,10 +28,11 @@ jobs:
             cd domains/nichodev.com/public_html
             put index.html -o index.html
             put voz.html -o voz.html
-            put modular-fx.html -o modular-fx.html
-            put modular-fx.css -o modular-fx.css
+            put voz.css -o voz.css
+            put voz-compacto.css -o voz-compacto.css
             mkdir -p js
-            put js/modular-fx.js -o js/modular-fx.js
+            put js/voz.js -o js/voz.js
             put robots.txt -o robots.txt
+            rm -f modular-fx.html modular-fx.css js/modular-fx.js
             bye
           "
