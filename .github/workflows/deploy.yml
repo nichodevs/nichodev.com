@@ -16,9 +16,6 @@ jobs:
       - name: Baixar arquivos do repositorio
         uses: actions/checkout@v4
 
-      - name: Remover arquivos antigos do Modular FX do checkout
-        run: rm -f modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
-
       - name: Validar site antes da publicação
         run: npm run check
 
@@ -31,7 +28,7 @@ jobs:
         run: |
           test -n "$HOST_KEYS"
           install -d -m 700 "$HOME/.ssh"
-          printf '%s\n' "$HOST_KEYS" > "$HOME/.ssh/known_hosts"
+          printf '%s\\n' "$HOST_KEYS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
       - name: Publicar arquivos na Hostinger
@@ -44,6 +41,7 @@ jobs:
             set sftp:auto-confirm no
             set cmd:fail-exit yes
             cd domains/nichodev.com/public_html
+            rm -f modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
             put style.css -o style.css
             put index.css -o index.css
             put voz.css -o voz.css
