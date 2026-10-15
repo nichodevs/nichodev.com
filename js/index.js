@@ -109,4 +109,4 @@ function navigateWithSound(button, playSound, soundDuration, soundName) {
 }
 
 navigateWithSound(startButton, playStartSound, 350, "START");
-navigateWithSound(selectButton, playSelectSound, 550, "SELECT");
+navigateWithSound(selectButton, playSelectSound, 650, "SELECT");
