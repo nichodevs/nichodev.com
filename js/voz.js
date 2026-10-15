@@ -109,6 +109,21 @@ function markPreset(key){
 document.querySelectorAll('input[type=range]').forEach(r =>
   r.addEventListener('input', () => { markPreset(null); currentAB = null; updateLabels(); applyLiveParams(); applyPreviewParams(); updateFxLabUI(); }));
 
+// Sorteia os controles dos dois painéis de efeitos e aplica o novo som imediatamente.
+$('randomEffectsBtn').addEventListener('click', () => {
+  const controls = [...document.querySelectorAll('.advanced-control input[type="range"]')];
+  controls.forEach(control => {
+    const min = Number(control.min);
+    const max = Number(control.max);
+    const step = Number(control.step) || 1;
+    const stepCount = Math.floor((max - min) / step) + 1;
+    control.value = String(min + Math.floor(Math.random() * stepCount) * step);
+  });
+
+  const lastControl = controls.at(-1);
+  if(lastControl) lastControl.dispatchEvent(new Event('input', {bubbles:true}));
+});
+
 document.querySelectorAll('[data-effect-toggle]').forEach(button =>
   button.addEventListener('click', () => {
     const effect = button.dataset.effectToggle;
@@ -1116,3 +1131,4 @@ $('toggleABBtn').addEventListener('click', () => {
 });
 loadFxSnapshots();
 updateFxLabUI();
+
