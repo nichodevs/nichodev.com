@@ -72,6 +72,7 @@ jobs:
             put cursor-crosshair.png -o cursor-crosshair.png
             put cursor-help.png -o cursor-help.png
             put cursor-alt.png -o cursor-alt.png
+            mkdir -p js
             put js/index.js -o js/index.js
             put js/voz.js -o js/voz.js
             put js/guitarra.js -o js/guitarra.js
