@@ -86,24 +86,57 @@ function navigateWithSound(button, playSound, soundDuration, soundName) {
     }
 
     let audio;
-    try {
-      audio = new AudioContextClass();
-      // Retome o contexto e agende o som no mesmo clique, inclusive na primeira visita.
-      if (audio.state !== "running") {
-        audio.resume().catch((error) => {
-          console.error(`Não foi possível ativar o áudio de ${soundName}:`, error);
-        });
-      }
-      playSound(audio);
+    let navigationStarted = false;
+    let resumeTimeout;
 
-      window.setTimeout(() => {
-        if (audio.state !== "closed") audio.close();
-        window.location.href = destination;
-      }, soundDuration);
-    } catch (error) {
-      console.error(`Não foi possível tocar o som de ${soundName}:`, error);
+    const navigate = () => {
+      if (navigationStarted) return;
+      navigationStarted = true;
+      window.clearTimeout(resumeTimeout);
       if (audio && audio.state !== "closed") audio.close().catch(() => {});
       window.location.href = destination;
+    };
+
+    const playAndNavigate = () => {
+      if (navigationStarted) return;
+      try {
+        playSound(audio);
+        window.setTimeout(navigate, soundDuration);
+      } catch (error) {
+        console.error(`Não foi possível tocar o som de ${soundName}:`, error);
+        navigate();
+      }
+    };
+
+    try {
+      audio = new AudioContextClass();
+
+      if (audio.state === "running") {
+        playAndNavigate();
+        return;
+      }
+
+      // O resume é chamado dentro do clique. Aguarde o navegador liberar o
+      // contexto antes de agendar as notas, especialmente na primeira visita.
+      resumeTimeout = window.setTimeout(() => {
+        console.error(`O áudio de ${soundName} não foi liberado a tempo.`);
+        navigate();
+      }, 2000);
+
+      audio.resume().then(() => {
+        if (audio.state === "running") {
+          window.clearTimeout(resumeTimeout);
+          playAndNavigate();
+        } else {
+          navigate();
+        }
+      }).catch((error) => {
+        console.error(`Não foi possível ativar o áudio de ${soundName}:`, error);
+        navigate();
+      });
+    } catch (error) {
+      console.error(`Não foi possível iniciar o áudio de ${soundName}:`, error);
+      navigate();
     }
   });
 }
