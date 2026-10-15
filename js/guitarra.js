@@ -224,6 +224,15 @@ function renderPedals(){
 function pedalChanged(message="Pedaleira atualizada."){
   currentAB=null;renderPedals();rebuildChain();announce("pedalStatus",message);
 }
+function randomizePedalboard(){
+  PEDALS.forEach(pedal=>{
+    values[pedal.id]=Math.floor(Math.random()*101);
+    enabled[pedal.id]=Math.random()<0.5;
+  });
+  if(!PEDALS.some(pedal=>enabled[pedal.id])) enabled[PEDALS[Math.floor(Math.random()*PEDALS.length)].id]=true;
+  pedalChanged("Ajustes aleatórios aplicados à pedaleira.");
+}
+$("randomizePedals").addEventListener("click",randomizePedalboard);
 $("pedalList").addEventListener("click",e=>{
   const sw=e.target.closest("[data-pedal]");
   if(sw){const id=sw.dataset.pedal;enabled[id]=!enabled[id];pedalChanged(PEDALS.find(p=>p.id===id).name+" "+(enabled[id]?"ligado. Ajuste preservado.":"desligado. Ajuste preservado."));return;}
@@ -297,3 +306,4 @@ $("captureA").addEventListener("click",()=>captureAB("A"));$("captureB").addEven
 $("recordBtn").addEventListener("click",startRecording);$("stopRecordBtn").addEventListener("click",stopRecording);
 if(navigator.mediaDevices){refreshInputs();navigator.mediaDevices.addEventListener?.("devicechange",()=>refreshInputs(inputStream?.getAudioTracks()[0]?.getSettings().deviceId||""));}
 renderPedals();syncAmpControls();
+
