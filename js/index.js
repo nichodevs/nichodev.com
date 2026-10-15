@@ -14,17 +14,27 @@ function getMenuAudioContext() {
   return menuAudioContext;
 }
 
-function primeMenuAudio() {
-  try {
-    const audio = getMenuAudioContext();
-    if (audio && audio.state !== "running") {
-      audio.resume().catch((error) => {
+function startMenuSoundOnPointerDown(button, playSound) {
+  button.addEventListener("pointerdown", (event) => {
+    if (!event.isPrimary || event.button !== 0) return;
+
+    try {
+      const audio = getMenuAudioContext();
+      if (!audio) return;
+
+      // Solicite a retomada e crie os osciladores durante o gesto físico.
+      const resumePromise = audio.state === "running"
+        ? Promise.resolve()
+        : audio.resume();
+      resumePromise.catch((error) => {
         console.error("Não foi possível preparar o áudio do menu:", error);
       });
+      playSound(audio);
+      primedMenuSounds.set(button, { audio, resumePromise });
+    } catch (error) {
+      console.error("Não foi possível iniciar o som no pointerdown:", error);
     }
-  } catch (error) {
-    console.error("Não foi possível preparar o áudio do menu:", error);
-  }
+  }, { passive: true });
 }
 
 function playStartSound(audio) {
@@ -99,13 +109,13 @@ function playSelectSound(audio) {
 function navigateWithSound(button, playSound, soundDuration, soundName) {
   if (!button) return;
 
-  // pointerdown acontece antes de click e deixa o contexto pronto no primeiro uso.
-  button.addEventListener("pointerdown", primeMenuAudio, { passive: true });
+  startMenuSoundOnPointerDown(button, playSound);
 
   button.addEventListener("click", (event) => {
     event.preventDefault();
     const destination = button.href;
     let audio;
+    let resumePromise;
     let navigationStarted = false;
     let resumeTimeout;
 
@@ -117,39 +127,34 @@ function navigateWithSound(button, playSound, soundDuration, soundName) {
       window.location.href = destination;
     };
 
-    const playAndNavigate = () => {
-      if (navigationStarted) return;
-      try {
-        playSound(audio);
-        window.setTimeout(navigate, soundDuration);
-      } catch (error) {
-        console.error(`Não foi possível tocar o som de ${soundName}:`, error);
-        navigate();
-      }
-    };
-
     try {
-      audio = getMenuAudioContext();
-      if (!audio) {
-        navigate();
-        return;
+      const primed = primedMenuSounds.get(button);
+      primedMenuSounds.delete(button);
+
+      if (primed) {
+        ({ audio, resumePromise } = primed);
+      } else {
+        // Teclado e tecnologias assistivas podem gerar click sem pointerdown.
+        audio = getMenuAudioContext();
+        if (!audio) {
+          navigate();
+          return;
+        }
+        resumePromise = audio.state === "running"
+          ? Promise.resolve()
+          : audio.resume();
+        playSound(audio);
       }
 
-      if (audio.state === "running") {
-        playAndNavigate();
-        return;
-      }
-
-      // A retomada também é solicitada dentro do click caso pointerdown não ocorra.
       resumeTimeout = window.setTimeout(() => {
         console.error(`O áudio de ${soundName} não foi liberado a tempo.`);
         navigate();
       }, 2000);
 
-      audio.resume().then(() => {
+      resumePromise.then(() => {
         if (audio.state === "running") {
           window.clearTimeout(resumeTimeout);
-          playAndNavigate();
+          window.setTimeout(navigate, soundDuration);
         } else {
           navigate();
         }
