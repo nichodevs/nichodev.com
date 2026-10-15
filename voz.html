@@ -68,7 +68,10 @@
       <option value="">Microfone padrão do navegador</option>
     </select>
     <p class="small" id="micDeviceStatus" role="status" aria-live="polite">O navegador escolherá o microfone padrão.</p>
-    <button type="button" id="liveBtn">Ligar microfone</button>
+    <div class="preview-controls">
+      <button type="button" id="liveBtn">Ligar microfone</button>
+      <button type="button" class="random-effects-btn">RANDOM</button>
+    </div>
     <div class="processed-record-actions">
       <button type="button" id="recordProcessedBtn" disabled>Gravar voz processada</button>
       <button type="button" id="stopProcessedBtn" disabled>Parar gravação processada</button>
@@ -114,7 +117,7 @@
     <p class="small">O player acima toca o áudio original. Use o botão abaixo para ouvir com os efeitos; você pode ajustar os controles durante a reprodução.</p>
     <div class="preview-controls">
       <button type="button" id="effectPreviewBtn" disabled>Ouvir com efeitos</button>
-      <button type="button" id="randomEffectsBtn">RANDOM</button>
+      <button type="button" class="random-effects-btn">RANDOM</button>
       <button type="button" id="stopPreviewBtn" disabled>Parar prévia</button>
     </div>
     <p id="previewStatus" class="small" role="status">Grave ou importe um áudio para habilitar a prévia com efeitos.</p>
