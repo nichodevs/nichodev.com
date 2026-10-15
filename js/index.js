@@ -40,8 +40,8 @@ function startMenuSoundOnPointerDown(button, playSound) {
 
 function playStartSound(audio) {
   const notes = [
-    { frequency: 440, start: 0, duration: 0.08 },
-    { frequency: 660, start: 0.09, duration: 0.12 }
+    { frequency: 440, start: 0.015, duration: 0.16 },
+    { frequency: 660, start: 0.17, duration: 0.24 }
   ];
 
   for (const note of notes) {
@@ -52,7 +52,8 @@ function playStartSound(audio) {
 
     oscillator.type = "square";
     oscillator.frequency.value = note.frequency;
-    gain.gain.setValueAtTime(0.12, start);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(0.22, start + 0.008);
     gain.gain.exponentialRampToValueAtTime(0.001, end);
     oscillator.connect(gain);
     gain.connect(audio.destination);
@@ -60,6 +61,7 @@ function playStartSound(audio) {
     oscillator.stop(end);
   }
 }
+
 
 function playSelectSound(audio) {
   // Harmônicos ricos e um ataque curto dão ao acorde um timbre metálico de cordas.
@@ -170,5 +172,5 @@ function navigateWithSound(button, playSound, soundDuration, soundName) {
   });
 }
 
-navigateWithSound(startButton, playStartSound, 350, "START");
+navigateWithSound(startButton, playStartSound, 550, "START");
 navigateWithSound(selectButton, playSelectSound, 650, "SELECT");
