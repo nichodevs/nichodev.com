@@ -4,6 +4,7 @@ const startButton = document.getElementById("startBtn");
 const selectButton = document.querySelector('a[href="guitarra.html"]');
 
 let menuAudioContext = null;
+const primedMenuSounds = new WeakMap();
 
 function getMenuAudioContext() {
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
