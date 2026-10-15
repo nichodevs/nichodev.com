@@ -15,9 +15,10 @@ const PEDALS = [
   {id:"vibrato", name:"VB-2", type:"vibrato", desc:"Vibrato", color:"pink", control:"Depth"},
   {id:"tr2", name:"TR-2", type:"tremolo", desc:"Tremolo", color:"blue", control:"Depth"},
   {id:"dd8", name:"DD-8", type:"delay", desc:"Digital Delay", color:"white", control:"Feedback"},
-  {id:"rv6", name:"RV-6", type:"reverb", desc:"Reverb", color:"white", control:"Level"}
+  {id:"rv6", name:"RV-6", type:"reverb", desc:"Reverb", color:"white", control:"Level"},
+  {id:"shimmer", name:"SHIMMER", type:"shimmer", desc:"Shimmer Reverb", color:"purple", control:"Shimmer"}
 ];
-const values = Object.fromEntries(PEDALS.map(p => [p.id, ({ns2:35,cs3:30,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0})[p.id]]));
+const values = Object.fromEntries(PEDALS.map(p => [p.id, ({ns2:35,cs3:30,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0,shimmer:0})[p.id]]));
 const enabled = Object.fromEntries(PEDALS.map(p => [p.id, ["ns2","cs3","ge7"].includes(p.id)]));
 let order = PEDALS.map(p => p.id);
 let ctx = null, inputNode = null, inputStream = null, mediaNode = null, fileUrl = null;
@@ -117,6 +118,15 @@ function makeStage(pedalId){
     const dry=ctx.createGain(),wet=ctx.createGain(),convolver=ctx.createConvolver(),buffer=ctx.createBuffer(2,Math.floor(ctx.sampleRate*(1+amount*2.8)),ctx.sampleRate);
     for(let ch=0;ch<2;ch++){const data=buffer.getChannelData(ch);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2.4);}
     convolver.buffer=buffer;wet.gain.value=.08+amount*.62;nodes.push(dry,wet,convolver);connect(input,dry);connect(dry,output);connect(input,convolver);connect(convolver,wet);connect(wet,output);
+  }else if(type==="shimmer"){
+    const dry=ctx.createGain(),wet=ctx.createGain(),shifter=ctx.createWaveShaper(),highpass=ctx.createBiquadFilter(),convolver=ctx.createConvolver();
+    const curve=new Float32Array(2048);
+    for(let i=0;i<curve.length;i++){const x=i*2/(curve.length-1)-1;curve[i]=2*Math.abs(x)-1;}
+    shifter.curve=curve;shifter.oversample="4x";highpass.type="highpass";highpass.frequency.value=120;
+    const buffer=ctx.createBuffer(2,Math.floor(ctx.sampleRate*(2.2+amount*2.2)),ctx.sampleRate);
+    for(let ch=0;ch<2;ch++){const data=buffer.getChannelData(ch);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2.1);}
+    convolver.buffer=buffer;dry.gain.value=.82;wet.gain.value=.16+amount*.68;
+    nodes.push(dry,wet,shifter,highpass,convolver);connect(input,dry);connect(dry,output);connect(input,shifter);connect(shifter,highpass);connect(highpass,convolver);connect(convolver,wet);connect(wet,output);
   }else{connect(input,output);}
   return{input,output,nodes,oscillators};
 }
