@@ -76,6 +76,7 @@ jobs:
             put js/index.js -o js/index.js
             put js/voz.js -o js/voz.js
             put js/guitarra.js -o js/guitarra.js
+            put js/back-sound.js -o js/back-sound.js
             put robots.txt -o robots.txt
             put index.html -o index.html
             put voz.html -o voz.html
@@ -101,6 +102,7 @@ jobs:
             /js/index.js
             /js/voz.js
             /js/guitarra.js
+            /js/back-sound.js
             /cursor.png
             /cursor-pointer.png
           )
