@@ -91,9 +91,9 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 .control-content fieldset:last-child { margin-bottom: 0; }
 
 /* Grade previsível: duas colunas em telas largas e uma em celulares. */
-.studio-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 10px 12px; }
-.studio-panels > .control-panel { display: block; width: auto; min-width: 0; margin: 0; }
-@media (max-width: 700px) { .studio-panels { grid-template-columns: minmax(0, 1fr); } }
+.studio-panels { column-count: 2; column-gap: 12px; }
+.studio-panels > .control-panel { display: inline-block; width: 100%; min-width: 0; margin: 0 0 10px; break-inside: avoid; vertical-align: top; }
+@media (max-width: 700px) { .studio-panels { column-count: 1; } }
 
 .microphone-select {
   display: block; width: 100%; min-width: 0; margin: 8px 0; padding: 10px 12px;
@@ -107,7 +107,7 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 .recording-state, #micDeviceStatus, .processed-record-time { margin: 8px 0; }
 .recording-state[data-state="recording"] { font-weight: 700; }
 @media (max-width: 700px) {
-  .studio-panels { gap: 8px; }
+  .studio-panels { column-gap: 8px; }
   .custom-preset-item { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .custom-preset-name { grid-column: 1 / -1; }
 }
