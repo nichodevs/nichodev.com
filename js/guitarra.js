@@ -10,11 +10,14 @@ const PEDALS = [
   {id:"ch1", name:"CH-1", type:"chorus", desc:"Super Chorus", color:"blue", control:"Depth"},
   {id:"bf3", name:"BF-3", type:"flanger", desc:"Flanger", color:"purple", control:"Depth"},
   {id:"ph3", name:"PH-3", type:"phaser", desc:"Phase Shifter", color:"orange", control:"Rate"},
+  {id:"fuzz", name:"FZ-5", type:"fuzz", desc:"Fuzz", color:"purple", control:"Fuzz"},
+  {id:"octfuzz", name:"OCTAFUZZ", type:"octfuzz", desc:"Octave Fuzz", color:"orange", control:"Octave"},
+  {id:"vibrato", name:"VB-2", type:"vibrato", desc:"Vibrato", color:"pink", control:"Depth"},
   {id:"tr2", name:"TR-2", type:"tremolo", desc:"Tremolo", color:"blue", control:"Depth"},
   {id:"dd8", name:"DD-8", type:"delay", desc:"Digital Delay", color:"white", control:"Feedback"},
   {id:"rv6", name:"RV-6", type:"reverb", desc:"Reverb", color:"white", control:"Level"}
 ];
-const values = Object.fromEntries(PEDALS.map(p => [p.id, ({ns2:35,cs3:30,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,tr2:0,dd8:0,rv6:0})[p.id]]));
+const values = Object.fromEntries(PEDALS.map(p => [p.id, ({ns2:35,cs3:30,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0})[p.id]]));
 const enabled = Object.fromEntries(PEDALS.map(p => [p.id, ["ns2","cs3","ge7"].includes(p.id)]));
 let order = PEDALS.map(p => p.id);
 let ctx = null, inputNode = null, inputStream = null, mediaNode = null, fileUrl = null;
@@ -61,6 +64,8 @@ function curveFor(type,amount){
     const x=i*2/(size-1)-1;
     if(type==="overdrive")curve[i]=Math.tanh(x*drive*0.75)/Math.tanh(drive*0.75);
     else if(type==="distortion")curve[i]=((1+drive)*x)/(1+drive*Math.abs(x));
+    else if(type==="fuzz")curve[i]=Math.tanh(x*drive*1.8)/Math.tanh(drive*1.8);
+    else if(type==="octfuzz")curve[i]=Math.tanh((2*Math.abs(x)-1)*drive)/Math.tanh(drive);
     else curve[i]=Math.max(-1,Math.min(1,x*drive*1.8));
   }
   return curve;
@@ -75,7 +80,7 @@ function makeStage(pedalId){
     if(type==="gate"){comp.threshold.value=-38+amount*14;comp.knee.value=0;comp.ratio.value=12;comp.attack.value=.004;comp.release.value=.09;}
     else{comp.threshold.value=-12-amount*28;comp.knee.value=10;comp.ratio.value=1+amount*9;comp.attack.value=.008;comp.release.value=.18;}
     connect(input,comp);connect(comp,output);
-  }else if(type==="overdrive"||type==="distortion"){
+  }else if(type==="overdrive"||type==="distortion"||type==="fuzz"||type==="octfuzz"){
     const shaper=ctx.createWaveShaper();shaper.curve=curveFor(type,amount);shaper.oversample="4x";nodes.push(shaper);connect(input,shaper);connect(shaper,output);
   }else if(type==="eq"){
     const low=ctx.createBiquadFilter(),mid=ctx.createBiquadFilter(),high=ctx.createBiquadFilter();
@@ -95,6 +100,11 @@ function makeStage(pedalId){
     filters.forEach((f,i)=>{f.type="allpass";f.frequency.value=350+i*240;f.Q.value=.8;});
     lfo.frequency.value=.15+amount*1.4;depth.gain.value=amount*900;lfo.connect(depth);filters.forEach(f=>depth.connect(f.frequency));lfo.start();wet.gain.value=.6;
     nodes.push(dry,wet,...filters,depth);oscillators.push(lfo);connect(input,dry);connect(dry,output);connect(input,filters[0]);filters.forEach((f,i)=>connect(f,filters[i+1]||wet));connect(wet,output);
+  }else if(type==="vibrato"){
+    const delay=ctx.createDelay(.04),lfo=ctx.createOscillator(),depth=ctx.createGain();
+    delay.delayTime.value=.012;lfo.frequency.value=.8+amount*5;depth.gain.value=.0006+amount*.006;
+    lfo.connect(depth);depth.connect(delay.delayTime);lfo.start();
+    nodes.push(delay,depth);oscillators.push(lfo);connect(input,delay);connect(delay,output);
   }else if(type==="tremolo"){
     const gain=ctx.createGain(),lfo=ctx.createOscillator(),depth=ctx.createGain();
     lfo.type="square";lfo.frequency.value=2+amount*8;depth.gain.value=.48*amount;gain.gain.value=1-depth.gain.value;lfo.connect(depth);depth.connect(gain.gain);lfo.start();
