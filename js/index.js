@@ -17,7 +17,15 @@ if (startButton) {
     let audio;
     try {
       audio = new AudioContextClass();
-      if (audio.state === "suspended") await audio.resume();
+      // Inicie a retomada durante a ativação do clique, mas não espere a
+      // Promise: o som precisa ser agendado imediatamente para funcionar
+      // também na primeira interação em navegadores com autoplay bloqueado.
+      if (audio.state !== "running") {
+        const resumePromise = audio.resume();
+        resumePromise.catch((error) => {
+          console.error("Não foi possível ativar o áudio do START:", error);
+        });
+      }
 
       const notes = [
         { frequency: 440, start: 0, duration: 0.08 },
@@ -43,7 +51,7 @@ if (startButton) {
       window.setTimeout(() => {
         if (audio && audio.state !== "closed") audio.close();
         window.location.href = destination;
-      }, 300);
+      }, 350);
     } catch (error) {
       console.error("Não foi possível tocar o som do START:", error);
       if (audio && audio.state !== "closed") audio.close().catch(() => {});
