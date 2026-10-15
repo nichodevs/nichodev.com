@@ -3,62 +3,51 @@
 const startButton = document.getElementById("startBtn");
 const selectButton = document.querySelector('a[href="guitarra.html"]');
 
-function createStartToneWavUrl() {
-  const sampleRate = 44100;
-  const duration = 0.31;
-  const sampleCount = Math.ceil(sampleRate * duration);
-  const bytesPerSample = 2;
-  const buffer = new ArrayBuffer(44 + sampleCount * bytesPerSample);
-  const view = new DataView(buffer);
+let menuAudioContext = null;
 
-  const writeText = (offset, value) => {
-    for (let i = 0; i < value.length; i += 1) {
-      view.setUint8(offset + i, value.charCodeAt(i));
+function getMenuAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!menuAudioContext || menuAudioContext.state === "closed") {
+    menuAudioContext = new AudioContextClass();
+  }
+  return menuAudioContext;
+}
+
+function primeMenuAudio() {
+  try {
+    const audio = getMenuAudioContext();
+    if (audio && audio.state !== "running") {
+      audio.resume().catch((error) => {
+        console.error("Não foi possível preparar o áudio do menu:", error);
+      });
     }
-  };
+  } catch (error) {
+    console.error("Não foi possível preparar o áudio do menu:", error);
+  }
+}
 
-  writeText(0, "RIFF");
-  view.setUint32(4, 36 + sampleCount * bytesPerSample, true);
-  writeText(8, "WAVE");
-  writeText(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, 1, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * bytesPerSample, true);
-  view.setUint16(32, bytesPerSample, true);
-  view.setUint16(34, 16, true);
-  writeText(36, "data");
-  view.setUint32(40, sampleCount * bytesPerSample, true);
-
+function playStartSound(audio) {
   const notes = [
-    { frequency: 440, start: 0, duration: 0.09 },
-    { frequency: 660, start: 0.105, duration: 0.16 }
+    { frequency: 440, start: 0, duration: 0.08 },
+    { frequency: 660, start: 0.09, duration: 0.12 }
   ];
 
-  for (let i = 0; i < sampleCount; i += 1) {
-    const time = i / sampleRate;
-    let sample = 0;
+  for (const note of notes) {
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    const start = audio.currentTime + note.start;
+    const end = start + note.duration;
 
-    for (const note of notes) {
-      const noteTime = time - note.start;
-      if (noteTime < 0 || noteTime > note.duration) continue;
-
-      const attack = Math.min(1, noteTime / 0.004);
-      const release = Math.min(1, (note.duration - noteTime) / 0.025);
-      const envelope = Math.max(0, Math.min(attack, release));
-      const phase = 2 * Math.PI * note.frequency * noteTime;
-      const tone = Math.sin(phase) * 0.72
-        + Math.sin(phase * 3) * 0.19
-        + Math.sin(phase * 5) * 0.09;
-      sample += tone * envelope * 0.42;
-    }
-
-    const clipped = Math.max(-1, Math.min(1, sample));
-    view.setInt16(44 + i * bytesPerSample, Math.round(clipped * 32767), true);
+    oscillator.type = "square";
+    oscillator.frequency.value = note.frequency;
+    gain.gain.setValueAtTime(0.12, start);
+    gain.gain.exponentialRampToValueAtTime(0.001, end);
+    oscillator.connect(gain);
+    gain.connect(audio.destination);
+    oscillator.start(start);
+    oscillator.stop(end);
   }
-
-  return URL.createObjectURL(new Blob([buffer], { type: "audio/wav" }));
 }
 
 function playSelectSound(audio) {
@@ -107,59 +96,15 @@ function playSelectSound(audio) {
   pick.start(strumStart);
 }
 
-function navigateWithStartSound(button) {
-  if (!button) return;
-
-  button.addEventListener("click", (event) => {
-    event.preventDefault();
-    const destination = button.href;
-    let soundUrl;
-    let navigationStarted = false;
-
-    const navigate = () => {
-      if (navigationStarted) return;
-      navigationStarted = true;
-      if (soundUrl) URL.revokeObjectURL(soundUrl);
-      window.location.href = destination;
-    };
-
-    try {
-      soundUrl = createStartToneWavUrl();
-      const sound = new Audio(soundUrl);
-      sound.volume = 0.55;
-      sound.addEventListener("ended", () => window.setTimeout(navigate, 80), { once: true });
-
-      // play() é chamado diretamente no gesto do usuário; não depende de
-      // AudioContext.resume() nem de uma resposta de rede na primeira visita.
-      const playback = sound.play();
-      if (playback && typeof playback.catch === "function") {
-        playback.catch((error) => {
-          console.error("Não foi possível tocar o som do START:", error);
-          navigate();
-        });
-      }
-
-      window.setTimeout(navigate, 1500);
-    } catch (error) {
-      console.error("Não foi possível iniciar o som do START:", error);
-      navigate();
-    }
-  });
-}
-
 function navigateWithSound(button, playSound, soundDuration, soundName) {
   if (!button) return;
 
+  // pointerdown acontece antes de click e deixa o contexto pronto no primeiro uso.
+  button.addEventListener("pointerdown", primeMenuAudio, { passive: true });
+
   button.addEventListener("click", (event) => {
     event.preventDefault();
     const destination = button.href;
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-
-    if (!AudioContextClass) {
-      window.location.href = destination;
-      return;
-    }
-
     let audio;
     let navigationStarted = false;
     let resumeTimeout;
@@ -184,15 +129,18 @@ function navigateWithSound(button, playSound, soundDuration, soundName) {
     };
 
     try {
-      audio = new AudioContextClass();
+      audio = getMenuAudioContext();
+      if (!audio) {
+        navigate();
+        return;
+      }
 
       if (audio.state === "running") {
         playAndNavigate();
         return;
       }
 
-      // O resume é chamado dentro do clique. Aguarde o navegador liberar o
-      // contexto antes de agendar as notas, especialmente na primeira visita.
+      // A retomada também é solicitada dentro do click caso pointerdown não ocorra.
       resumeTimeout = window.setTimeout(() => {
         console.error(`O áudio de ${soundName} não foi liberado a tempo.`);
         navigate();
@@ -216,5 +164,5 @@ function navigateWithSound(button, playSound, soundDuration, soundName) {
   });
 }
 
-navigateWithStartSound(startButton);
+navigateWithSound(startButton, playStartSound, 350, "START");
 navigateWithSound(selectButton, playSelectSound, 650, "SELECT");
