@@ -52,6 +52,8 @@ body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-col
 .preset-grid button{font-size:8px}
 .pedalboard-panel{grid-column:1/-1;padding:14px}
 .section-heading h2{margin:0;color:var(--g-lime);font-size:12px}
+.section-heading-title{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.section-heading-title button{flex:0 0 auto}
 .section-heading p{margin:4px 0 12px;color:var(--g-mute)}
 .pedal-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
 .pedal{--pedal-color:var(--g-line);min-width:0;padding:10px;border:3px solid var(--pedal-color);background:linear-gradient(160deg,#273121,#151c13);box-shadow:inset 0 0 0 2px #0e130d}
