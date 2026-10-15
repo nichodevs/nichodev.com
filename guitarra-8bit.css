@@ -69,7 +69,9 @@ body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-col
 .record-time{font-size:22px;color:var(--g-lime);letter-spacing:2px}
 .guitar-app audio{display:block;width:100%;margin-top:12px}
 .guitar-app footer{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-top:28px;padding-top:14px;border-top:2px solid var(--g-line);font-size:8px;color:var(--g-mute)}
+.footer-actions{display:flex;flex-wrap:wrap;gap:16px;align-items:center}
 .download-link[hidden],audio[hidden]{display:none}
 @media(max-width:700px){.guitar-layout{grid-template-columns:1fr}.pedalboard-panel{grid-column:auto}.amp-face{grid-template-columns:1fr}.amp-controls{grid-template-columns:repeat(3,1fr)}.amp-grill,.amp-led-row{grid-column:auto}.guitar-app footer{flex-direction:column;align-items:flex-start}}
 @media(max-width:420px){.amp-face{padding:12px}.preset-grid{grid-template-columns:1fr}.guitar-nav a{flex:1}.pedal-list{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
