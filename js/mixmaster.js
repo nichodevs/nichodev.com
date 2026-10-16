@@ -14,6 +14,7 @@
   const state = { tracks: [], selected: [], selectedTrackId: null, playhead: 0, zoom: 16, bpm: 120, tab: "edit", master: .8, playing: false };
   let db, audioContext, masterNode, meterFrame, playStartedAt = 0, playOffset = 0, activeSources = [];
   let recorder, recorderStream, recordingSource, recordingAnalyser, recordingSilencer, recordingFrame = 0, recordingStartedAt = 0, lastWaveformSampleAt = 0, liveWaveformPeaks = [], recordChunks = [], undoStack = [], redoStack = [], saveTimer;
+  let recordingClip = null, recordingTrack = null, lastClipWaveformUpdate = 0;
   const buffers = new Map(), blobs = new Map(), routeNodes = new Map();
   const id = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const esc = value => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -380,10 +381,20 @@
         drawAnalyserWaveform(draw, recordingAnalyser, samples, width, height);
         const elapsed = (performance.now() - recordingStartedAt) / 1000;
         els.recordingTime.textContent = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(Math.floor(elapsed % 60)).padStart(2, "0")}.${String(Math.floor(elapsed % 1 * 100)).padStart(2, "0")}`;
-        recordingFrame = requestAnimationFrame(paint);
+        updateRecordingClipWaveform(elapsed); recordingFrame = requestAnimationFrame(paint);
       };
       paint();
     } catch { els.recordingMonitor.hidden = false; els.recordingTime.textContent = "VISUALIZAÇÃO INDISPONÍVEL"; }
+  }
+  function updateRecordingClipWaveform(elapsed) {
+    if (!recordingClip || !recordingTrack || performance.now() - lastClipWaveformUpdate < 180) return;
+    lastClipWaveformUpdate = performance.now(); recordingClip.sourceEnd = Math.max(.05, elapsed);
+    recordingClip.waveformPeaks = compressWaveformPeaks(liveWaveformPeaks, 900);
+    const block = els.list.querySelector('[data-clip-id="' + recordingClip.id + '"]'); if (!block) return;
+    block.style.width = Math.max(38, elapsed * state.zoom) + 'px';
+    const canvas = block.querySelector('canvas'), context = canvas?.getContext('2d'); if (!canvas || !context) return;
+    const width = Math.max(80, Math.round(elapsed * 10)); if (canvas.width !== width) canvas.width = width;
+    context.clearRect(0, 0, canvas.width, canvas.height); drawStoredWaveform(context, recordingClip.waveformPeaks, canvas.width, canvas.height);
   }
   function drawAnalyserWaveform(ctx, analyser, samples, width, height) {
     analyser.getByteTimeDomainData(samples);
@@ -421,18 +432,31 @@
           try { buffer = await decodeBlob(blob); buffers.set(key, buffer); } catch {}
           const savedPeaks = compressWaveformPeaks(waveformPeaks.length ? waveformPeaks : buildWaveformPeaks(buffer));
           if (!savedPeaks.length) for (let i = 0; i < 160; i++) savedPeaks.push([-.015, .015]);
-          state.playhead = recordingStart; positionPlayhead(); checkpoint();
-          let track = state.tracks.find(item => item.id === state.selectedTrackId && item.type !== "midi") || state.tracks.find(item => item.type !== "midi");
-          if (!track) { track = freshTrack(`VOZ ${state.tracks.filter(item => item.name.startsWith("VOZ")).length + 1}`); state.tracks.push(track); }
-          const clip = { id: id(), type: "audio", audioId: key, name: `Gravação ${new Date().toLocaleTimeString("pt-BR")}`, start: recordingStart, sourceStart: 0, sourceEnd: buffer?.duration || duration, gain: 1, waveformPeaks: savedPeaks, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
-          track.clips.push(clip); state.selectedTrackId = track.id; state.selected = [clip.id]; saveProject(); render();
+          state.playhead = recordingStart; positionPlayhead();
+          const track = recordingTrack || state.tracks.find(item => item.id === state.selectedTrackId && item.type !== "midi") || state.tracks.find(item => item.type !== "midi");
+          if (!track) throw new Error("A faixa da gravação não está disponível.");
+          const clip = recordingClip || { id: id(), type: "audio", start: recordingStart, sourceStart: 0, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
+          clip.audioId = key; clip.name = 'Gravação ' + new Date().toLocaleTimeString('pt-BR'); clip.sourceEnd = buffer?.duration || duration; clip.waveformPeaks = savedPeaks;
+          if (!track.clips.includes(clip)) track.clips.push(clip);
+          state.selectedTrackId = track.id; state.selected = [clip.id]; saveProject(); render();
+          recordingClip = recordingTrack = null; liveWaveformPeaks = [];
           setStatus(buffer ? "Gravação e forma de onda salvas na faixa selecionada" : "Forma de onda salva; áudio gravado, mas o navegador não conseguiu decodificá-lo para reprodução");
           liveWaveformPeaks = [];
-        } catch (error) { setStatus(`Não foi possível salvar a gravação: ${error.message}`); }
-        finally { els.play.disabled = false; }
+        } catch (error) {
+          if (recordingClip && recordingTrack) {
+            recordingClip.sourceEnd = Math.max(.05, (performance.now() - recordingStartedAt) / 1000); recordingClip.waveformPeaks = compressWaveformPeaks(liveWaveformPeaks, 900);
+            state.selectedTrackId = recordingTrack.id; state.selected = [recordingClip.id]; saveProject(); render();
+          }
+          setStatus('Não foi possível finalizar o áudio gravado: ' + error.message);
+        } finally { recordingClip = recordingTrack = null; els.play.disabled = false; }
       };
       state.playhead = recordingStart; positionPlayhead(); saveProject();
-      recorder.start(250); startLiveWaveform(recorderStream); els.play.disabled = true; els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando a partir de 0:00… clique em PARAR REC para finalizar");
+      recorder.start(250); startLiveWaveform(recorderStream);
+      recordingTrack = state.tracks.find(item => item.id === state.selectedTrackId && item.type === "audio") || state.tracks.find(item => item.type === "audio");
+      if (!recordingTrack) { recordingTrack = freshTrack('VOZ ' + (state.tracks.filter(item => item.name.startsWith('VOZ')).length + 1)); state.tracks.push(recordingTrack); }
+      checkpoint(); recordingClip = { id: id(), type: "audio", audioId: "", name: "GRAVANDO…", start: recordingStart, sourceStart: 0, sourceEnd: .05, gain: 1, waveformPeaks: [], envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
+      recordingTrack.clips.push(recordingClip); state.selectedTrackId = recordingTrack.id; state.selected = [recordingClip.id]; lastClipWaveformUpdate = 0; render();
+      els.play.disabled = true; els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando na faixa selecionada a partir de 0:00… clique em PARAR REC para finalizar");
     } catch (error) { recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null; stopLiveWaveform(); els.play.disabled = false; setStatus(error.message || "Não foi possível acessar o microfone."); }
   }
   function stopRecording() { if (recorder?.state === "recording") { recorder.stop(); els.record.classList.remove("recording"); els.record.innerHTML = "●<small>REC</small>"; setStatus("Finalizando gravação…"); } }
