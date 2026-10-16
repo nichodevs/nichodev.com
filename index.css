@@ -54,8 +54,8 @@ body {
 .repository-qr-card {
   display: grid;
   justify-items: center;
-  gap: 9px;
-  padding: 12px;
+  gap: 5px;
+  padding: 7px 10px;
   border: 2px solid var(--fg);
   background: var(--bg);
   text-align: center;
@@ -65,23 +65,32 @@ body {
 .repository-qr-card h2,
 .repository-qr-card p {
   margin: 0;
-  font-size: 8px;
-  line-height: 1.7;
+  font-size: 7px;
+  line-height: 1.6;
 }
 
 .repository-qr-card a {
+  position: relative;
+  z-index: 1;
   display: block;
-  width: 128px;
-  height: 128px;
-  padding: 5px;
+  width: 64px;
+  height: 64px;
+  padding: 3px;
   border: 2px solid var(--fg);
   background: #fff;
   image-rendering: pixelated;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.repository-qr-card a:hover,
+.repository-qr-card a:focus-visible {
+  z-index: 2;
+  transform: scale(1.4);
+  box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--fg);
 }
 
 .repository-qr-card .repository-qr { display: block; width: 100%; height: 100%; }
 
-@media (max-height: 760px) {
-  .repository-qr-card { gap: 5px; padding: 8px; }
-  .repository-qr-card a { width: 104px; height: 104px; }
+@media (prefers-reduced-motion: reduce) {
+  .repository-qr-card a { transition: none; }
 }
