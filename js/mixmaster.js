@@ -424,7 +424,6 @@
       state.playhead = recordingStart; positionPlayhead(); renderSelection(); saveProject();
       const recordingContext = audioCtx();
       if (recordingContext.state === "suspended") await recordingContext.resume();
-      await projectReady;
       if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error("A gravação requer um navegador compatível e uma conexão segura (HTTPS).");
       recorderStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
       const mime = ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/webm"].find(type => MediaRecorder.isTypeSupported(type));
@@ -440,7 +439,6 @@
           const decodedPeaks = buildWaveformPeaks(buffer);
           const liveHasSignal = waveformPeaks.some(([min, max]) => Math.max(Math.abs(min), Math.abs(max)) > .003);
           const savedPeaks = compressWaveformPeaks(decodedPeaks.length ? decodedPeaks : (liveHasSignal ? waveformPeaks : []));
-          if (!savedPeaks.length) for (let i = 0; i < 160; i++) savedPeaks.push([-.015, .015]);
           if (!savedPeaks.length) for (let i = 0; i < 160; i++) savedPeaks.push([-.015, .015]);
           state.playhead = recordingStart; positionPlayhead();
           let track = state.tracks.find(item => item.id === recordingTrack?.id && item.type === "audio") || state.tracks.find(item => item.id === state.selectedTrackId && item.type === "audio") || state.tracks.find(item => item.type === "audio");
@@ -461,7 +459,7 @@
         } finally { recordingClip = recordingTrack = null; els.play.disabled = false; }
       };
       state.playhead = recordingStart; positionPlayhead(); saveProject();
-      recorder.start(250); startLiveWaveform(recorderStream)
+      recorder.start(250); startLiveWaveform(recorderStream);
       recordingTrack = state.tracks.find(item => item.id === state.selectedTrackId && item.type === "audio") || state.tracks.find(item => item.type === "audio");
       if (!recordingTrack) { recordingTrack = freshTrack('VOZ ' + (state.tracks.filter(item => item.name.startsWith('VOZ')).length + 1)); state.tracks.push(recordingTrack); }
       checkpoint(); recordingClip = { id: id(), type: "audio", audioId: "", name: "GRAVANDO…", start: recordingStart, sourceStart: 0, sourceEnd: .05, gain: 1, waveformPeaks: [], envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
