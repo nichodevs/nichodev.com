@@ -258,7 +258,7 @@
     for (const peak of peaks) maxMagnitude = Math.max(maxMagnitude, Math.abs(peak[0]), Math.abs(peak[1]));
     const scale = maxMagnitude > .0001 ? Math.min(24, .92 / maxMagnitude) : 1;
     const center = height / 2;
-    ctx.fillStyle = "#7846b8";
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--mix-wave-color").trim() || "#7846b8";
     for (let x = 0; x < width; x++) {
       const from = Math.floor(x * peaks.length / width), to = Math.max(from + 1, Math.floor((x + 1) * peaks.length / width));
       let min = 1, max = -1;
@@ -304,7 +304,7 @@
     if (drawStoredWaveform(ctx, clip.waveformPeaks, w, h)) return;
     if (!buffer) { ctx.fillStyle = "#111"; ctx.font = "12px sans-serif"; ctx.fillText("ÁUDIO", 6, 18); return; }
     const channel = buffer.getChannelData(0); const start = Math.floor(clip.sourceStart * buffer.sampleRate), end = Math.floor(clip.sourceEnd * buffer.sampleRate); const span = Math.max(1, end - start), step = Math.ceil(span / w);
-    ctx.fillStyle = "#111";
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--mix-wave-color").trim() || "#111";
     for (let x = 0; x < w; x++) { let min = 1, max = -1; for (let j = 0; j < step && start + x * step + j < end; j++) { const sample = channel[start + x * step + j] || 0; min = Math.min(min, sample); max = Math.max(max, sample); } const y1 = (1 - max) * h / 2, y2 = (1 - min) * h / 2; ctx.fillRect(x, y1, 1, Math.max(1, y2 - y1)); }
   }
   function positionPlayhead() { const px = state.playhead * state.zoom; els.playhead.style.left = `${px}px`; els.time.textContent = `${String(Math.floor(state.playhead / 60)).padStart(2, "0")}:${String(Math.floor(state.playhead % 60)).padStart(2, "0")}.${String(Math.floor(state.playhead % 1 * 100)).padStart(2, "0")}`; }
@@ -659,6 +659,18 @@
     catch (error) { setStatus(`Erro ao exportar: ${error.message}`); }
   }
   function setTab(tab) { state.tab = tab; document.querySelectorAll("[data-tab]").forEach(button => button.classList.toggle("selected", button.dataset.tab === tab)); document.querySelectorAll("[data-panel]").forEach(panel => { panel.hidden = panel.dataset.panel !== tab; }); if (tab === "midi") renderPiano(); if (tab === "envelope") renderEnvelope(); }
+
+  const themeToggle = $("themeToggle");
+  function applyTheme(theme, persist = true) {
+    const dark = theme === "dark";
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    themeToggle.setAttribute("aria-pressed", String(dark));
+    themeToggle.setAttribute("aria-label", dark ? "Ativar modo claro" : "Ativar modo noturno");
+    themeToggle.innerHTML = dark ? "☀<small>MODO CLARO</small>" : "☾<small>MODO NOTURNO</small>";
+    if (persist) { try { localStorage.setItem("nichodev-mixmaster-theme", dark ? "dark" : "light"); } catch {} }
+  }
+  applyTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light", false);
+  themeToggle.addEventListener("click", () => applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"));
 
   $("newTrackButton").addEventListener("click", addTrack);
   $("newMidiButton").addEventListener("click", addMidiTrack);
