@@ -28,11 +28,16 @@ function startMenuSoundOnPointerDown(button, playSound) {
       const resumePromise = audio.state === "running"
         ? Promise.resolve()
         : audio.resume();
-      resumePromise.catch((error) => {
+      const primed = { audio, resumePromise, soundStarted: false };
+      primedMenuSounds.set(button, primed);
+      resumePromise.then(() => {
+        if (audio.state === "running" && !primed.soundStarted) {
+          playSound(audio);
+          primed.soundStarted = true;
+        }
+      }).catch((error) => {
         console.error("Não foi possível preparar o áudio do menu:", error);
       });
-      playSound(audio);
-      primedMenuSounds.set(button, { audio, resumePromise });
     } catch (error) {
       console.error("Não foi possível iniciar o som no pointerdown:", error);
     }
@@ -112,19 +117,20 @@ function playSelectSound(audio) {
 
 
 function playMixMasterSound(audio) {
-  // Nota grave com fundamental arredondada e harmônico filtrado, como um baixo elétrico.
+  // Fundamental grave e harmônicos reforçados para continuar audível em caixas pequenas.
   const filter = audio.createBiquadFilter();
   const output = audio.createGain();
   filter.type = "lowpass";
-  filter.frequency.value = 720;
+  filter.frequency.value = 1050;
   filter.Q.value = 0.7;
-  output.gain.value = 0.8;
+  output.gain.value = 0.9;
   filter.connect(output);
   output.connect(audio.destination);
 
   const notes = [
-    { frequency: 73.42, start: 0.015, duration: 0.46, volume: 0.22, type: "triangle" },
-    { frequency: 146.83, start: 0.018, duration: 0.28, volume: 0.045, type: "sawtooth" }
+    { frequency: 82.41, start: 0.01, duration: 0.42, volume: 0.28, type: "triangle" },
+    { frequency: 164.82, start: 0.012, duration: 0.34, volume: 0.12, type: "sawtooth" },
+    { frequency: 246.94, start: 0.014, duration: 0.25, volume: 0.055, type: "triangle" }
   ];
 
   for (const note of notes) {
@@ -134,7 +140,7 @@ function playMixMasterSound(audio) {
     const end = start + note.duration;
     oscillator.type = note.type;
     oscillator.frequency.setValueAtTime(note.frequency * 1.025, start);
-    oscillator.frequency.exponentialRampToValueAtTime(note.frequency, start + 0.07);
+    oscillator.frequency.exponentialRampToValueAtTime(note.frequency, start + 0.06);
     gain.gain.setValueAtTime(0.0001, start);
     gain.gain.linearRampToValueAtTime(note.volume, start + 0.012);
     gain.gain.exponentialRampToValueAtTime(0.0001, end);
@@ -143,8 +149,23 @@ function playMixMasterSound(audio) {
     oscillator.start(start);
     oscillator.stop(end);
   }
-}
 
+  const attack = audio.createBuffer(1, Math.ceil(audio.sampleRate * 0.04), audio.sampleRate);
+  const samples = attack.getChannelData(0);
+  for (let i = 0; i < samples.length; i += 1) samples[i] = Math.random() * 2 - 1;
+  const pick = audio.createBufferSource();
+  const pickFilter = audio.createBiquadFilter();
+  const pickGain = audio.createGain();
+  pick.buffer = attack;
+  pickFilter.type = "lowpass";
+  pickFilter.frequency.value = 850;
+  pickGain.gain.setValueAtTime(0.045, audio.currentTime + 0.01);
+  pickGain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.05);
+  pick.connect(pickFilter);
+  pickFilter.connect(pickGain);
+  pickGain.connect(output);
+  pick.start(audio.currentTime + 0.01);
+}
 function navigateWithSound(button, playSound, soundDuration, soundName) {
   if (!button) return;
 
@@ -182,7 +203,11 @@ function navigateWithSound(button, playSound, soundDuration, soundName) {
         resumePromise = audio.state === "running"
           ? Promise.resolve()
           : audio.resume();
-        playSound(audio);
+        resumePromise.then(() => {
+          if (audio.state === "running") playSound(audio);
+        }).catch((error) => {
+          console.error(`Não foi possível preparar o áudio de ${soundName}:`, error);
+        });
       }
 
       resumeTimeout = window.setTimeout(() => {
