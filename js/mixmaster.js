@@ -14,6 +14,7 @@
   const state = { tracks: [], selected: [], selectedTrackId: null, playhead: 0, zoom: 16, bpm: 120, tab: "edit", master: .8, playing: false };
   let db, audioContext, masterNode, meterFrame, playStartedAt = 0, playOffset = 0, activeSources = [];
   let recorder, recorderStream, recordingSource, recordingAnalyser, recordingSilencer, recordingFrame = 0, recordingStartedAt = 0, lastWaveformSampleAt = 0, liveWaveformPeaks = [], recordChunks = [], undoStack = [], redoStack = [], saveTimer;
+  let projectReady = Promise.resolve(), recordingSetup = false;
   let recordingClip = null, recordingTrack = null, lastClipWaveformUpdate = 0;
   const buffers = new Map(), blobs = new Map(), routeNodes = new Map();
   const id = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -414,10 +415,13 @@
     els.recordingMonitor.hidden = true;
   }
   async function startRecording() {
+    if (recordingSetup) return;
+    recordingSetup = true;
     const recordingStart = 0;
     stopPlayback(true);
     state.playhead = recordingStart; positionPlayhead(); renderSelection(); saveProject();
     try {
+      await projectReady;
       if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error("A gravação requer um navegador compatível e uma conexão segura (HTTPS).");
       recorderStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
       const mime = ["audio/webm;codecs=opus", "audio/ogg;codecs=opus", "audio/webm"].find(type => MediaRecorder.isTypeSupported(type));
@@ -454,13 +458,13 @@
         } finally { recordingClip = recordingTrack = null; els.play.disabled = false; }
       };
       state.playhead = recordingStart; positionPlayhead(); saveProject();
-      recorder.start(250); startLiveWaveform(recorderStream);
+      recorder.start(250); startLiveWaveform(recorderStream); recordingSetup = false;
       recordingTrack = state.tracks.find(item => item.id === state.selectedTrackId && item.type === "audio") || state.tracks.find(item => item.type === "audio");
       if (!recordingTrack) { recordingTrack = freshTrack('VOZ ' + (state.tracks.filter(item => item.name.startsWith('VOZ')).length + 1)); state.tracks.push(recordingTrack); }
       checkpoint(); recordingClip = { id: id(), type: "audio", audioId: "", name: "GRAVANDO…", start: recordingStart, sourceStart: 0, sourceEnd: .05, gain: 1, waveformPeaks: [], envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
       recordingTrack.clips.push(recordingClip); state.selectedTrackId = recordingTrack.id; state.selected = [recordingClip.id]; lastClipWaveformUpdate = 0; render();
       els.play.disabled = true; els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando na faixa selecionada a partir de 0:00… clique em PARAR REC para finalizar");
-    } catch (error) { recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null; stopLiveWaveform(); els.play.disabled = false; setStatus(error.message || "Não foi possível acessar o microfone."); }
+    } catch (error) { recordingSetup = false; recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null; stopLiveWaveform(); els.play.disabled = false; setStatus(error.message || "Não foi possível acessar o microfone."); }
   }
   function stopRecording() { if (recorder?.state === "recording") { recorder.stop(); els.record.classList.remove("recording"); els.record.innerHTML = "●<small>REC</small>"; setStatus("Finalizando gravação…"); } }
   function envelopeAt(points, x) { if (!points?.length) return .8; const right = points.findIndex(point => point.x >= x); if (right <= 0) return points[0].y; const a = points[right - 1], b = points[right]; if (!b) return points.at(-1).y; const t = (x - a.x) / (b.x - a.x); return a.y + (b.y - a.y) * t; }
@@ -622,5 +626,5 @@
   $("redoButton").addEventListener("click", () => { if (!redoStack.length) return; undoStack.push(snapshot()); restoreSnapshot(redoStack.pop()); setStatus("Ação refeita"); updateUndoButtons(); });
   window.addEventListener("keydown", event => { if (event.target.matches("input,textarea,select")) return; if (event.code === "Space") { event.preventDefault(); state.playing ? stopPlayback(false) : play(); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") { event.preventDefault(); $("undoButton").click(); } if (event.key === "Delete" || event.key === "Backspace") deleteSelected(); });
   window.addEventListener("beforeunload", () => { stopPlayback(); if (recorder?.state === "recording") stopRecording(); if (meterFrame) cancelAnimationFrame(meterFrame); });
-  loadProject();
+  projectReady = loadProject();
 })();
