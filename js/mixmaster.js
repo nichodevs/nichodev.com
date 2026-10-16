@@ -303,7 +303,7 @@
     ctx.fillStyle = "#111";
     for (let x = 0; x < w; x++) { let min = 1, max = -1; for (let j = 0; j < step && start + x * step + j < end; j++) { const sample = channel[start + x * step + j] || 0; min = Math.min(min, sample); max = Math.max(max, sample); } const y1 = (1 - max) * h / 2, y2 = (1 - min) * h / 2; ctx.fillRect(x, y1, 1, Math.max(1, y2 - y1)); }
   }
-  function positionPlayhead() { const labelWidth = matchMedia("(max-width: 760px)").matches ? 140 : 170; const px = labelWidth + state.playhead * state.zoom; els.playhead.style.left = `${px}px`; els.time.textContent = `${String(Math.floor(state.playhead / 60)).padStart(2, "0")}:${String(Math.floor(state.playhead % 60)).padStart(2, "0")}.${String(Math.floor(state.playhead % 1 * 100)).padStart(2, "0")}`; }
+  function positionPlayhead() { const px = state.playhead * state.zoom; els.playhead.style.left = `${px}px`; els.time.textContent = `${String(Math.floor(state.playhead / 60)).padStart(2, "0")}:${String(Math.floor(state.playhead % 60)).padStart(2, "0")}.${String(Math.floor(state.playhead % 1 * 100)).padStart(2, "0")}`; }
   function renderSelection() {
     for (const row of els.list.querySelectorAll(".track-row")) { const active = row.dataset.trackId === state.selectedTrackId; row.classList.toggle("active-track-row", active); row.setAttribute("aria-selected", String(active)); }
     const one = selectedClip();
