@@ -385,14 +385,14 @@
         updateRecordingClipWaveform(elapsed); recordingFrame = requestAnimationFrame(paint);
       };
       paint();
-    } catch { els.recordingMonitor.hidden = false; els.recordingTime.textContent = "VISUALIZAÇÃO INDISPONÍVEL"; }
+    } catch (error) { console.error("Falha na forma de onda ao vivo:", error); els.recordingMonitor.hidden = false; els.recordingTime.textContent = "ERRO NA VISUALIZAÇÃO"; }
   }
   function updateRecordingClipWaveform(elapsed) {
     if (!recordingClip || !recordingTrack || performance.now() - lastClipWaveformUpdate < 180) return;
     lastClipWaveformUpdate = performance.now(); recordingClip.sourceEnd = Math.max(.05, elapsed);
     recordingClip.waveformPeaks = compressWaveformPeaks(liveWaveformPeaks, 900);
     const block = els.list.querySelector('[data-clip-id="' + recordingClip.id + '"]'); if (!block) return;
-    block.style.width = Math.max(38, elapsed * state.zoom) + 'px';
+    block.style.width = Math.min(100000, Math.max(38, elapsed * state.zoom)) + 'px';
     const canvas = block.querySelector('canvas'), context = canvas?.getContext('2d'); if (!canvas || !context) return;
     const width = Math.min(12000, Math.max(80, Math.round(elapsed * 10))); if (canvas.width !== width) canvas.width = width;
     context.clearRect(0, 0, canvas.width, canvas.height); drawStoredWaveform(context, recordingClip.waveformPeaks, canvas.width, canvas.height);
