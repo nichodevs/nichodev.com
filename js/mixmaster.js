@@ -234,7 +234,7 @@
       block.innerHTML = `<span class="clip-label">${esc(clip.name || "MIDI")}</span>`;
       for (const note of clip.notes || []) { const bar = document.createElement("i"); bar.className = "midi-note"; bar.style.left = `${4 + note.step / 16 * 92}%`; bar.style.top = `${13 + note.pitch * 5}px`; bar.style.width = "3%"; block.append(bar); }
     } else {
-      const canvas = document.createElement("canvas"); canvas.width = Math.max(80, Math.round(durationOf(clip) * 10)); canvas.height = 140; block.append(canvas);
+      const canvas = document.createElement("canvas"); canvas.width = Math.min(12000, Math.max(80, Math.round(durationOf(clip) * 10))); canvas.height = 140; block.append(canvas);
       const title = document.createElement("span"); title.className = "clip-label"; title.textContent = clip.name; block.append(title);
       drawWaveform(canvas, buffers.get(clip.audioId), clip);
     }
@@ -372,7 +372,7 @@
       recordingAnalyser = ctx.createAnalyser(); recordingAnalyser.fftSize = 1024;
       recordingSilencer = ctx.createGain(); recordingSilencer.gain.value = 0;
       recordingSource.connect(recordingAnalyser); recordingAnalyser.connect(recordingSilencer); recordingSilencer.connect(ctx.destination);
-      recordingStartedAt = performance.now(); lastWaveformSampleAt = 0; liveWaveformPeaks = []; els.recordingMonitor.hidden = false;
+      lastWaveformSampleAt = 0; liveWaveformPeaks = []; els.recordingMonitor.hidden = false;
       const samples = new Uint8Array(recordingAnalyser.fftSize), canvas = els.recordingWaveform, draw = canvas.getContext("2d");
       const paint = () => {
         if (!recordingAnalyser || !draw) return;
@@ -394,7 +394,7 @@
     const block = els.list.querySelector('[data-clip-id="' + recordingClip.id + '"]'); if (!block) return;
     block.style.width = Math.max(38, elapsed * state.zoom) + 'px';
     const canvas = block.querySelector('canvas'), context = canvas?.getContext('2d'); if (!canvas || !context) return;
-    const width = Math.max(80, Math.round(elapsed * 10)); if (canvas.width !== width) canvas.width = width;
+    const width = Math.min(12000, Math.max(80, Math.round(elapsed * 10))); if (canvas.width !== width) canvas.width = width;
     context.clearRect(0, 0, canvas.width, canvas.height); drawStoredWaveform(context, recordingClip.waveformPeaks, canvas.width, canvas.height);
   }
   function drawAnalyserWaveform(ctx, analyser, samples, width, height) {
@@ -432,7 +432,7 @@
       recorder.onstop = async () => {
         stopLiveWaveform(); const blob = new Blob(recordChunks, { type: recorder.mimeType || "audio/webm" }); recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null;
         try {
-          const key = id(), duration = Math.max(.05, (performance.now() - recordingStartedAt) / 1000), waveformPeaks = compressWaveformPeaks(liveWaveformPeaks);
+          const key = id(), duration = Math.max(.05, (performance.now() - (recordingStartedAt || performance.now())) / 1000), waveformPeaks = compressWaveformPeaks(liveWaveformPeaks);
           try { await storeBlob(key, blob); } catch {}
           let buffer = null;
           try { buffer = await decodeBlob(blob); buffers.set(key, buffer); } catch {}
@@ -452,7 +452,7 @@
           liveWaveformPeaks = [];
         } catch (error) {
           if (recordingClip && recordingTrack) {
-            recordingClip.sourceEnd = Math.max(.05, (performance.now() - recordingStartedAt) / 1000); recordingClip.waveformPeaks = compressWaveformPeaks(liveWaveformPeaks, 900);
+            recordingClip.sourceEnd = Math.max(.05, (performance.now() - (recordingStartedAt || performance.now())) / 1000); recordingClip.waveformPeaks = compressWaveformPeaks(liveWaveformPeaks, 900);
             state.selectedTrackId = recordingTrack.id; state.selected = [recordingClip.id]; saveProject(); render();
           }
           setStatus('Não foi possível finalizar o áudio gravado: ' + error.message);
@@ -460,7 +460,7 @@
       };
       state.playhead = recordingStart; positionPlayhead(); saveProject();
       recorder.start(250); startLiveWaveform(recorderStream);
-      recordingTrack = state.tracks.find(item => item.id === state.selectedTrackId && item.type === "audio") || state.tracks.find(item => item.type === "audio");
+      recorder.start(250); recordingStartedAt = performance.now(); lastWaveformSampleAt = 0; liveWaveformPeaks = []; startLiveWaveform(recorderStream);
       if (!recordingTrack) { recordingTrack = freshTrack('VOZ ' + (state.tracks.filter(item => item.name.startsWith('VOZ')).length + 1)); state.tracks.push(recordingTrack); }
       checkpoint(); recordingClip = { id: id(), type: "audio", audioId: "", name: "GRAVANDO…", start: recordingStart, sourceStart: 0, sourceEnd: .05, gain: 1, waveformPeaks: [], envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
       recordingTrack.clips.push(recordingClip); state.selectedTrackId = recordingTrack.id; state.selected = [recordingClip.id]; lastClipWaveformUpdate = 0; render();
