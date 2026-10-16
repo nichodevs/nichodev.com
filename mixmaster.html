@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="cursores-retro.css">
-  <link rel="stylesheet" href="mixmaster.css?v=3">
+  <link rel="stylesheet" href="mixmaster.css?v=4">
 </head>
 <body class="mix-page">
   <main class="mix-app">
@@ -41,6 +41,8 @@
 
     <section class="mix-statusbar" aria-label="Estado do projeto"><span id="projectStatus" role="status">Projeto pronto · suas alterações são salvas neste navegador</span><span class="time-readout" id="timeReadout">00:00.00</span><span id="audioMeter" class="meter" aria-label="Nível de saída"><i></i></span><label class="bpm-control">BPM <input id="bpmInput" type="number" min="40" max="240" value="120" aria-label="Andamento em batidas por minuto"></label></section>
 
+    <section id="recordingMonitor" class="recording-monitor" aria-label="Forma de onda da gravação em andamento" hidden><div class="recording-monitor-heading"><strong>GRAVANDO · FORMA DE ONDA AO VIVO</strong><span id="recordingTime">00:00.00</span></div><canvas id="recordingWaveform" width="900" height="100"></canvas></section>
+
     <section class="editor-shell" aria-label="Editor multifaixa">
       <div class="timeline" id="timeline">
         <div class="track-label-header">FAIXAS</div>
@@ -59,7 +61,7 @@
 
     <section class="clip-editor" aria-label="Editor do clipe selecionado">
       <div class="editor-tabs"><button class="selected" type="button" data-tab="edit">EDIÇÃO</button><button type="button" data-tab="envelope">ENVELOPE</button><button type="button" data-tab="midi">MIDI</button><span id="selectionLabel">NENHUM CLIPE SELECIONADO</span></div>
-      <div class="edit-tools" data-panel="edit"><button id="splitButton" type="button" disabled>DIVIDIR NO PLAYHEAD</button><button id="duplicateButton" type="button" disabled>DUPLICAR CLIPE</button><button id="joinButton" type="button" disabled>JUNTAR SELEÇÃO</button><button id="deleteButton" type="button" disabled>EXCLUIR CLIPE</button><label>ZOOM <input id="zoomControl" type="range" min="8" max="48" value="16"></label></div>
+      <div class="edit-tools" data-panel="edit"><button id="splitButton" type="button" disabled>CORTAR NO PLAYHEAD</button><button id="trimStartButton" type="button" disabled>RECORTAR INÍCIO</button><button id="trimEndButton" type="button" disabled>RECORTAR FINAL</button><button id="duplicateButton" type="button" disabled>DUPLICAR CLIPE</button><button id="joinButton" type="button" disabled>JUNTAR SELEÇÃO</button><button id="deleteButton" type="button" disabled>EXCLUIR CLIPE</button><label>ZOOM <input id="zoomControl" type="range" min="8" max="48" value="16"></label></div>
       <div class="edit-tools envelope-tools" data-panel="envelope" hidden><label>VOLUME DO CLIPE <output id="clipGainValue">100%</output><input id="clipGain" type="range" min="0" max="150" value="100" disabled></label><canvas id="envelopeCanvas" width="720" height="130" aria-label="Envelope de volume editável"></canvas><p>Arraste os pontos para desenhar o volume do clipe durante a reprodução.</p></div>
       <div class="edit-tools midi-tools" data-panel="midi" hidden><p>Crie uma faixa MIDI para desenhar notas no piano roll. As notas são reproduzidas por sintetizador simples.</p><div id="pianoRoll" class="piano-roll" aria-label="Editor de notas MIDI"></div></div>
     </section>
@@ -67,6 +69,6 @@
     <footer>ÁUDIO LOCAL · O PROJETO FICA SALVO NESTE NAVEGADOR · MIXMASTER v1</footer>
   </main>
   <script src="js/back-sound.js?v=1" defer></script>
-  <script src="js/mixmaster.js?v=7" defer></script>
+  <script src="js/mixmaster.js?v=8" defer></script>
 </body>
 </html>

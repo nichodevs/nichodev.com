@@ -4,7 +4,7 @@
   const els = {
     list: $("trackList"), ruler: $("ruler"), playhead: $("playhead"), timeline: $("timeline"),
     status: $("projectStatus"), time: $("timeReadout"), meter: $("audioMeter").firstElementChild,
-    audioFiles: $("audioFiles"), record: $("recordButton"), play: $("playButton"), stop: $("stopButton"),
+    audioFiles: $("audioFiles"), record: $("recordButton"), play: $("playButton"), stop: $("stopButton"), recordingMonitor: $("recordingMonitor"), recordingWaveform: $("recordingWaveform"), recordingTime: $("recordingTime"),
     selection: $("selectionLabel"), piano: $("pianoRoll"), envelope: $("envelopeCanvas")
   };
   const DB_NAME = "nichodev-mixmaster-v1";
@@ -13,7 +13,7 @@
   const FREQUENCIES = [523.25, 493.88, 440, 392, 349.23, 329.63, 293.66, 261.63];
   const state = { tracks: [], selected: [], selectedTrackId: null, playhead: 0, zoom: 16, bpm: 120, tab: "edit", master: .8, playing: false };
   let db, audioContext, masterNode, meterFrame, playStartedAt = 0, playOffset = 0, activeSources = [];
-  let recorder, recorderStream, recordChunks = [], undoStack = [], redoStack = [], saveTimer;
+  let recorder, recorderStream, recordingSource, recordingAnalyser, recordingSilencer, recordingFrame = 0, recordingStartedAt = 0, recordChunks = [], undoStack = [], redoStack = [], saveTimer;
   const buffers = new Map(), blobs = new Map(), routeNodes = new Map();
   const id = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const esc = value => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -258,7 +258,9 @@
     for (const row of els.list.querySelectorAll(".track-row")) { const active = row.dataset.trackId === state.selectedTrackId; row.classList.toggle("active-track-row", active); row.setAttribute("aria-selected", String(active)); }
     const one = selectedClip();
     els.selection.textContent = one ? `${one.track.name} / ${one.clip.name || "CLIPE"}` : state.selected.length ? `${state.selected.length} CLIPES SELECIONADOS` : "NENHUM CLIPE SELECIONADO";
-    for (const buttonId of ["splitButton", "duplicateButton", "deleteButton"]) $(buttonId).disabled = !one;
+    const canTrimAtPlayhead = Boolean(one && one.clip.type !== "midi" && state.playhead > one.clip.start + .025 && state.playhead < clipEnd(one.clip) - .025);
+    $("splitButton").disabled = !canTrimAtPlayhead; $("trimStartButton").disabled = !canTrimAtPlayhead; $("trimEndButton").disabled = !canTrimAtPlayhead;
+    for (const buttonId of ["duplicateButton", "deleteButton"]) $(buttonId).disabled = !one;
     $("joinButton").disabled = state.selected.length < 2;
     $("clipGain").disabled = !one || one.clip.type === "midi";
     if (one && one.clip.type !== "midi") { $("clipGain").value = Math.round((one.clip.gain ?? 1) * 100); $("clipGainValue").textContent = `${Math.round((one.clip.gain ?? 1) * 100)}%`; }
@@ -314,6 +316,45 @@
     }
     saveProject(); render();
   }
+  function startLiveWaveform(stream) {
+    try {
+      const ctx = audioCtx();
+      recordingSource = ctx.createMediaStreamSource(stream);
+      recordingAnalyser = ctx.createAnalyser(); recordingAnalyser.fftSize = 1024;
+      recordingSilencer = ctx.createGain(); recordingSilencer.gain.value = 0;
+      recordingSource.connect(recordingAnalyser); recordingAnalyser.connect(recordingSilencer); recordingSilencer.connect(ctx.destination);
+      recordingStartedAt = performance.now(); els.recordingMonitor.hidden = false;
+      const samples = new Uint8Array(recordingAnalyser.fftSize), canvas = els.recordingWaveform, draw = canvas.getContext("2d");
+      const paint = () => {
+        if (!recordingAnalyser || !draw) return;
+        const ratio = window.devicePixelRatio || 1, width = Math.max(1, canvas.clientWidth), height = Math.max(1, canvas.clientHeight);
+        if (canvas.width !== Math.round(width * ratio) || canvas.height !== Math.round(height * ratio)) { canvas.width = Math.round(width * ratio); canvas.height = Math.round(height * ratio); }
+        draw.setTransform(ratio, 0, 0, ratio, 0, 0); draw.clearRect(0, 0, width, height);
+        drawAnalyserWaveform(draw, recordingAnalyser, samples, width, height);
+        const elapsed = (performance.now() - recordingStartedAt) / 1000;
+        els.recordingTime.textContent = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(Math.floor(elapsed % 60)).padStart(2, "0")}.${String(Math.floor(elapsed % 1 * 100)).padStart(2, "0")}`;
+        recordingFrame = requestAnimationFrame(paint);
+      };
+      paint();
+    } catch { els.recordingMonitor.hidden = false; els.recordingTime.textContent = "VISUALIZAÇÃO INDISPONÍVEL"; }
+  }
+  function drawAnalyserWaveform(ctx, analyser, samples, width, height) {
+    analyser.getByteTimeDomainData(samples);
+    ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = "#7846b8";
+    const step = width / samples.length;
+    for (let i = 0; i < samples.length; i++) {
+      const x = i * step, y = samples[i] / 255 * height;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  function stopLiveWaveform() {
+    if (recordingFrame) cancelAnimationFrame(recordingFrame);
+    recordingFrame = 0;
+    for (const node of [recordingSource, recordingAnalyser, recordingSilencer]) { try { node?.disconnect(); } catch {} }
+    recordingSource = recordingAnalyser = recordingSilencer = null;
+    els.recordingMonitor.hidden = true;
+  }
   async function startRecording() {
     const recordingStart = 0;
     stopPlayback(true);
@@ -325,7 +366,7 @@
       recorder = new MediaRecorder(recorderStream, mime ? { mimeType: mime } : undefined); recordChunks = [];
       recorder.ondataavailable = event => { if (event.data.size) recordChunks.push(event.data); };
       recorder.onstop = async () => {
-        const blob = new Blob(recordChunks, { type: recorder.mimeType || "audio/webm" }); recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null;
+        stopLiveWaveform(); const blob = new Blob(recordChunks, { type: recorder.mimeType || "audio/webm" }); recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null;
         try {
           const buffer = await decodeBlob(blob), key = id(); await storeBlob(key, blob); buffers.set(key, buffer); state.playhead = recordingStart; positionPlayhead(); checkpoint();
           const track = freshTrack(`VOZ ${state.tracks.filter(item => item.name.startsWith("VOZ")).length + 1}`); const clip = { id: id(), type: "audio", audioId: key, name: `Gravação ${new Date().toLocaleTimeString("pt-BR")}`, start: recordingStart, sourceStart: 0, sourceEnd: buffer.duration, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] }; track.clips.push(clip); state.tracks.push(track); state.selected = [clip.id]; saveProject(); render(); setStatus("Gravação adicionada como nova faixa de áudio");
@@ -333,8 +374,8 @@
         finally { els.play.disabled = false; }
       };
       state.playhead = recordingStart; positionPlayhead(); saveProject();
-      recorder.start(250); els.play.disabled = true; els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando a partir de 0:00… clique em PARAR REC para finalizar");
-    } catch (error) { recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null; els.play.disabled = false; setStatus(error.message || "Não foi possível acessar o microfone."); }
+      recorder.start(250); startLiveWaveform(recorderStream); els.play.disabled = true; els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando a partir de 0:00… clique em PARAR REC para finalizar");
+    } catch (error) { recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null; stopLiveWaveform(); els.play.disabled = false; setStatus(error.message || "Não foi possível acessar o microfone."); }
   }
   function stopRecording() { if (recorder?.state === "recording") { recorder.stop(); els.record.classList.remove("recording"); els.record.innerHTML = "●<small>REC</small>"; setStatus("Finalizando gravação…"); } }
   function envelopeAt(points, x) { if (!points?.length) return .8; const right = points.findIndex(point => point.x >= x); if (right <= 0) return points[0].y; const a = points[right - 1], b = points[right]; if (!b) return points.at(-1).y; const t = (x - a.x) / (b.x - a.x); return a.y + (b.y - a.y) * t; }
@@ -402,6 +443,27 @@
     if (state.playing) { state.playing = false; for (const source of activeSources) { try { source.stop(); } catch {} } activeSources = []; els.play.classList.remove("playing"); saveProject(); }
     if (reset) { state.playhead = 0; positionPlayhead(); }
   }
+  function trimEnvelope(points, from, to) {
+    const source = points?.length ? points : [{ x: 0, y: .8 }, { x: 1, y: .8 }];
+    const startY = envelopeAt(source, from), endY = envelopeAt(source, to);
+    return [{ x: 0, y: startY }, ...source.filter(point => point.x > from && point.x < to).map(point => ({ x: (point.x - from) / (to - from), y: point.y })), { x: 1, y: endY }];
+  }
+  function trimClipStart() {
+    const item = selectedClip(); if (!item || item.clip.type === "midi") return;
+    const { track, clip } = item, amount = state.playhead - clip.start, duration = durationOf(clip);
+    if (amount <= .025 || amount >= duration - .025) return;
+    checkpoint(); const fraction = amount / duration;
+    clip.sourceStart += amount; clip.start = state.playhead; clip.envelope = trimEnvelope(clip.envelope, fraction, 1);
+    saveProject(); render(); setStatus("Início do áudio recortado no cursor");
+  }
+  function trimClipEnd() {
+    const item = selectedClip(); if (!item || item.clip.type === "midi") return;
+    const { clip } = item, amount = state.playhead - clip.start, duration = durationOf(clip);
+    if (amount <= .025 || amount >= duration - .025) return;
+    checkpoint(); const fraction = amount / duration;
+    clip.sourceEnd = clip.sourceStart + amount; clip.envelope = trimEnvelope(clip.envelope, 0, fraction);
+    saveProject(); render(); setStatus("Final do áudio recortado no cursor");
+  }
   function splitClip() {
     const item = selectedClip(); if (!item || item.clip.type === "midi") return;
     const { track, clip } = item; const splitAt = state.playhead;
@@ -458,6 +520,8 @@
   els.play.addEventListener("click", () => state.playing ? stopPlayback(false) : play());
   els.stop.addEventListener("click", () => { stopPlayback(true); setStatus("Reprodução parada"); });
   $("splitButton").addEventListener("click", splitClip);
+  $("trimStartButton").addEventListener("click", trimClipStart);
+  $("trimEndButton").addEventListener("click", trimClipEnd);
   $("duplicateButton").addEventListener("click", duplicateClip);
   $("deleteButton").addEventListener("click", deleteSelected);
   $("joinButton").addEventListener("click", joinSelected);
