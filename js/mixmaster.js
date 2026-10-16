@@ -162,7 +162,7 @@
       if (saved?.tracks?.length) {
         state.tracks = saved.tracks;
         state.selectedTrackId = saved.selectedTrackId || state.tracks[0]?.id || null;
-        state.playhead = saved.playhead || 0;
+        state.playhead = 0; // Sempre abrir o cursor no início do projeto.
         state.bpm = saved.bpm || 120;
         state.master = saved.master ?? .8;
         $("bpmInput").value = state.bpm;
