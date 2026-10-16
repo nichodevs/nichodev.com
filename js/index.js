@@ -2,6 +2,7 @@
 
 const startButton = document.getElementById("startBtn");
 const selectButton = document.querySelector('a[href="guitarra.html"]');
+const mixmasterButton = document.querySelector('a[href="mixmaster.html"]');
 
 let menuAudioContext = null;
 const primedMenuSounds = new WeakMap();
@@ -109,6 +110,41 @@ function playSelectSound(audio) {
   pick.start(strumStart);
 }
 
+
+function playMixMasterSound(audio) {
+  // Nota grave com fundamental arredondada e harmônico filtrado, como um baixo elétrico.
+  const filter = audio.createBiquadFilter();
+  const output = audio.createGain();
+  filter.type = "lowpass";
+  filter.frequency.value = 720;
+  filter.Q.value = 0.7;
+  output.gain.value = 0.8;
+  filter.connect(output);
+  output.connect(audio.destination);
+
+  const notes = [
+    { frequency: 73.42, start: 0.015, duration: 0.46, volume: 0.22, type: "triangle" },
+    { frequency: 146.83, start: 0.018, duration: 0.28, volume: 0.045, type: "sawtooth" }
+  ];
+
+  for (const note of notes) {
+    const oscillator = audio.createOscillator();
+    const gain = audio.createGain();
+    const start = audio.currentTime + note.start;
+    const end = start + note.duration;
+    oscillator.type = note.type;
+    oscillator.frequency.setValueAtTime(note.frequency * 1.025, start);
+    oscillator.frequency.exponentialRampToValueAtTime(note.frequency, start + 0.07);
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.linearRampToValueAtTime(note.volume, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    oscillator.connect(gain);
+    gain.connect(filter);
+    oscillator.start(start);
+    oscillator.stop(end);
+  }
+}
+
 function navigateWithSound(button, playSound, soundDuration, soundName) {
   if (!button) return;
 
@@ -174,3 +210,4 @@ function navigateWithSound(button, playSound, soundDuration, soundName) {
 
 navigateWithSound(startButton, playStartSound, 550, "START");
 navigateWithSound(selectButton, playSelectSound, 650, "SELECT");
+navigateWithSound(mixmasterButton, playMixMasterSound, 600, "MIX/MASTER");
