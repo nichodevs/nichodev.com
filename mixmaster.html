@@ -9,15 +9,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script>try{if(localStorage.getItem("nichodev-mixmaster-theme")==="dark")document.documentElement.dataset.theme="dark"}catch{}</script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="cursores-retro.css">
-  <link rel="stylesheet" href="mixmaster.css?v=5">
+  <link rel="stylesheet" href="mixmaster.css?v=6">
 </head>
 <body class="mix-page">
   <main class="mix-app">
     <header class="mix-topbar">
       <a class="mix-brand" href="index.html" aria-label="Voltar ao menu principal"><span aria-hidden="true">▣</span><span>NICHODEVS<br><small>AUDIO ARCADE</small></span></a>
       <nav aria-label="Menu principal"><a href="index.html">INÍCIO</a><a href="voz.html">VOZ</a><a href="guitarra.html">GUITARRA</a><a class="active" href="mixmaster.html" aria-current="page">MIX/MASTER</a></nav>
+      <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Ativar modo noturno">☾<small>MODO NOTURNO</small></button>
       <a class="mix-back" href="index.html">← MENU</a>
     </header>
 
@@ -69,6 +71,6 @@
     <footer>ÁUDIO LOCAL · O PROJETO FICA SALVO NESTE NAVEGADOR · MIXMASTER v1</footer>
   </main>
   <script src="js/back-sound.js?v=1" defer></script>
-  <script src="js/mixmaster.js?v=22" defer></script>
+  <script src="js/mixmaster.js?v=23" defer></script>
 </body>
 </html>
