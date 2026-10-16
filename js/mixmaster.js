@@ -14,7 +14,7 @@
   const state = { tracks: [], selected: [], selectedTrackId: null, playhead: 0, zoom: 16, bpm: 120, tab: "edit", master: .8, playing: false };
   let db, audioContext, masterNode, meterFrame, playStartedAt = 0, playOffset = 0, activeSources = [];
   let recorder, recorderStream, recordingSource, recordingAnalyser, recordingSilencer, recordingFrame = 0, recordingStartedAt = 0, lastWaveformSampleAt = 0, liveWaveformPeaks = [], recordChunks = [], undoStack = [], redoStack = [], saveTimer;
-  let projectReady = Promise.resolve(), recordingSetup = false;
+  let projectReady = Promise.resolve(), recordingSetup = false, recordingFinalizing = false;
   let recordingClip = null, recordingTrack = null, lastClipWaveformUpdate = 0;
   const buffers = new Map(), blobs = new Map(), routeNodes = new Map();
   const id = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -126,13 +126,17 @@
     saveProject(); render();
   }
   function updateUndoButtons() { $("undoButton").disabled = !undoStack.length; $("redoButton").disabled = !redoStack.length; }
+  function persistProjectNow() {
+    clearTimeout(saveTimer); saveTimer = null;
+    try {
+      localStorage.setItem(PROJECT_KEY, JSON.stringify({ tracks: state.tracks, selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master }));
+      return true;
+    } catch { return false; }
+  }
   function saveProject() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
-      try {
-        localStorage.setItem(PROJECT_KEY, JSON.stringify({ tracks: state.tracks, selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master }));
-        els.status.textContent = "Projeto salvo neste navegador";
-      } catch { els.status.textContent = "Não foi possível salvar o projeto neste navegador"; }
+      els.status.textContent = persistProjectNow() ? "Projeto salvo neste navegador" : "Não foi possível salvar o projeto neste navegador";
     }, 180);
   }
   function openDB() {
@@ -348,9 +352,10 @@
   els.envelope.addEventListener("pointerup", () => { if (draggingPoint >= 0) { draggingPoint = -1; saveProject(); renderEnvelope(); } });
   function moveEnvelopePoint(event) { const item = selectedClip(); if (!item) return; const rect = els.envelope.getBoundingClientRect(); const points = item.clip.envelope; const point = points[draggingPoint]; if (!point) return; point.x = Math.max(draggingPoint ? points[draggingPoint - 1].x + .01 : 0, Math.min(draggingPoint < points.length - 1 ? points[draggingPoint + 1].x - .01 : 1, (event.clientX - rect.left) / rect.width)); point.y = Math.max(0, Math.min(1, 1 - (event.clientY - rect.top) / rect.height)); renderEnvelope(); }
   function setStatus(message) { els.status.textContent = message; }
-  function addTrack() { checkpoint(); const track = freshTrack(`FAIXA ${state.tracks.length + 1}`); state.tracks.push(track); state.selectedTrackId = track.id; if (audioContext && track.type !== "midi") createTrackRoute(track); saveProject(); render(); setStatus("Nova faixa de áudio criada"); }
-  function addMidiTrack() { checkpoint(); const track = freshTrack(`MIDI ${state.tracks.filter(item => item.type === "midi").length + 1}`, "midi"); track.clips.push({ id: id(), type: "midi", name: "REGIÃO MIDI", start: state.playhead, duration: 60 / state.bpm * 4, notes: [] }); state.tracks.push(track); state.selectedTrackId = track.id; state.selected = [track.clips[0].id]; saveProject(); render(); setStatus("Faixa MIDI criada · clique na grade para desenhar notas"); }
+  async function addTrack() { await projectReady; checkpoint(); const track = freshTrack(`FAIXA ${state.tracks.length + 1}`); state.tracks.push(track); state.selectedTrackId = track.id; if (audioContext && track.type !== "midi") createTrackRoute(track); saveProject(); render(); setStatus("Nova faixa de áudio criada"); }
+  async function addMidiTrack() { await projectReady; checkpoint(); const track = freshTrack(`MIDI ${state.tracks.filter(item => item.type === "midi").length + 1}`, "midi"); track.clips.push({ id: id(), type: "midi", name: "REGIÃO MIDI", start: state.playhead, duration: 60 / state.bpm * 4, notes: [] }); state.tracks.push(track); state.selectedTrackId = track.id; state.selected = [track.clips[0].id]; saveProject(); render(); setStatus("Faixa MIDI criada · clique na grade para desenhar notas"); }
   async function importFiles(files, targetTrack) {
+    await projectReady;
     const valid = [...files].filter(file => file.type.startsWith("audio/"));
     if (!valid.length) { setStatus("Escolha um arquivo de áudio compatível."); return; }
     setStatus(`Importando ${valid.length} arquivo(s)…`);
@@ -416,7 +421,7 @@
     els.recordingMonitor.hidden = true;
   }
   async function startRecording() {
-    if (recordingSetup) return;
+    if (recordingSetup || recordingFinalizing) return;
     recordingSetup = true;
     try {
       await projectReady;
@@ -431,6 +436,9 @@
       recorder = new MediaRecorder(recorderStream, mime ? { mimeType: mime } : undefined); recordChunks = [];
       recorder.ondataavailable = event => { if (event.data.size) recordChunks.push(event.data); };
       recorder.onstop = async () => {
+        recordingFinalizing = true;
+        els.record.disabled = true; els.play.disabled = true;
+        setStatus("Finalizando gravação e preparando a forma de onda…");
         const targetTrack = recordingTrack;
         const targetClip = recordingClip;
         const capturedPeaks = compressWaveformPeaks(liveWaveformPeaks);
@@ -458,11 +466,12 @@
           Object.assign(clip, { type: "audio", audioId: key, name: "Gravação " + new Date().toLocaleTimeString("pt-BR"), start: recordingStart, sourceStart: 0, sourceEnd: Math.max(.05, buffer?.duration || elapsed), waveformPeaks: savedPeaks });
           if (!track.clips.some(item => item.id === clip.id)) track.clips.push(clip);
           state.selectedTrackId = track.id; state.selected = [clip.id]; state.playhead = recordingStart;
-          clearTimeout(saveTimer);
-          localStorage.setItem(PROJECT_KEY, JSON.stringify({ tracks: state.tracks, selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master }));
+          const saved = persistProjectNow();
           render();
           recordingClip = recordingTrack = null; liveWaveformPeaks = [];
-          setStatus(buffer ? "Gravação salva na faixa e pronta para reprodução" : "Forma de onda salva; o navegador não conseguiu decodificar o áudio para reprodução");
+          setStatus(!saved
+            ? "Gravação aparece na faixa, mas o navegador não conseguiu salvar o projeto localmente"
+            : buffer ? "Gravação salva na faixa e pronta para reprodução" : "Forma de onda salva; o navegador não conseguiu decodificar o áudio para reprodução");
         } catch (error) {
           const track = targetTrack || freshTrack("VOZ 1");
           const clip = targetClip || { id: id(), type: "audio", start: recordingStart, sourceStart: 0, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
@@ -471,10 +480,12 @@
           Object.assign(clip, { type: "audio", name: "Gravação recuperada", start: recordingStart, sourceStart: 0, sourceEnd: elapsed, waveformPeaks: capturedPeaks });
           if (!track.clips.some(item => item.id === clip.id)) track.clips.push(clip);
           state.selectedTrackId = track.id; state.selected = [clip.id]; state.playhead = recordingStart;
-          try { localStorage.setItem(PROJECT_KEY, JSON.stringify({ tracks: state.tracks, selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master })); render(); } catch {}
-          setStatus("A faixa foi preservada, mas houve erro ao finalizar o áudio: " + error.message);
+          const saved = persistProjectNow();
+          try { render(); } catch (renderError) { console.error("Falha ao redesenhar a faixa gravada:", renderError); }
+          setStatus("A faixa foi preservada" + (saved ? "" : " apenas nesta sessão") + ", mas houve erro ao finalizar o áudio: " + error.message);
         } finally {
           recordingClip = recordingTrack = null; liveWaveformPeaks = [];
+          recordingFinalizing = false;
           els.record.disabled = false; els.play.disabled = false;
           els.record.classList.remove("recording"); els.record.innerHTML = "●<small>REC</small>";
         }
@@ -501,9 +512,12 @@
       const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.type = "square"; osc.frequency.value = FREQUENCIES[note.pitch] || 440; gain.gain.setValueAtTime(0, when + at - offset); gain.gain.linearRampToValueAtTime((note.velocity || .7) * .25, when + at - offset + .012); gain.gain.setValueAtTime((note.velocity || .7) * .25, when + at - offset + stepDuration * .75); gain.gain.linearRampToValueAtTime(0, when + at - offset + stepDuration * .95); osc.connect(gain); gain.connect(output); osc.start(when + at - offset); osc.stop(when + at - offset + stepDuration); activeSources.push(osc);
     }
   }
-  function play() {
+  async function play() {
     try {
-      const ctx = audioCtx(); stopPlayback(false); state.playing = true; playOffset = state.playhead; playStartedAt = ctx.currentTime; activeSources = [];
+      await projectReady;
+      const ctx = audioCtx();
+      if (ctx.state === "suspended") await ctx.resume();
+      stopPlayback(false); state.playing = true; playOffset = state.playhead; playStartedAt = ctx.currentTime; activeSources = [];
       const soloExists = state.tracks.some(track => track.solo);
       for (const track of state.tracks) {
         if (!track.muted && (!soloExists || track.solo)) { if (!routeNodes.has(track.id)) createTrackRoute(track); updateRoute(track); }
@@ -526,7 +540,8 @@
     } catch (error) { setStatus(error.message); }
   }
   async function resetProject() {
-    if (recorder?.state === "recording") { setStatus("Pare a gravação antes de resetar o projeto."); return; }
+    await projectReady;
+    if (recorder?.state === "recording" || recordingFinalizing) { setStatus("Pare a gravação antes de resetar o projeto."); return; }
     if (!confirm("Isso apagará as faixas, gravações e áudios salvos deste projeto neste navegador. Não será possível desfazer. Continuar?")) return;
     stopPlayback(true);
     try {
