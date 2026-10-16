@@ -24,3 +24,5 @@ button:hover,.tool-button:hover{background:var(--mix-lime)!important;color:var(-
 /* Destaque persistente para a faixa selecionada na linha do tempo. */
 .track-row.active-track-row .track-controls{background:#e8ddff;box-shadow:inset 0 0 0 2px #7846b8}
 .track-row.active-track-row .track-lane{background-color:#f4efff}
+
+.reset-project-button{border-color:#a22;color:#8b1e1e}.reset-project-button:hover{background:#fff0f0}

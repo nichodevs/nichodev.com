@@ -365,6 +365,34 @@
       requestAnimationFrame(tick);
     } catch (error) { setStatus(error.message); }
   }
+  async function resetProject() {
+    if (recorder?.state === "recording") { setStatus("Pare a gravação antes de resetar o projeto."); return; }
+    if (!confirm("Isso apagará as faixas, gravações e áudios salvos deste projeto neste navegador. Não será possível desfazer. Continuar?")) return;
+    stopPlayback(true);
+    try {
+      if (!db) await openDB();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction("audio", "readwrite");
+        tx.objectStore("audio").clear();
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error || new Error("Não foi possível limpar os áudios."));
+      });
+      localStorage.removeItem(PROJECT_KEY);
+    } catch (error) {
+      setStatus(`Não foi possível resetar o projeto: ${error.message}`);
+      return;
+    }
+    for (const nodes of routeNodes.values()) for (const node of Object.values(nodes)) { try { node.disconnect(); } catch {} }
+    routeNodes.clear(); buffers.clear(); blobs.clear();
+    undoStack.length = 0; redoStack.length = 0;
+    state.tracks = [freshTrack("FAIXA 1")]; state.selected = []; state.selectedTrackId = state.tracks[0].id;
+    state.playhead = 0; state.zoom = 16; state.bpm = 120; state.master = .8;
+    $("bpmInput").value = "120"; $("masterVolume").value = "80"; $("masterValue").textContent = "80%"; $("zoomControl").value = "16";
+    if (audioContext) createTrackRoute(state.tracks[0]);
+    setTab("edit"); saveProject(); render(); updateUndoButtons();
+    setStatus("Projeto resetado · comece com uma faixa vazia");
+  }
   function stopPlayback(reset = false) {
     if (state.playing) { state.playing = false; for (const source of activeSources) { try { source.stop(); } catch {} } activeSources = []; els.play.classList.remove("playing"); saveProject(); }
     if (reset) { state.playhead = 0; positionPlayhead(); }
@@ -429,6 +457,7 @@
   $("deleteButton").addEventListener("click", deleteSelected);
   $("joinButton").addEventListener("click", joinSelected);
   $("exportButton").addEventListener("click", exportMix);
+  $("resetProjectButton").addEventListener("click", resetProject);
   $("zoomControl").addEventListener("input", event => { state.zoom = Number(event.target.value); render(); });
   $("bpmInput").addEventListener("change", event => { state.bpm = Math.max(40, Math.min(240, Number(event.target.value) || 120)); event.target.value = state.bpm; saveProject(); render(); });
   $("masterVolume").addEventListener("input", event => { state.master = Number(event.target.value) / 100; $("masterValue").textContent = `${event.target.value}%`; if (audioContext) masterNode.gain.setTargetAtTime(state.master, audioContext.currentTime, .02); saveProject(); });
