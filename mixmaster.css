@@ -28,3 +28,46 @@ button:hover,.tool-button:hover{background:var(--mix-lime)!important;color:var(-
 .reset-project-button{border-color:#a22;color:#8b1e1e}.reset-project-button:hover{background:#fff0f0}
 
 .recording-monitor{margin:0 0 10px;padding:10px;border:2px solid #7846b8;background:#f4efff}.recording-monitor[hidden]{display:none}.recording-monitor-heading{display:flex;justify-content:space-between;gap:12px;margin-bottom:7px;color:#4d2b7a;font:8px "Press Start 2P",monospace}.recording-monitor canvas{display:block;width:100%;height:100px;background:#fff;border:1px solid #9a7ac2}.record-button.recording{background:#ffe8ef;color:#a00}
+
+/* Tema escuro do MIXMASTER */
+html[data-theme="dark"] body.mix-page{background:#0b0d12;color:#edf0f7}
+html[data-theme="dark"] .mix-app{background:#141720;border-color:#303441}
+html[data-theme="dark"] .mix-topbar,html[data-theme="dark"] .mix-titlebar,html[data-theme="dark"] .mix-statusbar,html[data-theme="dark"] .clip-editor{border-color:#aeb3c1}
+html[data-theme="dark"] .mix-brand,html[data-theme="dark"] .mix-back,html[data-theme="dark"] .mix-topbar nav a{color:#edf0f7}
+html[data-theme="dark"] .mix-topbar nav a{border-color:#aeb3c1}
+html[data-theme="dark"] .mix-topbar nav a.active{background:#c9f23a;color:#111}
+html[data-theme="dark"] .eyebrow,html[data-theme="dark"] .tagline,html[data-theme="dark"] .mix-statusbar>span:first-child,html[data-theme="dark"] .mix-help,html[data-theme="dark"] .mix-app footer{color:#b8bdca}
+html[data-theme="dark"] .transport button,html[data-theme="dark"] .project-tools button,html[data-theme="dark"] .tool-button,html[data-theme="dark"] .editor-tabs button,html[data-theme="dark"] .edit-tools button,html[data-theme="dark"] .theme-toggle{background:#202430;color:#edf0f7;border-color:#b6bbc8}
+html[data-theme="dark"] .transport .transport-primary,html[data-theme="dark"] .editor-tabs button.selected{background:#c9f23a;color:#111}
+html[data-theme="dark"] .transport .record-button{color:#ff7686}
+html[data-theme="dark"] .theme-toggle{display:flex;align-items:center;gap:5px;padding:7px 9px;font:7px "Press Start 2P",monospace;cursor:pointer}
+html[data-theme="dark"] .theme-toggle small{font:6px "Press Start 2P",monospace}
+.theme-toggle{display:flex;align-items:center;gap:5px;padding:7px 9px;border:1px solid #111;background:#fff;color:#111;font:7px "Press Start 2P",monospace;white-space:nowrap;cursor:pointer}
+.theme-toggle small{font:6px "Press Start 2P",monospace}
+html[data-theme="dark"] .mix-statusbar,html[data-theme="dark"] .editor-shell{color:#edf0f7}
+html[data-theme="dark"] .meter,html[data-theme="dark"] .bpm-control input{background:#202430;color:#edf0f7;border-color:#b6bbc8}
+html[data-theme="dark"] .timeline,html[data-theme="dark"] .ruler-wrap{background:#141720}
+html[data-theme="dark"] .track-label-header{background:#202430;color:#edf0f7;border-color:#aeb3c1}
+html[data-theme="dark"] .ruler{background-color:#181b25;background-image:repeating-linear-gradient(90deg,transparent 0 calc(var(--mix-scale)*10 - 1px),#3a3e4b calc(var(--mix-scale)*10 - 1px) calc(var(--mix-scale)*10))}
+html[data-theme="dark"] .ruler span{color:#d3d6df}
+html[data-theme="dark"] .track-row{border-color:#454957}
+html[data-theme="dark"] .track-controls{background:#1a1d27;border-color:#aeb3c1}
+html[data-theme="dark"] .track-name{color:#edf0f7}
+html[data-theme="dark"] .track-type,html[data-theme="dark"] .inspector-note{color:#aeb3c1}
+html[data-theme="dark"] .track-lane{background-color:#141720;background-image:linear-gradient(to right,#2a2e39 1px,transparent 1px)}
+html[data-theme="dark"] .track-row:nth-child(even) .track-lane{background-color:#181b25}
+html[data-theme="dark"] .track-row.active-track-row .track-controls{background:#292337;box-shadow:inset 0 0 0 2px #bd91ff}
+html[data-theme="dark"] .track-row.active-track-row .track-lane{background-color:#211d2c}
+html[data-theme="dark"] .track-buttons button,html[data-theme="dark"] .inspector details,html[data-theme="dark"] .inspector details summary{background:#202430;color:#edf0f7;border-color:#555b6a}
+html[data-theme="dark"] .inspector{background:#171a23;border-color:#aeb3c1}
+html[data-theme="dark"] .inspector h2{border-color:#777d8b}
+html[data-theme="dark"] .inspector h2 span{color:#c9f23a}
+html[data-theme="dark"] .audio-clip{background:#37451d;border-color:#c9f23a;color:#f4f6ec}
+html[data-theme="dark"] .clip-label{color:#f4f6ec}
+html[data-theme="dark"] .midi-clip{background:#33264a;border-color:#c2a3f0}
+html[data-theme="dark"] .recording-monitor{background:#211d2c;border-color:#9d6be0}
+html[data-theme="dark"] .recording-monitor-heading{color:#d3b8ff}
+html[data-theme="dark"] .recording-monitor canvas,html[data-theme="dark"] #envelopeCanvas{background:#181b25;border-color:#73798a}
+html[data-theme="dark"] .mix-page input[type="number"]{background:#202430;color:#edf0f7;border-color:#b6bbc8}
+html[data-theme="dark"]{--mix-wave-color:#d5b5ff}
+@media(max-width:760px){.theme-toggle{margin-left:auto}}
