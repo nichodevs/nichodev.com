@@ -13,7 +13,7 @@
   const FREQUENCIES = [523.25, 493.88, 440, 392, 349.23, 329.63, 293.66, 261.63];
   const state = { tracks: [], selected: [], selectedTrackId: null, playhead: 0, zoom: 16, bpm: 120, tab: "edit", master: .8, playing: false };
   let db, audioContext, masterNode, meterFrame, playStartedAt = 0, playOffset = 0, activeSources = [];
-  let recorder, recorderStream, recordingSource, recordingAnalyser, recordingSilencer, recordingFrame = 0, recordingStartedAt = 0, recordChunks = [], undoStack = [], redoStack = [], saveTimer;
+  let recorder, recorderStream, recordingSource, recordingAnalyser, recordingSilencer, recordingFrame = 0, recordingStartedAt = 0, lastWaveformSampleAt = 0, liveWaveformPeaks = [], recordChunks = [], undoStack = [], redoStack = [], saveTimer;
   const buffers = new Map(), blobs = new Map(), routeNodes = new Map();
   const id = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   const esc = value => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -245,10 +245,41 @@
       block.addEventListener("pointermove", move); block.addEventListener("pointerup", up, { once: true });
     });
   }
+  function drawStoredWaveform(ctx, peaks, width, height) {
+    if (!peaks?.length) return false;
+    ctx.fillStyle = "#111";
+    for (let x = 0; x < width; x++) {
+      const from = Math.floor(x * peaks.length / width), to = Math.max(from + 1, Math.floor((x + 1) * peaks.length / width));
+      let min = 1, max = -1;
+      for (let i = from; i < to && i < peaks.length; i++) { min = Math.min(min, peaks[i][0]); max = Math.max(max, peaks[i][1]); }
+      const y1 = (1 - max) * height / 2, y2 = (1 - min) * height / 2;
+      ctx.fillRect(x, y1, 1, Math.max(1, y2 - y1));
+    }
+    return true;
+  }
+  function compressWaveformPeaks(peaks, limit = 1800) {
+    if (!peaks?.length) return [];
+    if (peaks.length <= limit) return peaks.map(point => [point[0], point[1]]);
+    const compact = [];
+    for (let i = 0; i < limit; i++) {
+      const from = Math.floor(i * peaks.length / limit), to = Math.max(from + 1, Math.floor((i + 1) * peaks.length / limit));
+      let min = 1, max = -1;
+      for (let j = from; j < to; j++) { min = Math.min(min, peaks[j][0]); max = Math.max(max, peaks[j][1]); }
+      compact.push([min, max]);
+    }
+    return compact;
+  }
+  function sliceWaveformPeaks(peaks, from, to) {
+    if (!peaks?.length) return peaks;
+    const start = Math.max(0, Math.min(peaks.length - 1, Math.floor(from * peaks.length)));
+    const end = Math.max(start + 1, Math.min(peaks.length, Math.ceil(to * peaks.length)));
+    return peaks.slice(start, end);
+  }
   function drawWaveform(canvas, buffer, clip) {
     const ctx = canvas.getContext("2d"); if (!ctx) return;
     const w = canvas.width, h = canvas.height; ctx.clearRect(0, 0, w, h);
-    if (!buffer) { ctx.fillStyle = "#111"; ctx.fillText("ÁUDIO", 6, 18); return; }
+    if (drawStoredWaveform(ctx, clip.waveformPeaks, w, h)) return;
+    if (!buffer) { ctx.fillStyle = "#111"; ctx.font = "12px sans-serif"; ctx.fillText("ÁUDIO", 6, 18); return; }
     const channel = buffer.getChannelData(0); const start = Math.floor(clip.sourceStart * buffer.sampleRate), end = Math.floor(clip.sourceEnd * buffer.sampleRate); const span = Math.max(1, end - start), step = Math.ceil(span / w);
     ctx.fillStyle = "#111";
     for (let x = 0; x < w; x++) { let min = 1, max = -1; for (let j = 0; j < step && start + x * step + j < end; j++) { const sample = channel[start + x * step + j] || 0; min = Math.min(min, sample); max = Math.max(max, sample); } const y1 = (1 - max) * h / 2, y2 = (1 - min) * h / 2; ctx.fillRect(x, y1, 1, Math.max(1, y2 - y1)); }
@@ -323,7 +354,7 @@
       recordingAnalyser = ctx.createAnalyser(); recordingAnalyser.fftSize = 1024;
       recordingSilencer = ctx.createGain(); recordingSilencer.gain.value = 0;
       recordingSource.connect(recordingAnalyser); recordingAnalyser.connect(recordingSilencer); recordingSilencer.connect(ctx.destination);
-      recordingStartedAt = performance.now(); els.recordingMonitor.hidden = false;
+      recordingStartedAt = performance.now(); lastWaveformSampleAt = 0; liveWaveformPeaks = []; els.recordingMonitor.hidden = false;
       const samples = new Uint8Array(recordingAnalyser.fftSize), canvas = els.recordingWaveform, draw = canvas.getContext("2d");
       const paint = () => {
         if (!recordingAnalyser || !draw) return;
@@ -340,13 +371,13 @@
   }
   function drawAnalyserWaveform(ctx, analyser, samples, width, height) {
     analyser.getByteTimeDomainData(samples);
-    ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = "#7846b8";
-    const step = width / samples.length;
-    for (let i = 0; i < samples.length; i++) {
-      const x = i * step, y = samples[i] / 255 * height;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    const now = performance.now();
+    if (now - lastWaveformSampleAt >= 45) {
+      let min = 1, max = -1;
+      for (const sample of samples) { const value = (sample - 128) / 128; min = Math.min(min, value); max = Math.max(max, value); }
+      liveWaveformPeaks.push([min, max]); lastWaveformSampleAt = now;
     }
-    ctx.stroke();
+    ctx.fillStyle = "#7846b8"; drawStoredWaveform(ctx, liveWaveformPeaks, width, height);
   }
   function stopLiveWaveform() {
     if (recordingFrame) cancelAnimationFrame(recordingFrame);
@@ -368,9 +399,18 @@
       recorder.onstop = async () => {
         stopLiveWaveform(); const blob = new Blob(recordChunks, { type: recorder.mimeType || "audio/webm" }); recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null;
         try {
-          const buffer = await decodeBlob(blob), key = id(); await storeBlob(key, blob); buffers.set(key, buffer); state.playhead = recordingStart; positionPlayhead(); checkpoint();
-          const track = freshTrack(`VOZ ${state.tracks.filter(item => item.name.startsWith("VOZ")).length + 1}`); const clip = { id: id(), type: "audio", audioId: key, name: `Gravação ${new Date().toLocaleTimeString("pt-BR")}`, start: recordingStart, sourceStart: 0, sourceEnd: buffer.duration, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] }; track.clips.push(clip); state.tracks.push(track); state.selected = [clip.id]; saveProject(); render(); setStatus("Gravação adicionada como nova faixa de áudio");
-        } catch (error) { setStatus(`Gravação concluída, mas não pôde ser decodificada: ${error.message}`); }
+          const key = id(), duration = Math.max(.05, (performance.now() - recordingStartedAt) / 1000), waveformPeaks = compressWaveformPeaks(liveWaveformPeaks);
+          try { await storeBlob(key, blob); } catch {}
+          let buffer = null;
+          try { buffer = await decodeBlob(blob); buffers.set(key, buffer); } catch {}
+          state.playhead = recordingStart; positionPlayhead(); checkpoint();
+          let track = state.tracks.find(item => item.id === state.selectedTrackId && item.type !== "midi") || state.tracks.find(item => item.type !== "midi");
+          if (!track) { track = freshTrack(`VOZ ${state.tracks.filter(item => item.name.startsWith("VOZ")).length + 1}`); state.tracks.push(track); }
+          const clip = { id: id(), type: "audio", audioId: key, name: `Gravação ${new Date().toLocaleTimeString("pt-BR")}`, start: recordingStart, sourceStart: 0, sourceEnd: buffer?.duration || duration, gain: 1, waveformPeaks, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
+          track.clips.push(clip); state.selectedTrackId = track.id; state.selected = [clip.id]; saveProject(); render();
+          setStatus(buffer ? "Gravação e forma de onda salvas na faixa selecionada" : "Forma de onda salva; áudio gravado, mas o navegador não conseguiu decodificá-lo para reprodução");
+          liveWaveformPeaks = [];
+        } catch (error) { setStatus(`Não foi possível salvar a gravação: ${error.message}`); }
         finally { els.play.disabled = false; }
       };
       state.playhead = recordingStart; positionPlayhead(); saveProject();
@@ -453,7 +493,7 @@
     const { track, clip } = item, amount = state.playhead - clip.start, duration = durationOf(clip);
     if (amount <= .025 || amount >= duration - .025) return;
     checkpoint(); const fraction = amount / duration;
-    clip.sourceStart += amount; clip.start = state.playhead; clip.envelope = trimEnvelope(clip.envelope, fraction, 1);
+    clip.sourceStart += amount; clip.start = state.playhead; clip.envelope = trimEnvelope(clip.envelope, fraction, 1); clip.waveformPeaks = sliceWaveformPeaks(clip.waveformPeaks, fraction, 1);
     saveProject(); render(); setStatus("Início do áudio recortado no cursor");
   }
   function trimClipEnd() {
@@ -461,14 +501,14 @@
     const { clip } = item, amount = state.playhead - clip.start, duration = durationOf(clip);
     if (amount <= .025 || amount >= duration - .025) return;
     checkpoint(); const fraction = amount / duration;
-    clip.sourceEnd = clip.sourceStart + amount; clip.envelope = trimEnvelope(clip.envelope, 0, fraction);
+    clip.sourceEnd = clip.sourceStart + amount; clip.envelope = trimEnvelope(clip.envelope, 0, fraction); clip.waveformPeaks = sliceWaveformPeaks(clip.waveformPeaks, 0, fraction);
     saveProject(); render(); setStatus("Final do áudio recortado no cursor");
   }
   function splitClip() {
     const item = selectedClip(); if (!item || item.clip.type === "midi") return;
     const { track, clip } = item; const splitAt = state.playhead;
     if (splitAt <= clip.start + .025 || splitAt >= clipEnd(clip) - .025) { setStatus("Mova o cursor para dentro do clipe para dividi-lo."); return; }
-    checkpoint(); const leftDuration = splitAt - clip.start; const originalEnd = clip.sourceEnd; const left = { ...clip, sourceEnd: clip.sourceStart + leftDuration, envelope: clip.envelope?.filter(point => point.x < leftDuration / durationOf(clip)).map(point => ({ ...point, x: point.x / (leftDuration / durationOf(clip)) })) }; const right = { ...clip, id: id(), start: splitAt, sourceStart: clip.sourceStart + leftDuration, sourceEnd: originalEnd, envelope: clip.envelope?.filter(point => point.x >= leftDuration / durationOf(clip)).map(point => ({ ...point, x: (point.x - leftDuration / durationOf(clip)) / (1 - leftDuration / durationOf(clip)) })) }; left.envelope ||= [{ x: 0, y: .8 }, { x: 1, y: .8 }]; right.envelope ||= [{ x: 0, y: .8 }, { x: 1, y: .8 }]; const index = track.clips.indexOf(clip); track.clips.splice(index, 1, left, right); state.selected = [left.id, right.id]; saveProject(); render(); setStatus("Clipe dividido em dois");
+    checkpoint(); const leftDuration = splitAt - clip.start; const originalEnd = clip.sourceEnd; const left = { ...clip, sourceEnd: clip.sourceStart + leftDuration, envelope: clip.envelope?.filter(point => point.x < leftDuration / durationOf(clip)).map(point => ({ ...point, x: point.x / (leftDuration / durationOf(clip)) })) }; const right = { ...clip, id: id(), start: splitAt, sourceStart: clip.sourceStart + leftDuration, sourceEnd: originalEnd, envelope: clip.envelope?.filter(point => point.x >= leftDuration / durationOf(clip)).map(point => ({ ...point, x: (point.x - leftDuration / durationOf(clip)) / (1 - leftDuration / durationOf(clip)) })) }; const waveformSplit = leftDuration / durationOf(clip); left.waveformPeaks = sliceWaveformPeaks(clip.waveformPeaks, 0, waveformSplit); right.waveformPeaks = sliceWaveformPeaks(clip.waveformPeaks, waveformSplit, 1); left.envelope ||= [{ x: 0, y: .8 }, { x: 1, y: .8 }]; right.envelope ||= [{ x: 0, y: .8 }, { x: 1, y: .8 }]; const index = track.clips.indexOf(clip); track.clips.splice(index, 1, left, right); state.selected = [left.id, right.id]; saveProject(); render(); setStatus("Clipe dividido em dois");
   }
   function duplicateClip() { const item = selectedClip(); if (!item) return; checkpoint(); const copy = JSON.parse(JSON.stringify(item.clip)); copy.id = id(); copy.start = clipEnd(item.clip) + .12; copy.name = `${item.clip.name} (cópia)`; item.track.clips.push(copy); state.selected = [copy.id]; saveProject(); render(); }
   function deleteSelected() { if (!state.selected.length) return; checkpoint(); for (const track of state.tracks) track.clips = track.clips.filter(clip => !state.selected.includes(clip.id)); state.selected = []; saveProject(); render(); setStatus("Clipe(s) excluído(s)"); }
