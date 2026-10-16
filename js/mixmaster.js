@@ -253,15 +253,15 @@
     for (const peak of peaks) maxMagnitude = Math.max(maxMagnitude, Math.abs(peak[0]), Math.abs(peak[1]));
     const scale = maxMagnitude > .0001 ? Math.min(24, .92 / maxMagnitude) : 1;
     const center = height / 2;
-    ctx.fillStyle = "#111";
+    ctx.fillStyle = "#7846b8";
     for (let x = 0; x < width; x++) {
       const from = Math.floor(x * peaks.length / width), to = Math.max(from + 1, Math.floor((x + 1) * peaks.length / width));
       let min = 1, max = -1;
       for (let i = from; i < to && i < peaks.length; i++) { min = Math.min(min, peaks[i][0]); max = Math.max(max, peaks[i][1]); }
       const top = center - Math.min(.92, Math.max(0, max * scale)) * center;
       const bottom = center - Math.max(-.92, Math.min(0, min * scale)) * center;
-      ctx.fillRect(x, Math.min(top, bottom), 1, Math.max(2, Math.abs(bottom - top)));
-      ctx.fillRect(x, center - barHeight / 2, 1, barHeight);
+      const barHeight = Math.max(2, Math.abs(bottom - top));
+      ctx.fillRect(x, Math.min(top, bottom), 1, barHeight);
     }
     return true;
   }
@@ -442,18 +442,25 @@
           if (!savedPeaks.length) for (let i = 0; i < 160; i++) savedPeaks.push([-.015, .015]);
           state.playhead = recordingStart; positionPlayhead();
           let track = state.tracks.find(item => item.id === recordingTrack?.id && item.type === "audio") || state.tracks.find(item => item.id === state.selectedTrackId && item.type === "audio") || state.tracks.find(item => item.type === "audio");
-          if (!track) throw new Error("A faixa da gravação não está disponível.");
+          if (!track) {
+            track = recordingTrack || freshTrack("VOZ 1");
+            if (!state.tracks.includes(track)) state.tracks.push(track);
+          }
+          if (!state.tracks.includes(track)) state.tracks.push(track);
           const clip = recordingClip || { id: id(), type: "audio", start: recordingStart, sourceStart: 0, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
           clip.audioId = key; clip.name = 'Gravação ' + new Date().toLocaleTimeString('pt-BR'); clip.sourceEnd = buffer?.duration || duration; clip.waveformPeaks = savedPeaks;
-          if (!track.clips.includes(clip)) track.clips.push(clip);
+          if (!track.clips.some(item => item.id === clip.id)) track.clips.push(clip);
           state.selectedTrackId = track.id; state.selected = [clip.id]; saveProject(); render();
           recordingClip = recordingTrack = null; liveWaveformPeaks = [];
           setStatus(buffer ? "Gravação e forma de onda salvas na faixa selecionada" : "Forma de onda salva; áudio gravado, mas o navegador não conseguiu decodificá-lo para reprodução");
           liveWaveformPeaks = [];
         } catch (error) {
           if (recordingClip && recordingTrack) {
+            if (!state.tracks.includes(recordingTrack)) state.tracks.push(recordingTrack);
+            if (!recordingTrack.clips.some(item => item.id === recordingClip.id)) recordingTrack.clips.push(recordingClip);
             recordingClip.sourceEnd = Math.max(.05, (performance.now() - (recordingStartedAt || performance.now())) / 1000); recordingClip.waveformPeaks = compressWaveformPeaks(liveWaveformPeaks, 900);
-            state.selectedTrackId = recordingTrack.id; state.selected = [recordingClip.id]; saveProject(); render();
+            state.selectedTrackId = recordingTrack.id; state.selected = [recordingClip.id]; saveProject();
+            try { render(); } catch (renderError) { console.error("Falha ao atualizar a interface após a gravação:", renderError); }
           }
           setStatus('Não foi possível finalizar o áudio gravado: ' + error.message);
         } finally { recordingClip = recordingTrack = null; els.play.disabled = false; }
