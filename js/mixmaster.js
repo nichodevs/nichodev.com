@@ -201,7 +201,7 @@
     renderSelection(); renderPiano(); renderEnvelope(); updateUndoButtons();
   }
   function renderTrack(track, width) {
-    const row = document.createElement("div"); row.className = "track-row"; row.dataset.trackId = track.id;
+    const row = document.createElement("div"); row.className = `track-row${track.id === state.selectedTrackId ? " active-track-row" : ""}`; row.dataset.trackId = track.id; row.setAttribute("aria-selected", String(track.id === state.selectedTrackId));
     const controls = document.createElement("div"); controls.className = `track-controls${track.id === state.selectedTrackId ? " active-track" : ""}`;
     controls.innerHTML = `<div class="track-info"><button class="track-name" type="button" title="Duplo clique para renomear">${esc(track.name)}</button><small class="track-type">${track.type === "midi" ? "SINTETIZADOR MIDI" : "ÁUDIO"}</small></div><div class="track-buttons"><button type="button" data-action="mute" aria-label="Silenciar faixa" class="${track.muted ? "on" : ""}">M</button><button type="button" data-action="solo" aria-label="Ouvir faixa solo" class="${track.solo ? "on" : ""}">S</button><button type="button" data-action="remove-track" aria-label="Excluir faixa">×</button></div><input class="track-volume" type="range" min="0" max="100" value="${Math.round(track.volume * 100)}" aria-label="Volume da faixa"><input class="track-pan" type="range" min="-100" max="100" value="${Math.round(track.pan * 100)}" aria-label="Pan da faixa">`;
     const lane = document.createElement("div"); lane.className = "track-lane"; lane.style.width = `${width}px`; lane.dataset.trackId = track.id;
@@ -218,7 +218,7 @@
     controls.querySelector(".track-pan").addEventListener("input", event => { track.pan = Number(event.target.value) / 100; updateRoute(track); saveProject(); });
     lane.addEventListener("pointerdown", event => {
       if (event.target.closest(".audio-clip")) return;
-      const rect = lane.getBoundingClientRect(); state.playhead = Math.max(0, (event.clientX - rect.left + lane.scrollLeft) / state.zoom); positionPlayhead(); renderSelection(); saveProject();
+      state.selectedTrackId = track.id; const rect = lane.getBoundingClientRect(); state.playhead = Math.max(0, (event.clientX - rect.left + lane.scrollLeft) / state.zoom); positionPlayhead(); renderSelection(); renderPiano(); saveProject();
     });
     lane.addEventListener("dragover", event => { if (event.dataTransfer.types.includes("Files")) event.preventDefault(); });
     lane.addEventListener("drop", event => { event.preventDefault(); const files = [...event.dataTransfer.files].filter(file => file.type.startsWith("audio/")); if (files.length) importFiles(files, track); });
@@ -255,6 +255,7 @@
   }
   function positionPlayhead() { const labelWidth = matchMedia("(max-width: 760px)").matches ? 140 : 170; const px = labelWidth + state.playhead * state.zoom; els.playhead.style.left = `${px}px`; els.time.textContent = `${String(Math.floor(state.playhead / 60)).padStart(2, "0")}:${String(Math.floor(state.playhead % 60)).padStart(2, "0")}.${String(Math.floor(state.playhead % 1 * 100)).padStart(2, "0")}`; }
   function renderSelection() {
+    for (const row of els.list.querySelectorAll(".track-row")) { const active = row.dataset.trackId === state.selectedTrackId; row.classList.toggle("active-track-row", active); row.setAttribute("aria-selected", String(active)); }
     const one = selectedClip();
     els.selection.textContent = one ? `${one.track.name} / ${one.clip.name || "CLIPE"}` : state.selected.length ? `${state.selected.length} CLIPES SELECIONADOS` : "NENHUM CLIPE SELECIONADO";
     for (const buttonId of ["splitButton", "duplicateButton", "deleteButton"]) $(buttonId).disabled = !one;
