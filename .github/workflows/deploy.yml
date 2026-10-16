@@ -73,11 +73,7 @@ jobs:
             put cursor-crosshair.png -o cursor-crosshair.png
             put cursor-help.png -o cursor-help.png
             put cursor-alt.png -o cursor-alt.png
-              put js/index.js -o js/index.js
-            put js/voz.js -o js/voz.js
-            put js/guitarra.js -o js/guitarra.js
-            put js/back-sound.js -o js/back-sound.js
-            put js/mixmaster.js -o js/mixmaster.js
+              mirror -R js js
             put robots.txt -o robots.txt
             put index.html -o index.html
             put voz.html -o voz.html
