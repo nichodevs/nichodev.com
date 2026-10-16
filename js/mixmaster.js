@@ -246,6 +246,7 @@
       const up = () => { block.removeEventListener("pointermove", move); block.removeEventListener("pointerup", up); saveProject(); render(); };
       block.addEventListener("pointermove", move); block.addEventListener("pointerup", up, { once: true });
     });
+    lane.append(block);
   }
   function drawStoredWaveform(ctx, peaks, width, height) {
     if (!peaks?.length) return false;
