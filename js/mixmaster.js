@@ -247,13 +247,19 @@
   }
   function drawStoredWaveform(ctx, peaks, width, height) {
     if (!peaks?.length) return false;
+    let maxMagnitude = 0;
+    for (const peak of peaks) maxMagnitude = Math.max(maxMagnitude, Math.abs(peak[0]), Math.abs(peak[1]));
+    const scale = maxMagnitude > .0001 ? Math.min(24, .92 / maxMagnitude) : 1;
+    const center = height / 2;
     ctx.fillStyle = "#111";
     for (let x = 0; x < width; x++) {
       const from = Math.floor(x * peaks.length / width), to = Math.max(from + 1, Math.floor((x + 1) * peaks.length / width));
       let min = 1, max = -1;
       for (let i = from; i < to && i < peaks.length; i++) { min = Math.min(min, peaks[i][0]); max = Math.max(max, peaks[i][1]); }
-      const y1 = (1 - max) * height / 2, y2 = (1 - min) * height / 2;
-      ctx.fillRect(x, y1, 1, Math.max(1, y2 - y1));
+      const top = center - Math.min(.92, Math.max(0, max * scale)) * center;
+      const bottom = center - Math.max(-.92, Math.min(0, min * scale)) * center;
+      const barHeight = Math.max(2, bottom - top);
+      ctx.fillRect(x, center - barHeight / 2, 1, barHeight);
     }
     return true;
   }
@@ -268,6 +274,16 @@
       compact.push([min, max]);
     }
     return compact;
+  }
+  function buildWaveformPeaks(buffer, limit = 1800) {
+    if (!buffer?.length) return [];
+    const samples = buffer.getChannelData(0), bucketSize = Math.max(1, Math.ceil(samples.length / limit)), peaks = [];
+    for (let start = 0; start < samples.length; start += bucketSize) {
+      let min = 1, max = -1;
+      for (let i = start; i < Math.min(samples.length, start + bucketSize); i++) { min = Math.min(min, samples[i]); max = Math.max(max, samples[i]); }
+      peaks.push([min, max]);
+    }
+    return peaks;
   }
   function sliceWaveformPeaks(peaks, from, to) {
     if (!peaks?.length) return peaks;
@@ -403,10 +419,12 @@
           try { await storeBlob(key, blob); } catch {}
           let buffer = null;
           try { buffer = await decodeBlob(blob); buffers.set(key, buffer); } catch {}
+          const savedPeaks = compressWaveformPeaks(waveformPeaks.length ? waveformPeaks : buildWaveformPeaks(buffer));
+          if (!savedPeaks.length) for (let i = 0; i < 160; i++) savedPeaks.push([-.015, .015]);
           state.playhead = recordingStart; positionPlayhead(); checkpoint();
           let track = state.tracks.find(item => item.id === state.selectedTrackId && item.type !== "midi") || state.tracks.find(item => item.type !== "midi");
           if (!track) { track = freshTrack(`VOZ ${state.tracks.filter(item => item.name.startsWith("VOZ")).length + 1}`); state.tracks.push(track); }
-          const clip = { id: id(), type: "audio", audioId: key, name: `Gravação ${new Date().toLocaleTimeString("pt-BR")}`, start: recordingStart, sourceStart: 0, sourceEnd: buffer?.duration || duration, gain: 1, waveformPeaks, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
+          const clip = { id: id(), type: "audio", audioId: key, name: `Gravação ${new Date().toLocaleTimeString("pt-BR")}`, start: recordingStart, sourceStart: 0, sourceEnd: buffer?.duration || duration, gain: 1, waveformPeaks: savedPeaks, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
           track.clips.push(clip); state.selectedTrackId = track.id; state.selected = [clip.id]; saveProject(); render();
           setStatus(buffer ? "Gravação e forma de onda salvas na faixa selecionada" : "Forma de onda salva; áudio gravado, mas o navegador não conseguiu decodificá-lo para reprodução");
           liveWaveformPeaks = [];
