@@ -73,7 +73,14 @@ jobs:
             put cursor-crosshair.png -o cursor-crosshair.png
             put cursor-help.png -o cursor-help.png
             put cursor-alt.png -o cursor-alt.png
-              mirror -R js js
+              set cmd:fail-exit no
+            mkdir js
+            set cmd:fail-exit yes
+            put js/index.js -o js/index.js
+            put js/voz.js -o js/voz.js
+            put js/guitarra.js -o js/guitarra.js
+            put js/back-sound.js -o js/back-sound.js
+            put js/mixmaster.js -o js/mixmaster.js
             put robots.txt -o robots.txt
             put index.html -o index.html
             put voz.html -o voz.html
