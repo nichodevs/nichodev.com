@@ -216,7 +216,7 @@
     controls.addEventListener("dblclick", event => { if (event.target.closest(".track-name")) { const name = prompt("Nome da faixa:", track.name); if (name?.trim()) { checkpoint(); track.name = name.trim().slice(0, 40); saveProject(); render(); } } });
     controls.querySelectorAll("[data-action]").forEach(button => button.addEventListener("click", () => {
       const action = button.dataset.action;
-      if (action === "remove-track") { if (state.tracks.length < 2) { setStatus("O projeto precisa manter ao menos uma faixa."); return; } checkpoint(); state.tracks = state.tracks.filter(item => item.id !== track.id); state.selected = state.selected.filter(clipId => !track.clips.some(clip => clip.id === clipId)); routeNodes.delete(track.id); }
+      if (action === "remove-track") { if (state.tracks.length < 2) { setStatus("O projeto precisa manter ao menos uma faixa."); return; } checkpoint(); state.tracks = state.tracks.filter(item => item.id !== track.id); state.selected = state.selected.filter(clipId => !track.clips.some(clip => clip.id === clipId)); if (state.selectedTrackId === track.id) state.selectedTrackId = state.tracks[0]?.id || null; routeNodes.delete(track.id); }
       if (action === "mute" || action === "solo") { checkpoint(); track[action === "mute" ? "muted" : "solo"] = !track[action === "mute" ? "muted" : "solo"]; state.tracks.forEach(updateRoute); }
       saveProject(); render();
     }));
@@ -496,10 +496,28 @@
       if (!recordingTrack) { recordingTrack = freshTrack('VOZ ' + (state.tracks.filter(item => item.name.startsWith('VOZ')).length + 1)); state.tracks.push(recordingTrack); }
       checkpoint(); recordingClip = { id: id(), type: "audio", audioId: "", name: "GRAVANDO…", start: recordingStart, sourceStart: 0, sourceEnd: .05, gain: 1, waveformPeaks: [], envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
       recordingTrack.clips.push(recordingClip); state.selectedTrackId = recordingTrack.id; state.selected = [recordingClip.id]; lastClipWaveformUpdate = 0; render();
-      els.play.disabled = true; els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando na faixa selecionada a partir de 0:00… clique em PARAR REC para finalizar"); recordingSetup = false;
-    } catch (error) { recordingSetup = false; recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null; stopLiveWaveform(); els.play.disabled = false; setStatus(error.message || "Não foi possível acessar o microfone."); }
+      els.play.disabled = true; els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando na faixa selecionada a partir de 0:00… clique em PARAR REC para finalizar"); recordingSetup = false; recordingFinalizing = false;
+    } catch (error) {
+      recordingSetup = false;
+      if (recorder?.state === "recording") {
+        setStatus("Houve um erro na interface; salvando o áudio capturado antes de parar…");
+        stopRecording();
+      } else {
+        recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null;
+        stopLiveWaveform(); els.record.disabled = false; els.play.disabled = false;
+        setStatus(error.message || "Não foi possível acessar o microfone.");
+      }
+    }
   }
-  function stopRecording() { if (recorder?.state === "recording") { recorder.stop(); els.record.classList.remove("recording"); els.record.innerHTML = "●<small>REC</small>"; setStatus("Finalizando gravação…"); } }
+  function stopRecording() {
+    if (recorder?.state === "recording" && !recordingFinalizing) {
+      recordingFinalizing = true;
+      els.record.disabled = true; els.play.disabled = true;
+      recorder.stop();
+      els.record.classList.remove("recording"); els.record.innerHTML = "●<small>REC</small>";
+      setStatus("Finalizando gravação…");
+    }
+  }
   function envelopeAt(points, x) { if (!points?.length) return .8; const right = points.findIndex(point => point.x >= x); if (right <= 0) return points[0].y; const a = points[right - 1], b = points[right]; if (!b) return points.at(-1).y; const t = (x - a.x) / (b.x - a.x); return a.y + (b.y - a.y) * t; }
   function scheduleEnvelope(param, clip, start, duration) { const points = clip.envelope || [{ x: 0, y: .8 }, { x: 1, y: .8 }]; param.setValueAtTime(0, start); param.linearRampToValueAtTime((clip.gain ?? 1) * points[0].y, start + .005); for (const point of points.slice(1)) param.linearRampToValueAtTime((clip.gain ?? 1) * point.y, start + Math.max(.01, point.x * duration)); }
   function scheduleMidi(track, clip, when, offset = 0, destination) {
@@ -625,7 +643,7 @@
   async function exportMix() {
     const duration = totalDuration(); if (duration > 600) { setStatus("A exportação está limitada a 10 minutos por projeto."); return; }
     const sampleRate = audioContext?.sampleRate || 44100, Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!Offline) { setStatus("A exportação WAV não é suportada neste navegador."); return; }
-    setStatus("Renderizando a mixagem WAV…"); const offline = new Offline(2, Math.ceil((duration + 1) * sampleRate), sampleRate), master = offline.createGain(); master.gain.value = state.master; master.connect(offline.destination); const rev = offline.createConvolver(); rev.buffer = impulse(offline, 1.8);
+    setStatus("Renderizando a mixagem WAV…"); const offline = new Offline(2, Math.ceil((duration + 1) * sampleRate), sampleRate), master = offline.createGain(); master.gain.value = state.master; master.connect(offline.destination);
     const soloExists = state.tracks.some(track => track.solo);
     for (const track of state.tracks) {
       if (track.muted || (soloExists && !track.solo)) continue;
