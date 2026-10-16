@@ -417,10 +417,13 @@
   async function startRecording() {
     if (recordingSetup) return;
     recordingSetup = true;
-    const recordingStart = 0;
-    stopPlayback(true);
-    state.playhead = recordingStart; positionPlayhead(); renderSelection(); saveProject();
     try {
+      await projectReady;
+      const recordingStart = 0;
+      stopPlayback(true);
+      state.playhead = recordingStart; positionPlayhead(); renderSelection(); saveProject();
+      const recordingContext = audioCtx();
+      if (recordingContext.state === "suspended") await recordingContext.resume();
       await projectReady;
       if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error("A gravação requer um navegador compatível e uma conexão segura (HTTPS).");
       recorderStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
@@ -440,7 +443,7 @@
           if (!savedPeaks.length) for (let i = 0; i < 160; i++) savedPeaks.push([-.015, .015]);
           if (!savedPeaks.length) for (let i = 0; i < 160; i++) savedPeaks.push([-.015, .015]);
           state.playhead = recordingStart; positionPlayhead();
-          const track = recordingTrack || state.tracks.find(item => item.id === state.selectedTrackId && item.type !== "midi") || state.tracks.find(item => item.type !== "midi");
+          let track = state.tracks.find(item => item.id === recordingTrack?.id && item.type === "audio") || state.tracks.find(item => item.id === state.selectedTrackId && item.type === "audio") || state.tracks.find(item => item.type === "audio");
           if (!track) throw new Error("A faixa da gravação não está disponível.");
           const clip = recordingClip || { id: id(), type: "audio", start: recordingStart, sourceStart: 0, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
           clip.audioId = key; clip.name = 'Gravação ' + new Date().toLocaleTimeString('pt-BR'); clip.sourceEnd = buffer?.duration || duration; clip.waveformPeaks = savedPeaks;
@@ -458,12 +461,12 @@
         } finally { recordingClip = recordingTrack = null; els.play.disabled = false; }
       };
       state.playhead = recordingStart; positionPlayhead(); saveProject();
-      recorder.start(250); startLiveWaveform(recorderStream); recordingSetup = false;
+      recorder.start(250); startLiveWaveform(recorderStream)
       recordingTrack = state.tracks.find(item => item.id === state.selectedTrackId && item.type === "audio") || state.tracks.find(item => item.type === "audio");
       if (!recordingTrack) { recordingTrack = freshTrack('VOZ ' + (state.tracks.filter(item => item.name.startsWith('VOZ')).length + 1)); state.tracks.push(recordingTrack); }
       checkpoint(); recordingClip = { id: id(), type: "audio", audioId: "", name: "GRAVANDO…", start: recordingStart, sourceStart: 0, sourceEnd: .05, gain: 1, waveformPeaks: [], envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
       recordingTrack.clips.push(recordingClip); state.selectedTrackId = recordingTrack.id; state.selected = [recordingClip.id]; lastClipWaveformUpdate = 0; render();
-      els.play.disabled = true; els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando na faixa selecionada a partir de 0:00… clique em PARAR REC para finalizar");
+      els.play.disabled = true; els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando na faixa selecionada a partir de 0:00… clique em PARAR REC para finalizar"); recordingSetup = false;
     } catch (error) { recordingSetup = false; recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null; stopLiveWaveform(); els.play.disabled = false; setStatus(error.message || "Não foi possível acessar o microfone."); }
   }
   function stopRecording() { if (recorder?.state === "recording") { recorder.stop(); els.record.classList.remove("recording"); els.record.innerHTML = "●<small>REC</small>"; setStatus("Finalizando gravação…"); } }
