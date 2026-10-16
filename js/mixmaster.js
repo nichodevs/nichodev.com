@@ -316,6 +316,7 @@
   }
   async function startRecording() {
     const recordingStart = 0;
+    stopPlayback(true);
     state.playhead = recordingStart; positionPlayhead(); renderSelection(); saveProject();
     try {
       if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error("A gravação requer um navegador compatível e uma conexão segura (HTTPS).");
@@ -329,10 +330,11 @@
           const buffer = await decodeBlob(blob), key = id(); await storeBlob(key, blob); buffers.set(key, buffer); state.playhead = recordingStart; positionPlayhead(); checkpoint();
           const track = freshTrack(`VOZ ${state.tracks.filter(item => item.name.startsWith("VOZ")).length + 1}`); const clip = { id: id(), type: "audio", audioId: key, name: `Gravação ${new Date().toLocaleTimeString("pt-BR")}`, start: recordingStart, sourceStart: 0, sourceEnd: buffer.duration, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] }; track.clips.push(clip); state.tracks.push(track); state.selected = [clip.id]; saveProject(); render(); setStatus("Gravação adicionada como nova faixa de áudio");
         } catch (error) { setStatus(`Gravação concluída, mas não pôde ser decodificada: ${error.message}`); }
+        finally { els.play.disabled = false; }
       };
       state.playhead = recordingStart; positionPlayhead(); saveProject();
-      recorder.start(250); els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando pelo microfone… clique em PARAR REC para finalizar");
-    } catch (error) { recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null; setStatus(error.message || "Não foi possível acessar o microfone."); }
+      recorder.start(250); els.play.disabled = true; els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando a partir de 0:00… clique em PARAR REC para finalizar");
+    } catch (error) { recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null; els.play.disabled = false; setStatus(error.message || "Não foi possível acessar o microfone."); }
   }
   function stopRecording() { if (recorder?.state === "recording") { recorder.stop(); els.record.classList.remove("recording"); els.record.innerHTML = "●<small>REC</small>"; setStatus("Finalizando gravação…"); } }
   function envelopeAt(points, x) { if (!points?.length) return .8; const right = points.findIndex(point => point.x >= x); if (right <= 0) return points[0].y; const a = points[right - 1], b = points[right]; if (!b) return points.at(-1).y; const t = (x - a.x) / (b.x - a.x); return a.y + (b.y - a.y) * t; }
