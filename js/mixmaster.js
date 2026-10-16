@@ -459,7 +459,6 @@
         } finally { recordingClip = recordingTrack = null; els.play.disabled = false; }
       };
       state.playhead = recordingStart; positionPlayhead(); saveProject();
-      recorder.start(250); startLiveWaveform(recorderStream);
       recorder.start(250); recordingStartedAt = performance.now(); lastWaveformSampleAt = 0; liveWaveformPeaks = []; startLiveWaveform(recorderStream);
       if (!recordingTrack) { recordingTrack = freshTrack('VOZ ' + (state.tracks.filter(item => item.name.startsWith('VOZ')).length + 1)); state.tracks.push(recordingTrack); }
       checkpoint(); recordingClip = { id: id(), type: "audio", audioId: "", name: "GRAVANDO…", start: recordingStart, sourceStart: 0, sourceEnd: .05, gain: 1, waveformPeaks: [], envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
