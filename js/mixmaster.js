@@ -259,7 +259,7 @@
       for (let i = from; i < to && i < peaks.length; i++) { min = Math.min(min, peaks[i][0]); max = Math.max(max, peaks[i][1]); }
       const top = center - Math.min(.92, Math.max(0, max * scale)) * center;
       const bottom = center - Math.max(-.92, Math.min(0, min * scale)) * center;
-      const barHeight = Math.max(2, bottom - top);
+      ctx.fillRect(x, Math.min(top, bottom), 1, Math.max(2, Math.abs(bottom - top)));
       ctx.fillRect(x, center - barHeight / 2, 1, barHeight);
     }
     return true;
@@ -430,7 +430,10 @@
           try { await storeBlob(key, blob); } catch {}
           let buffer = null;
           try { buffer = await decodeBlob(blob); buffers.set(key, buffer); } catch {}
-          const savedPeaks = compressWaveformPeaks(waveformPeaks.length ? waveformPeaks : buildWaveformPeaks(buffer));
+          const decodedPeaks = buildWaveformPeaks(buffer);
+          const liveHasSignal = waveformPeaks.some(([min, max]) => Math.max(Math.abs(min), Math.abs(max)) > .003);
+          const savedPeaks = compressWaveformPeaks(decodedPeaks.length ? decodedPeaks : (liveHasSignal ? waveformPeaks : []));
+          if (!savedPeaks.length) for (let i = 0; i < 160; i++) savedPeaks.push([-.015, .015]);
           if (!savedPeaks.length) for (let i = 0; i < 160; i++) savedPeaks.push([-.015, .015]);
           state.playhead = recordingStart; positionPlayhead();
           const track = recordingTrack || state.tracks.find(item => item.id === state.selectedTrackId && item.type !== "midi") || state.tracks.find(item => item.type !== "midi");
