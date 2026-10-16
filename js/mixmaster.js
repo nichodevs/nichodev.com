@@ -430,40 +430,53 @@
       recorder = new MediaRecorder(recorderStream, mime ? { mimeType: mime } : undefined); recordChunks = [];
       recorder.ondataavailable = event => { if (event.data.size) recordChunks.push(event.data); };
       recorder.onstop = async () => {
-        stopLiveWaveform(); const blob = new Blob(recordChunks, { type: recorder.mimeType || "audio/webm" }); recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null;
+        const targetTrack = recordingTrack;
+        const targetClip = recordingClip;
+        const capturedPeaks = compressWaveformPeaks(liveWaveformPeaks);
+        const elapsed = Math.max(.05, (performance.now() - (recordingStartedAt || performance.now())) / 1000);
+        stopLiveWaveform();
+        const blob = new Blob(recordChunks, { type: recorder.mimeType || "audio/webm" });
+        recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null;
+        els.record.disabled = true;
         try {
-          const key = id(), duration = Math.max(.05, (performance.now() - (recordingStartedAt || performance.now())) / 1000), waveformPeaks = compressWaveformPeaks(liveWaveformPeaks);
-          try { await storeBlob(key, blob); } catch {}
+          if (!blob.size) throw new Error("O navegador não entregou dados de áudio desta gravação.");
+          const key = id();
+          await storeBlob(key, blob);
           let buffer = null;
-          try { buffer = await decodeBlob(blob); buffers.set(key, buffer); } catch {}
+          try { buffer = await decodeBlob(blob); } catch (decodeError) { console.error("Não foi possível decodificar a gravação:", decodeError); }
+          if (buffer) buffers.set(key, buffer);
           const decodedPeaks = buildWaveformPeaks(buffer);
-          const liveHasSignal = waveformPeaks.some(([min, max]) => Math.max(Math.abs(min), Math.abs(max)) > .003);
-          const savedPeaks = compressWaveformPeaks(decodedPeaks.length ? decodedPeaks : (liveHasSignal ? waveformPeaks : []));
+          const liveHasSignal = capturedPeaks.some(([min, max]) => Math.max(Math.abs(min), Math.abs(max)) > .003);
+          const savedPeaks = compressWaveformPeaks(decodedPeaks.length ? decodedPeaks : (liveHasSignal ? capturedPeaks : []));
           if (!savedPeaks.length) for (let i = 0; i < 160; i++) savedPeaks.push([-.015, .015]);
-          state.playhead = recordingStart; positionPlayhead();
-          let track = state.tracks.find(item => item.id === recordingTrack?.id && item.type === "audio") || state.tracks.find(item => item.id === state.selectedTrackId && item.type === "audio") || state.tracks.find(item => item.type === "audio");
-          if (!track) {
-            track = recordingTrack || freshTrack("VOZ 1");
-            if (!state.tracks.includes(track)) state.tracks.push(track);
-          }
-          if (!state.tracks.includes(track)) state.tracks.push(track);
-          const clip = recordingClip || { id: id(), type: "audio", start: recordingStart, sourceStart: 0, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
-          clip.audioId = key; clip.name = 'Gravação ' + new Date().toLocaleTimeString('pt-BR'); clip.sourceEnd = buffer?.duration || duration; clip.waveformPeaks = savedPeaks;
+          let track = state.tracks.find(item => item.id === targetTrack?.id && item.type === "audio") || targetTrack || state.tracks.find(item => item.type === "audio") || freshTrack("VOZ 1");
+          if (!state.tracks.some(item => item.id === track.id)) state.tracks.push(track);
+          track.type = "audio";
+          track.clips ||= [];
+          const clip = targetClip || { id: id(), type: "audio", start: recordingStart, sourceStart: 0, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
+          Object.assign(clip, { type: "audio", audioId: key, name: "Gravação " + new Date().toLocaleTimeString("pt-BR"), start: recordingStart, sourceStart: 0, sourceEnd: Math.max(.05, buffer?.duration || elapsed), waveformPeaks: savedPeaks });
           if (!track.clips.some(item => item.id === clip.id)) track.clips.push(clip);
-          state.selectedTrackId = track.id; state.selected = [clip.id]; saveProject(); render();
+          state.selectedTrackId = track.id; state.selected = [clip.id]; state.playhead = recordingStart;
+          clearTimeout(saveTimer);
+          localStorage.setItem(PROJECT_KEY, JSON.stringify({ tracks: state.tracks, selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master }));
+          render();
           recordingClip = recordingTrack = null; liveWaveformPeaks = [];
-          setStatus(buffer ? "Gravação e forma de onda salvas na faixa selecionada" : "Forma de onda salva; áudio gravado, mas o navegador não conseguiu decodificá-lo para reprodução");
-          liveWaveformPeaks = [];
+          setStatus(buffer ? "Gravação salva na faixa e pronta para reprodução" : "Forma de onda salva; o navegador não conseguiu decodificar o áudio para reprodução");
         } catch (error) {
-          if (recordingClip && recordingTrack) {
-            if (!state.tracks.includes(recordingTrack)) state.tracks.push(recordingTrack);
-            if (!recordingTrack.clips.some(item => item.id === recordingClip.id)) recordingTrack.clips.push(recordingClip);
-            recordingClip.sourceEnd = Math.max(.05, (performance.now() - (recordingStartedAt || performance.now())) / 1000); recordingClip.waveformPeaks = compressWaveformPeaks(liveWaveformPeaks, 900);
-            state.selectedTrackId = recordingTrack.id; state.selected = [recordingClip.id]; saveProject();
-            try { render(); } catch (renderError) { console.error("Falha ao atualizar a interface após a gravação:", renderError); }
-          }
-          setStatus('Não foi possível finalizar o áudio gravado: ' + error.message);
-        } finally { recordingClip = recordingTrack = null; els.play.disabled = false; }
+          const track = targetTrack || freshTrack("VOZ 1");
+          const clip = targetClip || { id: id(), type: "audio", start: recordingStart, sourceStart: 0, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
+          if (!state.tracks.some(item => item.id === track.id)) state.tracks.push(track);
+          track.clips ||= [];
+          Object.assign(clip, { type: "audio", name: "Gravação recuperada", start: recordingStart, sourceStart: 0, sourceEnd: elapsed, waveformPeaks: capturedPeaks });
+          if (!track.clips.some(item => item.id === clip.id)) track.clips.push(clip);
+          state.selectedTrackId = track.id; state.selected = [clip.id]; state.playhead = recordingStart;
+          try { localStorage.setItem(PROJECT_KEY, JSON.stringify({ tracks: state.tracks, selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master })); render(); } catch {}
+          setStatus("A faixa foi preservada, mas houve erro ao finalizar o áudio: " + error.message);
+        } finally {
+          recordingClip = recordingTrack = null; liveWaveformPeaks = [];
+          els.record.disabled = false; els.play.disabled = false;
+          els.record.classList.remove("recording"); els.record.innerHTML = "●<small>REC</small>";
+        }
       };
       state.playhead = recordingStart; positionPlayhead(); saveProject();
       recorder.start(250); recordingStartedAt = performance.now(); lastWaveformSampleAt = 0; liveWaveformPeaks = []; startLiveWaveform(recorderStream);
@@ -498,9 +511,12 @@
           if (clipEnd(clip) <= playOffset) continue;
           if (clip.type === "midi") { scheduleMidi(track, clip, ctx.currentTime, playOffset); continue; }
           const buffer = buffers.get(clip.audioId), route = routeNodes.get(track.id); if (!buffer || !route) continue;
-          const source = ctx.createBufferSource(), clipGain = ctx.createGain(); source.buffer = buffer; scheduleEnvelope(clipGain.gain, clip, ctx.currentTime + Math.max(0, clip.start - playOffset), durationOf(clip)); source.connect(clipGain); clipGain.connect(route.volume);
-          const timelineOffset = Math.max(0, playOffset - clip.start), audioOffset = clip.sourceStart + timelineOffset, duration = clip.sourceEnd - audioOffset, at = ctx.currentTime + Math.max(0, clip.start - playOffset);
-          if (duration > 0) { source.start(at, audioOffset, duration); activeSources.push(source); }
+          const source = ctx.createBufferSource(), clipGain = ctx.createGain(); source.buffer = buffer;
+          const timelineOffset = Math.max(0, playOffset - clip.start), audioOffset = clip.sourceStart + timelineOffset, duration = Math.min(clip.sourceEnd, buffer.duration) - audioOffset, at = ctx.currentTime + Math.max(0, clip.start - playOffset);
+          const audibleDuration = Math.min(duration, clipEnd(clip) - Math.max(playOffset, clip.start));
+          scheduleEnvelope(clipGain.gain, clip, ctx.currentTime + Math.max(0, clip.start - playOffset), Math.max(.01, durationOf(clip)));
+          source.connect(clipGain); clipGain.connect(route.volume);
+          if (audibleDuration > 0) { source.start(at, audioOffset, audibleDuration); activeSources.push(source); }
         }
       }
       els.play.classList.add("playing"); setStatus("Reproduzindo mix");
