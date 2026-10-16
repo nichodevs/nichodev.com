@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="MIXMASTER: grave, edite e misture áudio no navegador.">
+  <title>MIXMASTER — nichodev.com</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="cursores-retro.css">
+  <link rel="stylesheet" href="mixmaster.css?v=1">
+</head>
+<body class="mix-page">
+  <main class="mix-app">
+    <header class="mix-topbar">
+      <a class="mix-brand" href="index.html" aria-label="Voltar ao menu principal"><span aria-hidden="true">▣</span><span>NICHODEVS<br><small>AUDIO ARCADE</small></span></a>
+      <nav aria-label="Menu principal"><a href="index.html">INÍCIO</a><a href="voz.html">VOZ</a><a href="guitarra.html">GUITARRA</a><a class="active" href="mixmaster.html" aria-current="page">MIX/MASTER</a></nav>
+      <a class="mix-back" href="index.html">← MENU</a>
+    </header>
+
+    <section class="mix-titlebar">
+      <div><p class="eyebrow">ESTÚDIO MULTIFAIXA NO NAVEGADOR</p><h1>MIXMASTER</h1><p class="tagline">GRAVE. EDITE. MISTURE. SOE MELHOR.</p></div>
+      <div class="transport" role="group" aria-label="Controles de reprodução">
+        <button id="playButton" class="transport-primary" type="button" title="Reproduzir (espaço)">▶<small>PLAY</small></button>
+        <button id="stopButton" type="button" title="Parar">■<small>STOP</small></button>
+        <button id="recordButton" class="record-button" type="button" title="Gravar pelo microfone">●<small>REC</small></button>
+        <button id="undoButton" type="button" title="Desfazer">↶<small>DESFAZER</small></button>
+        <button id="redoButton" type="button" title="Refazer">↷<small>REFAZER</small></button>
+      </div>
+      <div class="project-tools">
+        <label class="tool-button" for="audioFiles">＋<small>IMPORTAR ÁUDIO</small></label><input id="audioFiles" type="file" accept="audio/*" multiple hidden>
+        <button id="newTrackButton" type="button">＋<small>NOVA FAIXA</small></button>
+        <button id="newMidiButton" type="button">♫<small>FAIXA MIDI</small></button>
+        <button id="exportButton" type="button">⇧<small>EXPORTAR WAV</small></button>
+      </div>
+    </section>
+
+    <section class="mix-statusbar" aria-label="Estado do projeto"><span id="projectStatus" role="status">Projeto pronto · suas alterações são salvas neste navegador</span><span class="time-readout" id="timeReadout">00:00.00</span><span id="audioMeter" class="meter" aria-label="Nível de saída"><i></i></span><label class="bpm-control">BPM <input id="bpmInput" type="number" min="40" max="240" value="120" aria-label="Andamento em batidas por minuto"></label></section>
+
+    <section class="editor-shell" aria-label="Editor multifaixa">
+      <div class="timeline" id="timeline">
+        <div class="track-label-header">FAIXAS</div>
+        <div class="ruler-wrap"><div id="ruler" class="ruler"></div><div id="playhead" class="playhead" aria-hidden="true"></div></div>
+        <div id="trackList" class="track-list"></div>
+      </div>
+      <aside class="inspector" aria-label="Efeitos e mixagem">
+        <h2>INSPETOR <span id="inspectorTrack">MASTER</span></h2>
+        <label class="effect-control">VOLUME MASTER <output id="masterValue">80%</output><input id="masterVolume" type="range" min="0" max="100" value="80"></label>
+        <details open><summary>EQ / TOM</summary><label class="effect-control">FREQUÊNCIA <output id="toneValue">100%</output><input id="toneControl" type="range" min="5" max="100" value="100"></label></details>
+        <details><summary>DELAY</summary><label class="effect-control">MIX <output id="delayValue">0%</output><input id="delayControl" type="range" min="0" max="70" value="0"></label></details>
+        <details><summary>REVERB</summary><label class="effect-control">AMBIÊNCIA <output id="reverbValue">0%</output><input id="reverbControl" type="range" min="0" max="70" value="0"></label></details>
+        <div class="inspector-note">Os efeitos são processados em tempo real no navegador.</div>
+      </aside>
+    </section>
+
+    <section class="clip-editor" aria-label="Editor do clipe selecionado">
+      <div class="editor-tabs"><button class="selected" type="button" data-tab="edit">EDIÇÃO</button><button type="button" data-tab="envelope">ENVELOPE</button><button type="button" data-tab="midi">MIDI</button><span id="selectionLabel">NENHUM CLIPE SELECIONADO</span></div>
+      <div class="edit-tools" data-panel="edit"><button id="splitButton" type="button" disabled>DIVIDIR NO PLAYHEAD</button><button id="duplicateButton" type="button" disabled>DUPLICAR CLIPE</button><button id="joinButton" type="button" disabled>JUNTAR SELEÇÃO</button><button id="deleteButton" type="button" disabled>EXCLUIR CLIPE</button><label>ZOOM <input id="zoomControl" type="range" min="8" max="48" value="16"></label></div>
+      <div class="edit-tools envelope-tools" data-panel="envelope" hidden><label>VOLUME DO CLIPE <output id="clipGainValue">100%</output><input id="clipGain" type="range" min="0" max="150" value="100" disabled></label><canvas id="envelopeCanvas" width="720" height="130" aria-label="Envelope de volume editável"></canvas><p>Arraste os pontos para desenhar o volume do clipe durante a reprodução.</p></div>
+      <div class="edit-tools midi-tools" data-panel="midi" hidden><p>Crie uma faixa MIDI para desenhar notas no piano roll. As notas são reproduzidas por sintetizador simples.</p><div id="pianoRoll" class="piano-roll" aria-label="Editor de notas MIDI"></div></div>
+    </section>
+    <p class="mix-help">DICA: importe vários áudios ou grave pelo microfone. Arraste os clipes para posicioná-los; clique na régua para mover o cursor. Mute, solo, volume e pan ficam nos controles de cada faixa.</p>
+    <footer>ÁUDIO LOCAL · O PROJETO FICA SALVO NESTE NAVEGADOR · MIXMASTER v1</footer>
+  </main>
+  <script src="js/mixmaster.js?v=1" defer></script>
+</body>
+</html>

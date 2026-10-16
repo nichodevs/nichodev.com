@@ -61,6 +61,7 @@ jobs:
             put voz-compacto.css -o voz-compacto.css
             put cursores-retro.css -o cursores-retro.css
             put guitarra-8bit.css -o guitarra-8bit.css
+            put mixmaster.css -o mixmaster.css
             put cursor.png -o cursor.png
             put cursor-pointer.png -o cursor-pointer.png
             put cursor-text.png -o cursor-text.png
@@ -77,10 +78,12 @@ jobs:
             put js/voz.js -o js/voz.js
             put js/guitarra.js -o js/guitarra.js
             put js/back-sound.js -o js/back-sound.js
+            put js/mixmaster.js -o js/mixmaster.js
             put robots.txt -o robots.txt
             put index.html -o index.html
             put voz.html -o voz.html
             put guitarra.html -o guitarra.html
+            put mixmaster.html -o mixmaster.html
             rm -f modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
             bye
           "
@@ -93,16 +96,19 @@ jobs:
             /
             /voz.html
             /guitarra.html
+            /mixmaster.html
             /style.css
             /index.css
             /voz.css
             /voz-compacto.css
             /guitarra-8bit.css
+            /mixmaster.css
             /cursores-retro.css
             /js/index.js
             /js/voz.js
             /js/guitarra.js
             /js/back-sound.js
+            /js/mixmaster.js
             /cursor.png
             /cursor-pointer.png
           )
