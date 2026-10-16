@@ -49,3 +49,39 @@ body {
   font-size: 7px;
   margin: 0;
 }
+
+
+.repository-qr-card {
+  display: grid;
+  justify-items: center;
+  gap: 9px;
+  padding: 12px;
+  border: 2px solid var(--fg);
+  background: var(--bg);
+  text-align: center;
+  font-family: "Press Start 2P", monospace;
+}
+
+.repository-qr-card h2,
+.repository-qr-card p {
+  margin: 0;
+  font-size: 8px;
+  line-height: 1.7;
+}
+
+.repository-qr-card a {
+  display: block;
+  width: 128px;
+  height: 128px;
+  padding: 5px;
+  border: 2px solid var(--fg);
+  background: #fff;
+  image-rendering: pixelated;
+}
+
+.repository-qr-card .repository-qr { display: block; width: 100%; height: 100%; }
+
+@media (max-height: 760px) {
+  .repository-qr-card { gap: 5px; padding: 8px; }
+  .repository-qr-card a { width: 104px; height: 104px; }
+}
