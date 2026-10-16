@@ -315,6 +315,8 @@
     saveProject(); render();
   }
   async function startRecording() {
+    const recordingStart = 0;
+    state.playhead = recordingStart; positionPlayhead(); renderSelection(); saveProject();
     try {
       if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) throw new Error("A gravação requer um navegador compatível e uma conexão segura (HTTPS).");
       recorderStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
@@ -325,7 +327,7 @@
         const blob = new Blob(recordChunks, { type: recorder.mimeType || "audio/webm" }); recorderStream?.getTracks().forEach(track => track.stop()); recorderStream = null;
         try {
           const buffer = await decodeBlob(blob), key = id(); await storeBlob(key, blob); buffers.set(key, buffer); checkpoint();
-          const track = freshTrack(`VOZ ${state.tracks.filter(item => item.name.startsWith("VOZ")).length + 1}`); const clip = { id: id(), type: "audio", audioId: key, name: `Gravação ${new Date().toLocaleTimeString("pt-BR")}`, start: state.playhead, sourceStart: 0, sourceEnd: buffer.duration, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] }; track.clips.push(clip); state.tracks.push(track); state.selected = [clip.id]; saveProject(); render(); setStatus("Gravação adicionada como nova faixa de áudio");
+          const track = freshTrack(`VOZ ${state.tracks.filter(item => item.name.startsWith("VOZ")).length + 1}`); const clip = { id: id(), type: "audio", audioId: key, name: `Gravação ${new Date().toLocaleTimeString("pt-BR")}`, start: recordingStart, sourceStart: 0, sourceEnd: buffer.duration, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] }; track.clips.push(clip); state.tracks.push(track); state.selected = [clip.id]; saveProject(); render(); setStatus("Gravação adicionada como nova faixa de áudio");
         } catch (error) { setStatus(`Gravação concluída, mas não pôde ser decodificada: ${error.message}`); }
       };
       recorder.start(250); els.record.classList.add("recording"); els.record.innerHTML = "■<small>PARAR REC</small>"; setStatus("Gravando pelo microfone… clique em PARAR REC para finalizar");
