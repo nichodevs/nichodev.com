@@ -307,3 +307,12 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 @media (prefers-reduced-motion: reduce) {
   .effect-switch-track, .effect-switch-thumb { transition: none; }
 }
+
+
+.voice-shortcuts {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 18px 0 36px;
+}
