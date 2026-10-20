@@ -58,7 +58,7 @@
         <label class="file-button" for="audioFile">Carregar áudio de guitarra</label>
         <input id="audioFile" type="file" accept="audio/*">
         <audio id="audioSource" controls hidden aria-label="Reproduzir arquivo de guitarra carregado"></audio>
-        <div class="button-row"><button id="playFile" type="button" disabled>Ouvir com pedais</button><button id="stopFile" type="button" disabled>Parar arquivo</button></div>
+        <div class="button-row"><button id="playFile" class="file-mode-toggle" type="button" aria-pressed="false" disabled>Ouvir com pedais</button><button id="stopFile" type="button" disabled>Parar arquivo</button></div>
       </div>
     </details>
 
@@ -115,7 +115,7 @@
 
   <footer><div class="footer-actions"><a href="voz.html">ABRIR VOICE STUDIO</a><a href="mixmaster.html">ABRIR MIXMASTER</a><a href="index.html">VOLTAR</a></div><span>GUITAR FX LAB / BROWSER EDITION</span></footer>
 </main>
-<script src="js/guitarra.js?v=effects-toggle-20261019" defer></script>
+<script src="js/guitarra.js?v=file-effects-toggle-20261019" defer></script>
 <script src="js/back-sound.js?v=1" defer></script>
 </body>
 </html>
