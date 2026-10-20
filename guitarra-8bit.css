@@ -83,3 +83,16 @@ body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-col
 @media(max-width:420px){.amp-face{padding:12px}.preset-grid{grid-template-columns:1fr}.guitar-nav a{flex:1}.pedal-list{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
+
+
+/* Amplificador neon violeta escolhido pelo usuário. */
+.amp-console{background:#251033;border-color:#f044ee;box-shadow:0 0 8px #f044ee,0 0 22px #c42dff88,8px 8px 0 var(--g-shadow)}
+.amp-face{background:linear-gradient(135deg,#64248b,#20102f);border-color:#170a20;box-shadow:inset 0 0 0 3px #d84dff,inset 0 0 24px #bc35ff66}
+.amp-brand h2{color:#ffe4ff;text-shadow:0 0 7px #f044ee88}
+.brand-bolt{color:#ff54f0;text-shadow:0 0 8px #ff36e8,0 0 18px #bc35ff}
+.amp-control{color:#ffd6ff;text-shadow:0 0 6px #d746f188}
+.amp-control input{accent-color:#f044ee}
+.amp-grill{border-color:#b34de2;background:repeating-linear-gradient(0deg,#24132e 0 4px,#432454 4px 7px);color:#ff70ee;text-shadow:0 0 10px #e72cda}
+.amp-led-row{color:#ffe5ff}
+.led.on{background:#ff61f1;box-shadow:0 0 8px #ff47eb,0 0 16px #d52aff}
+.power-state{color:#ff8bf6;text-shadow:0 0 8px #ff39ec,0 0 16px #d52aff}
