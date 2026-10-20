@@ -1,6 +1,7 @@
 body{font-size:11px;line-height:1.9;padding:24px 16px 56px}
 main{max-width:560px;margin-inline:auto}
-h2{margin:0 0 20px;font-weight:400;font-size:clamp(14px,4.4vw,20px);line-height:1.4}
+h1{margin:0 0 20px;font-weight:400;font-size:clamp(14px,4.4vw,20px);line-height:1.4}
+.fx-lab-heading h2{margin:0;font-weight:400;font-size:clamp(13px,3.8vw,18px);line-height:1.5}
 
 /* textos corridos em fonte legível; pixel font fica em títulos, botões e rótulos */
 .warn,.small,#status{font-family:var(--font-text);font-size:13px;line-height:1.6}
@@ -345,3 +346,6 @@ html[data-theme="dark"] .fx-lab{background:#131722;color:var(--fg)}
 html[data-theme="dark"] input,
 html[data-theme="dark"] select,
 html[data-theme="dark"] audio{color-scheme:dark}
+
+
+.audio-file-limits{margin:8px 0 0;padding:10px 12px;border-left:3px solid var(--line);background:color-mix(in srgb,var(--bg) 92%,var(--fg));}

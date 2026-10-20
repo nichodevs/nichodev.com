@@ -5,7 +5,7 @@
     list: $("trackList"), ruler: $("ruler"), playhead: $("playhead"), timeline: $("timeline"),
     status: $("projectStatus"), time: $("timeReadout"), meter: $("audioMeter").firstElementChild,
     audioFiles: $("audioFiles"), record: $("recordButton"), play: $("playButton"), stop: $("stopButton"), recordingMonitor: $("recordingMonitor"), recordingWaveform: $("recordingWaveform"), recordingTime: $("recordingTime"),
-    selection: $("selectionLabel"), piano: $("pianoRoll"), envelope: $("envelopeCanvas")
+    selection: $("selectionLabel"), piano: $("pianoRoll"), envelope: $("envelopeCanvas"), envelopeStatus: $("envelopeStatus"), projectFile: $("projectFile")
   };
   const DB_NAME = "nichodev-mixmaster-v1";
   const PROJECT_KEY = "nichodev-mixmaster-project-v1";
@@ -338,19 +338,75 @@
       }
     }
   }
+  let selectedEnvelopePoint = -1;
   function renderEnvelope() {
     const canvas = els.envelope, ctx = canvas.getContext("2d"); if (!ctx) return;
     const { width: w, height: h } = canvas; ctx.clearRect(0, 0, w, h); ctx.fillStyle = "#fbfbfb"; ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = "#ddd"; ctx.lineWidth = 1; for (let i = 0; i <= 4; i++) { const y = i * h / 4; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-    ctx.strokeStyle = "#8bbd00"; ctx.lineWidth = 3; const item = selectedClip(); const points = item?.clip.envelope || [{ x: 0, y: .8 }, { x: 1, y: .8 }];
+    const item = selectedClip();
+    const points = item?.clip.envelope || [{ x: 0, y: .8 }, { x: 1, y: .8 }];
+    if (selectedEnvelopePoint >= points.length) selectedEnvelopePoint = points.length - 1;
+    ctx.strokeStyle = "#8bbd00"; ctx.lineWidth = 3;
     ctx.beginPath(); points.forEach((point, index) => { const x = point.x * w, y = (1 - point.y) * h; index ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
-    ctx.fillStyle = "#111"; for (const point of points) { ctx.beginPath(); ctx.arc(point.x * w, (1 - point.y) * h, 5, 0, Math.PI * 2); ctx.fill(); }
+    points.forEach((point, index) => {
+      ctx.beginPath(); ctx.arc(point.x * w, (1 - point.y) * h, index === selectedEnvelopePoint ? 7 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = index === selectedEnvelopePoint ? "#8bbd00" : "#111"; ctx.fill();
+    });
+    if (!item || item.clip.type === "midi") {
+      selectedEnvelopePoint = -1;
+      els.envelope.setAttribute("aria-label", "Editor de envelope indisponível; selecione um clipe de áudio");
+      els.envelopeStatus.textContent = "Selecione um clipe de áudio para editar o envelope.";
+    } else if (selectedEnvelopePoint >= 0) {
+      const point = points[selectedEnvelopePoint];
+      els.envelope.setAttribute("aria-label", `Ponto ${selectedEnvelopePoint + 1} de ${points.length} selecionado; posição ${Math.round(point.x * 100)} por cento, volume ${Math.round(point.y * 100)} por cento`);
+      els.envelopeStatus.textContent = `Ponto ${selectedEnvelopePoint + 1} de ${points.length} · posição ${Math.round(point.x * 100)}% · volume ${Math.round(point.y * 100)}%`;
+    } else {
+      els.envelope.setAttribute("aria-label", "Editor de envelope de volume; selecione um ponto para ajustar");
+      els.envelopeStatus.textContent = "Selecione um ponto para ajustar pelo teclado.";
+    }
   }
   let draggingPoint = -1;
-  els.envelope.addEventListener("pointerdown", event => { const item = selectedClip(); if (!item || item.clip.type === "midi") return; const rect = els.envelope.getBoundingClientRect(); const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)); const y = Math.max(0, Math.min(1, 1 - (event.clientY - rect.top) / rect.height)); item.clip.envelope ||= [{ x: 0, y: .8 }, { x: 1, y: .8 }]; let closest = -1, distance = .05; item.clip.envelope.forEach((point, index) => { const d = Math.hypot(point.x - x, point.y - y); if (d < distance) { distance = d; closest = index; } }); checkpoint(); if (closest < 0) { item.clip.envelope.push({ x, y }); item.clip.envelope.sort((a, b) => a.x - b.x); closest = item.clip.envelope.findIndex(point => point.x === x && point.y === y); } draggingPoint = closest; els.envelope.setPointerCapture(event.pointerId); moveEnvelopePoint(event); });
+  els.envelope.addEventListener("pointerdown", event => {
+    const item = selectedClip(); if (!item || item.clip.type === "midi") return;
+    const rect = els.envelope.getBoundingClientRect();
+    const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1, 1 - (event.clientY - rect.top) / rect.height));
+    item.clip.envelope ||= [{ x: 0, y: .8 }, { x: 1, y: .8 }];
+    let closest = -1, distance = .05;
+    item.clip.envelope.forEach((point, index) => { const d = Math.hypot(point.x - x, point.y - y); if (d < distance) { distance = d; closest = index; } });
+    checkpoint();
+    if (closest < 0) {
+      const point = { x, y }; item.clip.envelope.push(point); item.clip.envelope.sort((a, b) => a.x - b.x);
+      closest = item.clip.envelope.indexOf(point);
+    }
+    selectedEnvelopePoint = closest; draggingPoint = closest;
+    els.envelope.setPointerCapture(event.pointerId); moveEnvelopePoint(event);
+  });
   els.envelope.addEventListener("pointermove", event => { if (draggingPoint >= 0) moveEnvelopePoint(event); });
-  els.envelope.addEventListener("pointerup", () => { if (draggingPoint >= 0) { draggingPoint = -1; saveProject(); renderEnvelope(); } });
-  function moveEnvelopePoint(event) { const item = selectedClip(); if (!item) return; const rect = els.envelope.getBoundingClientRect(); const points = item.clip.envelope; const point = points[draggingPoint]; if (!point) return; point.x = Math.max(draggingPoint ? points[draggingPoint - 1].x + .01 : 0, Math.min(draggingPoint < points.length - 1 ? points[draggingPoint + 1].x - .01 : 1, (event.clientX - rect.left) / rect.width)); point.y = Math.max(0, Math.min(1, 1 - (event.clientY - rect.top) / rect.height)); renderEnvelope(); }
+  const finishEnvelopeDrag = () => { if (draggingPoint >= 0) { draggingPoint = -1; saveProject(); renderEnvelope(); } };
+  els.envelope.addEventListener("pointerup", finishEnvelopeDrag);
+  els.envelope.addEventListener("pointercancel", finishEnvelopeDrag);
+  els.envelope.addEventListener("keydown", event => {
+    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+    const item = selectedClip(); if (!item || item.clip.type === "midi") return;
+    item.clip.envelope ||= [{ x: 0, y: .8 }, { x: 1, y: .8 }];
+    if (selectedEnvelopePoint < 0) selectedEnvelopePoint = 0;
+    const point = item.clip.envelope[selectedEnvelopePoint]; if (!point) return;
+    event.preventDefault();
+    const step = event.shiftKey ? .05 : .01;
+    checkpoint();
+    if (event.key === "ArrowLeft") point.x = Math.max(selectedEnvelopePoint ? item.clip.envelope[selectedEnvelopePoint - 1].x + .01 : 0, point.x - step);
+    if (event.key === "ArrowRight") point.x = Math.min(selectedEnvelopePoint < item.clip.envelope.length - 1 ? item.clip.envelope[selectedEnvelopePoint + 1].x - .01 : 1, point.x + step);
+    if (event.key === "ArrowUp") point.y = Math.min(1, point.y + step);
+    if (event.key === "ArrowDown") point.y = Math.max(0, point.y - step);
+    saveProject(); renderEnvelope();
+  });
+  function moveEnvelopePoint(event) {
+    const item = selectedClip(); if (!item) return;
+    const rect = els.envelope.getBoundingClientRect(); const points = item.clip.envelope; const point = points[draggingPoint]; if (!point) return;
+    point.x = Math.max(draggingPoint ? points[draggingPoint - 1].x + .01 : 0, Math.min(draggingPoint < points.length - 1 ? points[draggingPoint + 1].x - .01 : 1, (event.clientX - rect.left) / rect.width));
+    point.y = Math.max(0, Math.min(1, 1 - (event.clientY - rect.top) / rect.height)); renderEnvelope();
+  }
   function setStatus(message) { els.status.textContent = message; }
   async function addTrack() { await projectReady; checkpoint(); const track = freshTrack(`FAIXA ${state.tracks.length + 1}`); state.tracks.push(track); state.selectedTrackId = track.id; if (audioContext && track.type !== "midi") createTrackRoute(track); saveProject(); render(); setStatus("Nova faixa de áudio criada"); }
   async function addMidiTrack() { await projectReady; checkpoint(); const track = freshTrack(`MIDI ${state.tracks.filter(item => item.type === "midi").length + 1}`, "midi"); track.clips.push({ id: id(), type: "midi", name: "REGIÃO MIDI", start: state.playhead, duration: 60 / state.bpm * 4, notes: [] }); state.tracks.push(track); state.selectedTrackId = track.id; state.selected = [track.clips[0].id]; saveProject(); render(); setStatus("Faixa MIDI criada · clique na grade para desenhar notas"); }
@@ -557,6 +613,83 @@
       requestAnimationFrame(tick);
     } catch (error) { setStatus(error.message); }
   }
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+      reader.onerror = () => reject(reader.error || new Error("Falha ao ler um áudio do projeto."));
+      reader.readAsDataURL(blob);
+    });
+  }
+  function base64ToBlob(value, mimeType) {
+    const binary = atob(value), bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: mimeType || "application/octet-stream" });
+  }
+  function downloadProjectFile(blob, filename) {
+    const url = URL.createObjectURL(blob), link = document.createElement("a");
+    link.href = url; link.download = filename; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  async function exportProjectBackup() {
+    await projectReady;
+    if (recorder?.state === "recording" || recordingFinalizing) { setStatus("Pare a gravação antes de criar um backup."); return; }
+    try {
+      const project = { tracks: JSON.parse(JSON.stringify(state.tracks)), selected: [...state.selected], selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master };
+      const audioIds = [...new Set(project.tracks.flatMap(track => track.clips.filter(clip => clip.type !== "midi").map(clip => clip.audioId).filter(Boolean)))];
+      let totalBytes = 0; const assets = [];
+      for (const assetId of audioIds) {
+        const blob = await loadBlob(assetId);
+        if (!blob) throw new Error("Um áudio deste projeto não está disponível no armazenamento local.");
+        totalBytes += blob.size;
+        if (totalBytes > 150 * 1024 * 1024) throw new Error("O backup excede 150 MB de áudio. Exporte uma mixagem WAV ou divida o projeto em partes menores.");
+        assets.push({ id: assetId, mimeType: blob.type || "application/octet-stream", dataBase64: await blobToBase64(blob) });
+      }
+      const backup = { app: "nichodev-mixmaster", formatVersion: 1, exportedAt: new Date().toISOString(), project, assets };
+      downloadProjectFile(new Blob([JSON.stringify(backup)], { type: "application/json" }), `nichodev-mixmaster-${new Date().toISOString().slice(0, 10)}.nichodev.json`);
+      setStatus(`Backup criado · ${assets.length} áudio(s) incluído(s)`);
+    } catch (error) { setStatus(`Não foi possível criar o backup: ${error.message}`); }
+  }
+  async function importProjectBackup(file) {
+    await projectReady;
+    if (!file) return;
+    if (recorder?.state === "recording" || recordingFinalizing) { setStatus("Pare a gravação antes de importar um backup."); return; }
+    if (file.size > 205 * 1024 * 1024) { setStatus("Este arquivo de backup ultrapassa o limite de 205 MB."); return; }
+    if (!confirm("Importar este backup substituirá as faixas atuais do MIXMASTER. Deseja continuar?")) { els.projectFile.value = ""; return; }
+    try {
+      const backup = JSON.parse(await file.text());
+      if (backup?.app !== "nichodev-mixmaster" || backup?.formatVersion !== 1 || !Array.isArray(backup?.project?.tracks) || !Array.isArray(backup?.assets)) throw new Error("O arquivo não é um backup MIXMASTER compatível.");
+      const assetMap = new Map();
+      for (const asset of backup.assets) {
+        if (typeof asset.id !== "string" || typeof asset.dataBase64 !== "string" || asset.dataBase64.length > 210 * 1024 * 1024) throw new Error("O backup contém um áudio inválido.");
+        if (assetMap.has(asset.id)) throw new Error("O backup contém identificadores de áudio duplicados.");
+        assetMap.set(asset.id, base64ToBlob(asset.dataBase64, asset.mimeType));
+      }
+      const referencedIds = new Set(backup.project.tracks.flatMap(track => (track.clips || []).filter(clip => clip.type !== "midi").map(clip => clip.audioId).filter(Boolean)));
+      for (const audioId of referencedIds) if (!assetMap.has(audioId)) throw new Error("O backup não contém todos os áudios usados pelo projeto.");
+      if (!db) await openDB();
+      setStatus("Importando backup e restaurando áudios…");
+      const newAudioIds = new Map(), decoded = new Map();
+      for (const [oldId, blob] of assetMap) {
+        const newId = id(); newAudioIds.set(oldId, newId);
+        decoded.set(newId, await decodeBlob(blob));
+        await storeBlob(newId, blob);
+      }
+      checkpoint(); stopPlayback(true);
+      state.tracks = JSON.parse(JSON.stringify(backup.project.tracks));
+      for (const track of state.tracks) for (const clip of track.clips || []) if (clip.type !== "midi" && clip.audioId) clip.audioId = newAudioIds.get(clip.audioId);
+      for (const [audioId, buffer] of decoded) buffers.set(audioId, buffer);
+      state.selected = Array.isArray(backup.project.selected) ? backup.project.selected : [];
+      state.selectedTrackId = backup.project.selectedTrackId || state.tracks[0]?.id || null;
+      state.playhead = Math.max(0, Number(backup.project.playhead) || 0);
+      state.bpm = Math.max(40, Math.min(240, Number(backup.project.bpm) || 120));
+      state.master = Math.max(0, Math.min(1, Number(backup.project.master ?? .8)));
+      $("bpmInput").value = state.bpm; $("masterVolume").value = Math.round(state.master * 100); $("masterValue").textContent = `${Math.round(state.master * 100)}%`;
+      for (const track of state.tracks) if (audioContext) { if (!routeNodes.has(track.id)) createTrackRoute(track); else updateRoute(track); }
+      saveProject(); render(); setStatus(`Backup restaurado · ${state.tracks.length} faixa(s), ${decoded.size} áudio(s)`);
+    } catch (error) { setStatus(`Não foi possível importar o backup: ${error.message}`); }
+    finally { els.projectFile.value = ""; }
+  }
   async function resetProject() {
     await projectReady;
     if (recorder?.state === "recording" || recordingFinalizing) { setStatus("Pare a gravação antes de resetar o projeto."); return; }
@@ -685,6 +818,8 @@
   $("deleteButton").addEventListener("click", deleteSelected);
   $("joinButton").addEventListener("click", joinSelected);
   $("exportButton").addEventListener("click", exportMix);
+  $("exportProjectButton").addEventListener("click", exportProjectBackup);
+  els.projectFile.addEventListener("change", event => importProjectBackup(event.target.files?.[0]));
   $("resetProjectButton").addEventListener("click", resetProject);
   $("zoomControl").addEventListener("input", event => { state.zoom = Number(event.target.value); render(); });
   $("bpmInput").addEventListener("change", event => { state.bpm = Math.max(40, Math.min(240, Number(event.target.value) || 120)); event.target.value = state.bpm; saveProject(); render(); });

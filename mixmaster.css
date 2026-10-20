@@ -71,3 +71,7 @@ html[data-theme="dark"] .recording-monitor canvas,html[data-theme="dark"] #envel
 html[data-theme="dark"] .mix-page input[type="number"]{background:#202430;color:#edf0f7;border-color:#b6bbc8}
 html[data-theme="dark"]{--mix-wave-color:#d5b5ff}
 @media(max-width:760px){.theme-toggle{margin-left:auto}}
+
+
+.quick-start{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:12px 14px;border-bottom:2px solid var(--mix-ink);background:var(--mix-panel,#f6f6f6);font:13px/1.5 system-ui,sans-serif;color:var(--mix-ink)}.quick-start strong{font:9px/1.5 "Press Start 2P",monospace}.quick-start span{max-width:30rem}.home-guidance{font-size:14px}.envelope-tools canvas:focus-visible{outline:3px dashed #73a000;outline-offset:3px}.envelope-status{font:12px/1.5 system-ui,sans-serif!important;color:#444!important}
+@media(max-width:760px){.quick-start{display:grid;gap:6px;padding:10px}.quick-start strong{margin-bottom:3px}}

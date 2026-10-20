@@ -13,7 +13,7 @@
   <script>try{if(localStorage.getItem("nichodev-mixmaster-theme")==="dark")document.documentElement.dataset.theme="dark"}catch{}</script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="cursores-retro.css">
-  <link rel="stylesheet" href="mixmaster.css?v=6">
+  <link rel="stylesheet" href="mixmaster.css?v=7">
 </head>
 <body class="mix-page">
   <main class="mix-app">
@@ -38,11 +38,15 @@
         <button id="newTrackButton" type="button">＋<small>NOVA FAIXA</small></button>
         <button id="newMidiButton" type="button">♫<small>FAIXA MIDI</small></button>
         <button id="exportButton" type="button">⇧<small>EXPORTAR WAV</small></button>
+        <button id="exportProjectButton" type="button">⬇<small>BACKUP DO PROJETO</small></button>
+        <label class="tool-button" for="projectFile">⬆<small>IMPORTAR BACKUP</small></label><input id="projectFile" type="file" accept=".nichodev.json,application/json" hidden>
         <button id="resetProjectButton" class="reset-project-button" type="button" title="Apagar o projeto salvo e começar de novo">↻<small>RESETAR</small></button>
       </div>
     </section>
 
     <section class="mix-statusbar" aria-label="Estado do projeto"><span id="projectStatus" role="status">Projeto pronto · suas alterações são salvas neste navegador</span><span class="time-readout" id="timeReadout">00:00.00</span><span id="audioMeter" class="meter" aria-label="Nível de saída"><i></i></span><label class="bpm-control">BPM <input id="bpmInput" type="number" min="40" max="240" value="120" aria-label="Andamento em batidas por minuto"></label></section>
+
+    <section class="quick-start" aria-label="Como começar no MIXMASTER"><strong>COMECE EM 3 PASSOS</strong><span>1. Importe um áudio ou grave pelo microfone.</span><span>2. Arraste e edite os clipes; use o inspetor para ajustar o som.</span><span>3. Exporte a mixagem WAV ou baixe um backup restaurável com os áudios.</span></section>
 
     <section id="recordingMonitor" class="recording-monitor" aria-label="Forma de onda da gravação em andamento" hidden><div class="recording-monitor-heading"><strong>GRAVANDO · FORMA DE ONDA AO VIVO</strong><span id="recordingTime">00:00.00</span></div><canvas id="recordingWaveform" width="900" height="100"></canvas></section>
 
@@ -65,13 +69,13 @@
     <section class="clip-editor" aria-label="Editor do clipe selecionado">
       <div class="editor-tabs"><button class="selected" type="button" data-tab="edit">EDIÇÃO</button><button type="button" data-tab="envelope">ENVELOPE</button><button type="button" data-tab="midi">MIDI</button><span id="selectionLabel">NENHUM CLIPE SELECIONADO</span></div>
       <div class="edit-tools" data-panel="edit"><button id="splitButton" type="button" disabled>CORTAR NO PLAYHEAD</button><button id="trimStartButton" type="button" disabled>RECORTAR INÍCIO</button><button id="trimEndButton" type="button" disabled>RECORTAR FINAL</button><button id="duplicateButton" type="button" disabled>DUPLICAR CLIPE</button><button id="joinButton" type="button" disabled>JUNTAR SELEÇÃO</button><button id="deleteButton" type="button" disabled>EXCLUIR CLIPE</button><label>ZOOM <input id="zoomControl" type="range" min="8" max="48" value="16"></label></div>
-      <div class="edit-tools envelope-tools" data-panel="envelope" hidden><label>VOLUME DO CLIPE <output id="clipGainValue">100%</output><input id="clipGain" type="range" min="0" max="150" value="100" disabled></label><canvas id="envelopeCanvas" width="720" height="130" aria-label="Envelope de volume editável"></canvas><p>Arraste os pontos para desenhar o volume do clipe durante a reprodução.</p></div>
+      <div class="edit-tools envelope-tools" data-panel="envelope" hidden><label>VOLUME DO CLIPE <output id="clipGainValue">100%</output><input id="clipGain" type="range" min="0" max="150" value="100" disabled></label><canvas id="envelopeCanvas" width="720" height="130" tabindex="0" role="group" aria-label="Editor de envelope de volume" aria-describedby="envelopeHelp"></canvas><p id="envelopeHelp">Selecione ou crie um ponto com mouse ou toque. Com o teclado, use as setas para ajustar posição e volume; segure Shift para mover em passos maiores.</p><p id="envelopeStatus" class="envelope-status" role="status" aria-live="polite">Selecione um clipe de áudio para editar o envelope.</p></div>
       <div class="edit-tools midi-tools" data-panel="midi" hidden><p>Crie uma faixa MIDI para desenhar notas no piano roll. As notas são reproduzidas por sintetizador simples.</p><div id="pianoRoll" class="piano-roll" aria-label="Editor de notas MIDI"></div></div>
     </section>
     <p class="mix-help">DICA: importe vários áudios ou grave pelo microfone. Arraste os clipes para posicioná-los; clique na régua para mover o cursor. Mute, solo, volume e pan ficam nos controles de cada faixa.</p>
     <footer>ÁUDIO LOCAL · O PROJETO FICA SALVO NESTE NAVEGADOR · MIXMASTER v1</footer>
   </main>
   <script src="js/back-sound.js?v=1" defer></script>
-  <script src="js/mixmaster.js?v=23" defer></script>
+  <script src="js/mixmaster.js?v=24" defer></script>
 </body>
 </html>
