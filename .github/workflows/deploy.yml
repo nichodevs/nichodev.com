@@ -64,7 +64,6 @@ jobs:
             put cursores-retro.css -o cursores-retro.css
             put guitarra-8bit.css -o guitarra-8bit.css
             put mixmaster.css -o mixmaster.css
-            mkdir -p assets/cursors
             put assets/cursors/cursor.png -o assets/cursors/cursor.png
             put assets/cursors/cursor-pointer.png -o assets/cursors/cursor-pointer.png
             put assets/cursors/cursor-text.png -o assets/cursors/cursor-text.png
@@ -76,7 +75,6 @@ jobs:
             put assets/cursors/cursor-crosshair.png -o assets/cursors/cursor-crosshair.png
             put assets/cursors/cursor-help.png -o assets/cursors/cursor-help.png
             put assets/cursors/cursor-alt.png -o assets/cursors/cursor-alt.png
-            mkdir -p js
             put js/index.js -o js/index.js
             put js/voz.js -o js/voz.js
             put js/guitarra.js -o js/guitarra.js
@@ -87,7 +85,6 @@ jobs:
             put voz.html -o voz.html
             put guitarra.html -o guitarra.html
             put mixmaster.html -o mixmaster.html
-            mkdir -p onda
             put onda/index.html -o onda/index.html
             put onda/onda.css -o onda/onda.css
             put onda/onda.js -o onda/onda.js
