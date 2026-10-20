@@ -18,7 +18,7 @@ const PEDALS = [
   {id:"rv6", name:"RV-6", type:"reverb", desc:"Reverb", color:"white", control:"Level"},
   {id:"shimmer", name:"SHIMMER", type:"shimmer", desc:"Shimmer Reverb", color:"purple", control:"Shimmer"}
 ];
-const values = Object.fromEntries(PEDALS.map(p => [p.id, ({ns2:35,cs3:30,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0,shimmer:0})[p.id]]));
+const values = Object.fromEntries(PEDALS.map(p => [p.id, ({ns2:35,cs3:18,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0,shimmer:0})[p.id]]));
 const enabled = Object.fromEntries(PEDALS.map(p => [p.id, ["ns2","cs3","ge7"].includes(p.id)]));
 let order = PEDALS.map(p => p.id);
 let ctx = null, inputNode = null, inputStream = null, mediaNode = null, fileUrl = null;
@@ -83,7 +83,7 @@ function makeStage(pedalId){
   if(type==="gate"||type==="compressor"){
     const comp=ctx.createDynamicsCompressor(); nodes.push(comp);
     if(type==="gate"){comp.threshold.value=-38+amount*14;comp.knee.value=0;comp.ratio.value=12;comp.attack.value=.004;comp.release.value=.09;}
-    else{comp.threshold.value=-12-amount*28;comp.knee.value=10;comp.ratio.value=1+amount*9;comp.attack.value=.008;comp.release.value=.18;}
+    else{comp.threshold.value=-16-amount*22;comp.knee.value=8;comp.ratio.value=1+amount*6;comp.attack.value=.008;comp.release.value=.08+amount*.12;}
     connect(input,comp);connect(comp,output);
   }else if(type==="overdrive"||type==="distortion"||type==="fuzz"||type==="octfuzz"){
     const shaper=ctx.createWaveShaper();shaper.curve=curveFor(type,amount);shaper.oversample="4x";nodes.push(shaper);connect(input,shaper);connect(shaper,output);
@@ -116,12 +116,12 @@ function makeStage(pedalId){
     nodes.push(gain,depth);oscillators.push(lfo);connect(input,gain);connect(gain,output);
   }else if(type==="delay"){
     const dry=ctx.createGain(),wet=ctx.createGain(),delay=ctx.createDelay(1.2),feedback=ctx.createGain();
-    delay.delayTime.value=.12+amount*.48;feedback.gain.value=Math.min(.68,amount*.72);wet.gain.value=.12+amount*.5;
+    delay.delayTime.value=.09+amount*.32;feedback.gain.value=Math.min(.42,amount*.48);wet.gain.value=.08+amount*.3;
     nodes.push(dry,wet,delay,feedback);connect(input,dry);connect(dry,output);connect(input,delay);connect(delay,wet);connect(wet,output);connect(delay,feedback);connect(feedback,delay);
   }else if(type==="reverb"){
-    const dry=ctx.createGain(),wet=ctx.createGain(),convolver=ctx.createConvolver(),buffer=ctx.createBuffer(2,Math.floor(ctx.sampleRate*(1+amount*2.8)),ctx.sampleRate);
-    for(let ch=0;ch<2;ch++){const data=buffer.getChannelData(ch);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2.4);}
-    convolver.buffer=buffer;wet.gain.value=.08+amount*.62;nodes.push(dry,wet,convolver);connect(input,dry);connect(dry,output);connect(input,convolver);connect(convolver,wet);connect(wet,output);
+    const dry=ctx.createGain(),wet=ctx.createGain(),convolver=ctx.createConvolver(),buffer=ctx.createBuffer(2,Math.floor(ctx.sampleRate*(.65+amount*1.35)),ctx.sampleRate);
+    for(let ch=0;ch<2;ch++){const data=buffer.getChannelData(ch);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,3.6);}
+    convolver.buffer=buffer;wet.gain.value=.04+amount*.34;nodes.push(dry,wet,convolver);connect(input,dry);connect(dry,output);connect(input,convolver);connect(convolver,wet);connect(wet,output);
   }else if(type==="shimmer"){
     const dry=ctx.createGain(),wet=ctx.createGain(),shifter=ctx.createWaveShaper(),highpass=ctx.createBiquadFilter(),convolver=ctx.createConvolver();
     const curve=new Float32Array(2048);
@@ -347,7 +347,7 @@ function applyPreset(key){
   syncAmpControls();renderPedals();rebuildChain();announce("pedalStatus","Preset "+key.toUpperCase()+" carregado.");
 }
 function resetEffects(){
-  const defaults={ns2:35,cs3:30,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0,shimmer:0};
+  const defaults={ns2:35,cs3:18,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0,shimmer:0};
   Object.assign(values,defaults);
   PEDALS.forEach(p=>enabled[p.id]=["ns2","cs3","ge7"].includes(p.id));
   order=PEDALS.map(p=>p.id);
