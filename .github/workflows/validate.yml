@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -11,10 +14,25 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 10
     steps:
       - name: Baixar arquivos do repositorio
         uses: actions/checkout@v4
 
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Instalar dependencias registradas no lockfile
+        run: npm ci
+
       - name: Validar site e arquivos do deploy
         run: npm run check
+
+      - name: Instalar Chromium para os testes
+        run: npx playwright install --with-deps chromium
+
+      - name: Testar navegação, responsividade e teclado
+        run: npm run test:e2e
