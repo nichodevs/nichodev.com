@@ -42,7 +42,7 @@ jobs:
           HOST_KEYS: ${{ secrets.HOSTINGER_KNOWN_HOSTS }}
         run: |
           install -d -m 700 "$HOME/.ssh"
-          printf '%s\\n' "$HOST_KEYS" > "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$HOST_KEYS" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
       - name: Publicar arquivos na Hostinger
@@ -131,7 +131,7 @@ jobs:
           )
           for path in "${paths[@]}"; do
             echo "Conferindo $path"
-            curl --fail --silent --show-error --location \\
-              --retry 3 --retry-all-errors --retry-delay 2 --max-time 20 \\
+            curl --fail --silent --show-error --location \
+              --retry 3 --retry-all-errors --retry-delay 2 --max-time 20 \
               --output /dev/null "$SITE_URL$path"
           done
