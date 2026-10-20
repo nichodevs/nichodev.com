@@ -25,6 +25,8 @@ let ctx = null, inputNode = null, inputStream = null, mediaNode = null, fileUrl 
 let analyser = null, master = null, recordDestination = null, activeStages = [];
 let recorder = null, recordChunks = [], recordUrl = null, recordStarted = 0, recordTicker = 0;
 let rawRecordingSource = null, rawRecordingDestination = null;
+let recordedMediaNode = null, recordedPlaybackGain = null, recordedPlaybackStages = [];
+let recordingHasDry = false, recordingEffectsEnabled = false;
 let tunerFrame = 0, tunerLastUpdate = 0, snapshots = {A:null,B:null}, currentAB = null;
 
 const PRESETS = {
@@ -154,8 +156,53 @@ function makeAmpCabStage(){
   input.connect(pre);pre.connect(shaper);shaper.connect(tone);tone.connect(highpass);highpass.connect(lowpass);lowpass.connect(output);
   return{input,output,nodes:[input,pre,shaper,tone,highpass,lowpass,output],oscillators:[]};
 }
+function ensureRecordedPlayback(){
+  if(!ctx)return;
+  if(!recordedPlaybackGain){
+    recordedPlaybackGain=ctx.createGain();
+    recordedPlaybackGain.gain.value=Number($("masterVolume").value)/100;
+    recordedPlaybackGain.connect(ctx.destination);
+  }
+  if(!recordedMediaNode)recordedMediaNode=ctx.createMediaElementSource($("recordedAudio"));
+}
+function clearRecordedPlaybackStages(){
+  recordedPlaybackStages.forEach(stage=>{
+    stage.oscillators.forEach(o=>{try{o.stop()}catch(e){}});
+    stage.nodes.forEach(n=>{try{n.disconnect()}catch(e){}});
+  });
+  recordedPlaybackStages=[];
+}
+function rebuildRecordedPlaybackChain(){
+  if(!ctx||!recordedMediaNode||!recordedPlaybackGain)return;
+  clearRecordedPlaybackStages();
+  try{recordedMediaNode.disconnect()}catch(e){}
+  if(!recordingHasDry||!recordingEffectsEnabled){
+    recordedMediaNode.connect(recordedPlaybackGain);
+    return;
+  }
+  let previous=recordedMediaNode;
+  for(const id of order){
+    const stage=makeStage(id);recordedPlaybackStages.push(stage);
+    previous.connect(stage.input);previous=stage.output;
+  }
+  const ampCab=makeAmpCabStage();recordedPlaybackStages.push(ampCab);
+  previous.connect(ampCab.input);ampCab.output.connect(recordedPlaybackGain);
+}
+function updateRecordingEffectsButton(){
+  const button=$("recordingEffectsBtn");
+  button.disabled=!recordingHasDry||!!recorder;
+  button.setAttribute("aria-pressed",String(recordingEffectsEnabled));
+}
+function toggleRecordingEffects(){
+  if(!recordingHasDry)return;
+  recordingEffectsEnabled=!recordingEffectsEnabled;
+  updateRecordingEffectsButton();rebuildRecordedPlaybackChain();
+  announce("recordStatus",recordingEffectsEnabled?"Efeitos ligados na reprodução da gravação.":"Efeitos desligados; reprodução sem processamento.");
+}
 function rebuildChain(){
-  if(!ctx||!inputNode)return;
+  if(!ctx)return;
+  rebuildRecordedPlaybackChain();
+  if(!inputNode)return;
   disconnectStages();
   try{inputNode.disconnect()}catch(e){}
   inputNode.connect(analyser);
@@ -311,6 +358,7 @@ function toggleAB(){
 function syncAmpControls(){
   ["masterVolume","ampGain","ampTone"].forEach(id=>$(id+"Value").textContent=$(id).value+"%");
   if(master)master.gain.setTargetAtTime(Number($("masterVolume").value)/100,ctx.currentTime,.015);
+  if(recordedPlaybackGain)recordedPlaybackGain.gain.setTargetAtTime(Number($("masterVolume").value)/100,ctx.currentTime,.015);
   currentAB=null;
 }
 function startRecording(withoutEffects=false){
@@ -318,6 +366,8 @@ function startRecording(withoutEffects=false){
   if(!window.MediaRecorder){announce("recordStatus","Este navegador não oferece gravação de áudio.");return;}
   if(recordUrl&&!window.confirm("Começar uma nova gravação substituirá a gravação anterior. Continuar?"))return;
   if(recordUrl)URL.revokeObjectURL(recordUrl);
+  $("recordedAudio").pause();recordingHasDry=false;recordingEffectsEnabled=false;updateRecordingEffectsButton();
+  if(recordedMediaNode)rebuildRecordedPlaybackChain();
   recordUrl=null;$("recordedAudio").removeAttribute("src");$("recordedAudio").hidden=true;$("downloadRecording").removeAttribute("href");$("downloadRecording").hidden=true;$("recordTime").textContent="00:00";
   recordChunks=[];
   const destination=withoutEffects?ctx.createMediaStreamDestination():recordDestination;
@@ -334,11 +384,13 @@ function startRecording(withoutEffects=false){
     const blob=new Blob(recordChunks,{type:recorder.mimeType||"audio/webm"});recordUrl=URL.createObjectURL(blob);
     $("recordedAudio").src=recordUrl;$("recordedAudio").hidden=false;$("downloadRecording").href=recordUrl;
     $("downloadRecording").download="guitar-fx-lab-"+(withoutEffects?"sem-efeitos-":"")+new Date().toISOString().replace(/[:.]/g,"-")+".webm";$("downloadRecording").hidden=false;
-    releaseRawTap();
-    announce("recordStatus",withoutEffects?"Gravação sem efeitos pronta para ouvir e baixar.":"Gravação processada pronta para ouvir e baixar.");
-    recorder=null;clearInterval(recordTicker);$("recordBtn").disabled=!inputNode;$("recordDryBtn").disabled=!inputNode;$("stopRecordBtn").disabled=true;
+    releaseRawTap();recordingHasDry=withoutEffects;recordingEffectsEnabled=false;
+    ensureRecordedPlayback();rebuildRecordedPlaybackChain();
+    recorder=null;updateRecordingEffectsButton();clearInterval(recordTicker);
+    $("recordBtn").disabled=!inputNode;$("recordDryBtn").disabled=!inputNode;$("stopRecordBtn").disabled=true;
+    announce("recordStatus",withoutEffects?"Gravação sem efeitos pronta. Use Efeitos para alternar a reprodução com e sem processamento.":"Gravação processada pronta para ouvir e baixar.");
   };
-  recorder.start();recordStarted=Date.now();$("recordBtn").disabled=true;$("recordDryBtn").disabled=true;$("stopRecordBtn").disabled=false;
+  recorder.start();recordStarted=Date.now();$("recordBtn").disabled=true;$("recordDryBtn").disabled=true;$("recordingEffectsBtn").disabled=true;$("stopRecordBtn").disabled=false;
   announce("recordStatus",withoutEffects?"Gravando saída sem efeitos (sinal direto da entrada)…":"Gravando saída processada…");
   clearInterval(recordTicker);recordTicker=setInterval(()=>{$("recordTime").textContent=formatTime((Date.now()-recordStarted)/1000);},250);
 }
@@ -356,7 +408,7 @@ $("ampTone").addEventListener("input",()=>{syncAmpControls();rebuildChain();});
 $("resetAmp").addEventListener("click",resetEffects);
 document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>applyPreset(b.dataset.preset)));
 $("captureA").addEventListener("click",()=>captureAB("A"));$("captureB").addEventListener("click",()=>captureAB("B"));$("toggleAB").addEventListener("click",toggleAB);
-$("recordBtn").addEventListener("click",()=>startRecording(false));$("recordDryBtn").addEventListener("click",()=>startRecording(true));$("stopRecordBtn").addEventListener("click",stopRecording);
+$("recordBtn").addEventListener("click",()=>startRecording(false));$("recordDryBtn").addEventListener("click",()=>startRecording(true));$("stopRecordBtn").addEventListener("click",stopRecording);$("recordingEffectsBtn").addEventListener("click",toggleRecordingEffects);
 if(navigator.mediaDevices){refreshInputs();navigator.mediaDevices.addEventListener?.("devicechange",()=>refreshInputs(inputStream?.getAudioTracks()[0]?.getSettings().deviceId||""));}
 renderPedals();syncAmpControls();
 
