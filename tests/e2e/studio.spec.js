@@ -22,7 +22,7 @@ test.describe("páginas do estúdio", () => {
     await expect(page.getByRole("link", { name: "Abrir estúdio de voz" })).toHaveAttribute("href", "voz.html");
     await expect(page.getByRole("link", { name: "Abrir Guitar FX LAB" })).toHaveAttribute("href", "guitarra.html");
     await expect(page.getByRole("link", { name: "Abrir MIXMASTER" })).toHaveAttribute("href", "mixmaster.html");
-  }
+  });
 
   for (const pageInfo of studioPages) {
     test(`não cria rolagem horizontal em celular em ${pageInfo.path}`, async ({ page }) => {
