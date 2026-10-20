@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "BinaryData.h"
 
 namespace
 {
@@ -14,6 +15,18 @@ const juce::Colour purpleEdge{0xff8d6ca8};
 const juce::Colour lavender{0xffd9b2ff};
 const juce::Colour shadow{0xff050805};
 
+juce::Typeface::Ptr pixelTypeface()
+{
+    static auto typeface = juce::Typeface::createSystemTypefaceFor(
+        BinaryData::Pixel_ttf, (size_t) BinaryData::Pixel_ttfSize);
+    return typeface;
+}
+
+juce::Font pixelFont(float height)
+{
+    return juce::Font(juce::FontOptions(height).withTypeface(pixelTypeface()));
+}
+
 void styleSlider(juce::Slider& slider, bool isAmpControl)
 {
     slider.setSliderStyle(juce::Slider::LinearHorizontal);
@@ -27,6 +40,26 @@ void styleSlider(juce::Slider& slider, bool isAmpControl)
     slider.setColour(juce::Slider::textBoxBackgroundColourId, panel);
     slider.setColour(juce::Slider::textBoxOutlineColourId, line);
 }
+}
+
+juce::Font GuitarFxRetroLookAndFeel::getTextButtonFont(juce::TextButton&, int buttonHeight)
+{
+    return pixelFont(juce::jmin(8.0f, (float) buttonHeight * 0.36f));
+}
+
+juce::Font GuitarFxRetroLookAndFeel::getComboBoxFont(juce::ComboBox&)
+{
+    return pixelFont(8.0f);
+}
+
+juce::Font GuitarFxRetroLookAndFeel::getLabelFont(juce::Label& label)
+{
+    return pixelFont(juce::jmin(8.0f, (float) label.getHeight() * 0.62f));
+}
+
+juce::Font GuitarFxRetroLookAndFeel::getPopupMenuFont()
+{
+    return pixelFont(8.0f);
 }
 
 GuitarFxRetroLookAndFeel::GuitarFxRetroLookAndFeel()
@@ -69,7 +102,7 @@ void GuitarFxRetroLookAndFeel::drawButtonText(juce::Graphics& g,
                                                bool,
                                                bool)
 {
-    g.setFont(juce::FontOptions(9.0f, juce::Font::bold));
+    g.setFont(pixelFont(7.0f));
     g.setColour(button.getToggleState() ? bg : fg);
     g.drawFittedText(button.getButtonText(),
                      button.getLocalBounds().reduced(4, 2),
@@ -242,7 +275,7 @@ NichodevGuitarFXAudioProcessorEditor::NichodevGuitarFXAudioProcessorEditor(
 
     setResizable(true, true);
     setResizeLimits(760, 700, 1280, 1120);
-    setSize(860, 820);
+    setSize(760, 700);
 }
 
 NichodevGuitarFXAudioProcessorEditor::~NichodevGuitarFXAudioProcessorEditor()
@@ -264,12 +297,12 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
                juce::Justification::centredLeft);
 
     g.setColour(lime);
-    g.setFont(juce::FontOptions(22.0f, juce::Font::bold));
+    g.setFont(pixelFont(16.0f));
     g.drawText("GUITAR FX LAB", 24, 31, getWidth() - 48, 30,
                juce::Justification::centredLeft);
 
     g.setColour(muted);
-    g.setFont(juce::FontOptions(10.0f));
+    g.setFont(pixelFont(8.0f));
     g.drawText("VST3  /  15 PEDAIS  /  AUDIO NATIVO", 24, 58, getWidth() - 48, 16,
                juce::Justification::centredLeft);
 
@@ -286,11 +319,11 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("MODEL: PIXEL-8b", 30, 91, 170, 16, juce::Justification::centredLeft);
 
     g.setColour(lavender);
-    g.setFont(juce::FontOptions(25.0f, juce::Font::bold));
+    g.setFont(pixelFont(15.0f));
     g.drawText("▰", 34, 119, 42, 34, juce::Justification::centred);
 
     g.setColour(fg);
-    g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+    g.setFont(pixelFont(9.0f));
     g.drawText("NICHODEV", 30, 157, 160, 20, juce::Justification::centred);
     g.setColour(lavender);
     g.setFont(juce::FontOptions(9.0f, juce::Font::bold));

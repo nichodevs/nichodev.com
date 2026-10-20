@@ -40,6 +40,12 @@ juce_add_plugin(NichodevGuitarFX
 
 juce_generate_juce_header(NichodevGuitarFX)
 
+juce_add_binary_data(NichodevGuitarFXAssets
+  SOURCES
+    Assets/Pixel.ttf
+    Assets/OFL.txt
+)
+
 target_sources(NichodevGuitarFX PRIVATE
   Source/PluginProcessor.cpp
   Source/PluginEditor.cpp
@@ -56,6 +62,7 @@ target_compile_definitions(NichodevGuitarFX
 
 target_link_libraries(NichodevGuitarFX
   PRIVATE
+    NichodevGuitarFXAssets
     juce::juce_audio_utils
     juce::juce_dsp
     juce::juce_recommended_config_flags

@@ -6,6 +6,10 @@ class GuitarFxRetroLookAndFeel final : public juce::LookAndFeel_V4
 {
 public:
     GuitarFxRetroLookAndFeel();
+    juce::Font getTextButtonFont(juce::TextButton&, int buttonHeight) override;
+    juce::Font getComboBoxFont(juce::ComboBox&) override;
+    juce::Font getLabelFont(juce::Label&) override;
+    juce::Font getPopupMenuFont() override;
     void drawButtonBackground(juce::Graphics&, juce::Button&, const juce::Colour&, bool, bool) override;
     void drawButtonText(juce::Graphics&, juce::TextButton&, bool, bool) override;
     void drawToggleButton(juce::Graphics&, juce::ToggleButton&, bool, bool) override;
