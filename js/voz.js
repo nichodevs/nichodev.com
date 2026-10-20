@@ -109,9 +109,11 @@ function markPreset(key){
 document.querySelectorAll('input[type=range]').forEach(r =>
   r.addEventListener('input', () => { markPreset(null); currentAB = null; updateLabels(); applyLiveParams(); applyPreviewParams(); updateFxLabUI(); }));
 
-// Sorteia os controles dos dois painéis de efeitos e aplica o novo som imediatamente.
+// Sorteia os controles dos dois painéis, liga os efeitos e atualiza todas as saídas.
 function randomizeEffects(){
   const controls = [...document.querySelectorAll('.advanced-control input[type="range"]')];
+  if(!controls.length) return;
+
   controls.forEach(control => {
     const min = Number(control.min);
     const max = Number(control.max);
@@ -120,8 +122,14 @@ function randomizeEffects(){
     control.value = String(min + Math.floor(Math.random() * stepCount) * step);
   });
 
-  const lastControl = controls.at(-1);
-  if(lastControl) lastControl.dispatchEvent(new Event('input', {bubbles:true}));
+  setAllEffectsEnabled(true);
+  markPreset(null);
+  currentAB = null;
+  updateLabels();
+  applyLiveParams();
+  applyPreviewParams();
+  updateFxLabUI();
+  say('Configuração aleatória aplicada. Todos os efeitos foram ligados.');
 }
 
 document.querySelectorAll('.random-effects-btn').forEach(button =>
