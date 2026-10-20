@@ -32,12 +32,16 @@ body {
       animation: home-enter 820ms 390ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
-    .repository-qr-card {
+    a[href="https://github.com/nichodevs/nichodev.com/releases/latest"] {
       animation: home-enter 820ms 520ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
-    .site-footer {
+    .repository-qr-card {
       animation: home-enter 820ms 650ms cubic-bezier(.22, 1, .36, 1) both;
+    }
+
+    .site-footer {
+      animation: home-enter 820ms 780ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
     @keyframes home-enter {
@@ -140,6 +144,7 @@ body {
   #startBtn,
   a[href="guitarra.html"],
   a[href="mixmaster.html"],
+  a[href="https://github.com/nichodevs/nichodev.com/releases/latest"],
   .repository-qr-card,
   .site-footer {
     animation: none;
