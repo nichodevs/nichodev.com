@@ -41,6 +41,7 @@ body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-col
 .guitar-app select,.guitar-app input[type=file]{width:100%;max-width:100%;padding:9px;border:2px solid var(--g-line);background:var(--g-bg);color:var(--g-fg);font:14px system-ui,sans-serif}
 .file-button{margin-top:10px;font-size:8px}
 .button-row,.ab-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.recording-effects-toggle[aria-pressed="true"]{border-color:var(--g-lime);color:var(--g-lime);background:#24371e}
 .status{min-height:1.5em;color:var(--g-mute);margin:10px 0}
 .tuner{text-align:center}
 .tuner-note{color:var(--g-lime);font-size:clamp(28px,6vw,46px);line-height:1.5}
