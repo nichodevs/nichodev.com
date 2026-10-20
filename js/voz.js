@@ -2,6 +2,25 @@
 
 const $ = id => document.getElementById(id);
 
+function applyVoiceTheme(theme, persist = true){
+  const dark = theme === 'dark';
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  const button = $('themeToggle');
+  button.setAttribute('aria-pressed', String(dark));
+  button.setAttribute('aria-label', dark ? 'Ativar modo claro' : 'Ativar modo noturno');
+  button.innerHTML = dark ? '☀<small>MODO CLARO</small>' : '☾<small>MODO NOTURNO</small>';
+  if(persist){
+    try{ localStorage.setItem('nichodev-voice-theme', dark ? 'dark' : 'light'); }catch(_){}
+  }
+}
+
+const themeToggle = $('themeToggle');
+let savedVoiceTheme = null;
+try{ savedVoiceTheme = localStorage.getItem('nichodev-voice-theme'); }catch(_){}
+const initialVoiceTheme = savedVoiceTheme || (window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+applyVoiceTheme(initialVoiceTheme, false);
+themeToggle.addEventListener('click', () => applyVoiceTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+
 const MAX_SECONDS = 300;            // duração máxima (gravação e importação)
 const MAX_FILE_MB = 100;            // tamanho máximo do arquivo importado
 
