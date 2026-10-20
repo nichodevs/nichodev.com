@@ -26,7 +26,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout NichodevGuitarFXAudioProcess
  return l;
 }
 void NichodevGuitarFXAudioProcessor::prepareToPlay(double sr,int)
-{rate=sr;for(auto& p:fx)for(auto& s:p){s.delay.assign((size_t)std::max(4096,(int)(sr*3.5)),0);s.write=0;s.env=0;s.smooth=1;s.filter=0;s.phase=0;}}
+{rate=sr;for(auto& p:fx)for(auto& s:p){s.delay.assign((size_t)std::max(4096,(int)(sr*3.5)),0);s.write=0;s.env=0;s.smooth=1;s.filter=0;s.phase=0;}ampFilter.fill(0);ampEnv.fill(0);}
 void NichodevGuitarFXAudioProcessor::releaseResources(){for(auto& p:fx)for(auto& s:p){std::fill(s.delay.begin(),s.delay.end(),0);s.write=0;}}
 bool NichodevGuitarFXAudioProcessor::isBusesLayoutSupported(const BusesLayout& l)const{auto o=l.getMainOutputChannelSet();return o==l.getMainInputChannelSet()&&(o==juce::AudioChannelSet::mono()||o==juce::AudioChannelSet::stereo());}
 void NichodevGuitarFXAudioProcessor::processBlock(juce::AudioBuffer<float>& b,juce::MidiBuffer& midi)
@@ -57,8 +57,8 @@ void NichodevGuitarFXAudioProcessor::processBlock(juce::AudioBuffer<float>& b,ju
    }
   }
   x=std::tanh(x*(1+g*1.5f)*(1+g*7));
-  auto& amp=fx[4][(size_t)std::min(c,1)];amp.filter+=toneA*(x-amp.filter);amp.env+=.009f*(x-amp.env);
-  x=amp.filter+(x-amp.env)*.22f;b.setSample(c,n,x*mg);
+  const auto channel=(size_t)std::min(c,1);ampFilter[channel]+=toneA*(x-ampFilter[channel]);ampEnv[channel]+=.009f*(x-ampEnv[channel]);
+  x=ampFilter[channel]+(x-ampEnv[channel])*.22f;b.setSample(c,n,x*mg);
  }
 }
 void NichodevGuitarFXAudioProcessor::movePedal(int from,int delta){int to=from+delta;if(from<0||to<0||from>=pedalCount||to>=pedalCount)return;int a=order[(size_t)from],z=order[(size_t)to];order[(size_t)from]=z;order[(size_t)to]=a;juce::String v;for(int i=0;i<pedalCount;++i){if(i)v<<",";v<<order[(size_t)i].load();}parameters.state.setProperty("pedalOrder",v,nullptr);}
