@@ -1,6 +1,12 @@
 # Nichodev Guitar FX (VST3)
 
-Primeira versão nativa do Guitar FX LAB para uso como efeito em um DAW. O plugin recebe o áudio da faixa e oferece Drive, Tone, Mix e Output. Os parâmetros podem ser automatizados pelo host e são salvos com o projeto.
+Pedaleira nativa para o Guitar FX LAB, pensada para uso como efeito em um DAW. O plugin aceita áudio mono/estéreo, salva seus parâmetros no projeto e expõe os controles ao sistema de automação do host.
+
+## Pedais e amp
+
+A cadeia inclui os 15 efeitos do Guitar FX LAB: NS-2 (gate), CS-3 (compressor), BD-2 (overdrive), DS-1 (distortion), GE-7 (EQ), CH-1 (chorus), BF-3 (flanger), PH-3 (phaser), FZ-5 (fuzz), OCTAFUZZ, VB-2 (vibrato), TR-2 (tremolo), DD-8 (delay), RV-6 (reverb) e SHIMMER. Cada pedal tem liga/desliga, controle principal e posição reordenável. Inclui MASTER, AMP GAIN, AMP TONE, presets Clean Pixel, 8-Bit Blues, Arcade Crunch, Boss Battle e Space Delay, randomização e reset.
+
+Os controles e o fluxo correspondem à pedaleira do site. A geração de áudio foi reimplementada em JUCE e usa aproximações nativas; por isso não é uma comparação idêntica amostra por amostra ao Web Audio do navegador. Afinador, entrada de microfone/dispositivo, gravação e importação de arquivos continuam sendo recursos específicos do site.
 
 ## Compilar com o JUCE que você baixou
 
@@ -11,7 +17,7 @@ cmake -S plugin -B build/plugin -DJUCE_LOCAL_PATH=/caminho/para/JUCE -DCMAKE_BUI
 cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3
 ```
 
-No PowerShell, por exemplo:
+No PowerShell:
 
 ```powershell
 cmake -S plugin -B build/plugin -DJUCE_LOCAL_PATH="C:/caminho/para/JUCE" -DCMAKE_BUILD_TYPE=Release
@@ -20,12 +26,4 @@ cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3
 
 Se `JUCE_LOCAL_PATH` for omitido, o CMake baixa JUCE 9.0.4. O bundle VST3 aparece em `build/plugin/NichodevGuitarFX_artefacts/Release/VST3/` (ou no diretório de configuração correspondente).
 
-## Escopo desta primeira versão
-
-- Efeito de áudio mono/estéreo para guitarra.
-- Saturação soft-clip com controle de Drive.
-- Filtro de Tone, controle paralelo Mix e nível de saída.
-- Parâmetros automáveis e estado persistido no projeto do DAW.
-- Interface nativa JUCE com identidade visual arcade do nichodev.com.
-
-O Guitar FX LAB do navegador tem uma pedaleira maior, afinador, gravação e presets. Esses recursos ainda precisam ser portados e serão adicionados em etapas posteriores. O plugin usa JUCE 9; confirme a licença aplicável antes de distribuir builds. Consulte a [licença JUCE 9](https://juce.com/legal/juce-9-licence/).
+O plugin usa JUCE 9; confirme a licença aplicável antes de distribuir builds. Consulte a [licença JUCE 9](https://juce.com/legal/juce-9-licence/).
