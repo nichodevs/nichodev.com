@@ -1,26 +1,29 @@
 # nichodev.com
 
-Site estático com ferramentas de áudio que funcionam no navegador.
+Site estático com ferramentas de áudio para navegador e um plugin VST3 para uso em DAWs.
 
-## Páginas
+## Ferramentas
 
-- `index.html`: página inicial e atalhos.
-- `voz.html`: Voice Studio.
-- `guitarra.html`: Guitar FX LAB.
-- `mixmaster.html`: editor MIXMASTER.
-- `onda/index.html`: página interativa do easter egg da onda.
+- [Voice Studio](voz.html): processamento de voz e áudio no navegador.
+- [Guitar FX LAB](guitarra.html): cadeia de efeitos para guitarra.
+- [MIXMASTER](mixmaster.html): editor de áudio.
+- [Onda sonora](onda/): página interativa acessada pelo ícone animado no rodapé.
+- **Nichodev Guitar FX VST3**: versão nativa da pedaleira para Windows e Linux.
 
-## Organização
+O botão **DOWNLOAD VST** na página inicial abre a [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest). Os arquivos de instalação estão em **Assets**. Para detalhes, instalação e compilação, consulte [plugin/README.md](plugin/README.md).
 
-- `js/`: lógica dos estúdios e navegação.
-- `assets/cursors/`: imagens dos cursores retrô.
+## Estrutura
+
+- Páginas HTML e estilos principais na raiz.
+- `js/`: lógica das ferramentas de áudio e navegação.
+- `assets/cursors/`: cursores retrô.
 - `onda/`: página, estilos e animação do easter egg.
-- `scripts/validate-site.js`: valida referências, sintaxe e cobertura do deploy.
+- `plugin/`: projeto JUCE/CMake do VST3, assets e testes DSP.
+- `scripts/validate-site.js`: valida referências, sintaxe e cobertura dos arquivos do site.
 - `tests/e2e/`: testes de navegação, responsividade e teclado com Playwright.
-- `.github/workflows/`: validação de pull requests e publicação na Hostinger.
-- Os arquivos HTML principais e seus estilos ficam na raiz para manter diretos os caminhos do site estático.
+- `.github/workflows/`: validação do site, compilação/testes do plugin e publicação do site.
 
-## Desenvolvimento e validação
+## Desenvolvimento do site
 
 Requer Node.js 22 ou superior e npm.
 
@@ -32,8 +35,13 @@ npm run test:e2e
 npm start
 ```
 
-`npm ci` instala as versões registradas no `package-lock.json`. `npm run check` valida referências e arquivos do deploy. Os testes E2E abrem as cinco páginas no Chromium, verificam os atalhos da página inicial, a largura em telas móveis, foco de teclado e interação da onda. `npm start` inicia o servidor Express na porta 3000 (ou na porta definida por `PORT`); o endpoint `/health` verifica o servidor.
+`npm ci` instala as versões registradas no `package-lock.json`. `npm run check` valida referências e arquivos do site. Os testes E2E abrem as páginas no Chromium e verificam os atalhos da inicial, a largura em telas móveis, o foco de teclado e a interação da onda. `npm start` inicia o servidor Express na porta 3000 (ou na porta definida por `PORT`); o endpoint `/health` verifica o servidor.
+
+## VST3
+
+A implementação nativa e suas instruções estão em [plugin/README.md](plugin/README.md). O GitHub Actions compila o VST3 para Windows e Linux e executa os testes DSP quando há alterações no plugin.
 
 ## Publicação
 
-O workflow `Publicar site na Hostinger` publica em pushes para `main`, pode ser iniciado manualmente e também roda diariamente às 06:00 no horário de Brasília. Cada execução valida o site, envia os arquivos por SFTP e confere os endereços publicados.
+- **Releases do VST3:** publicados no GitHub; o botão de download do site aponta para o release mais recente.
+- **Site:** o workflow `Publicar site na Hostinger` roda no GitHub Actions em pushes para `main`), manualmente ou diariamente às 09:00 UTC (06:00 em Brasília). Ele valida o site e publica por SFTP na Hostinger usando os secrets `HOSTINGER_HOST`, `HOSTINGER_USERNAME`, `HOSTINGER_PASSWORD` e `HOSTINGER_KNOWN_HOSTS`. Esse workflow publica o site; as builds do plugin são distribuídas nos releases do GitHub.
