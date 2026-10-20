@@ -98,10 +98,10 @@
     <details id="recordPanel" class="g-panel" open>
       <summary>05 / Gravação e exportação</summary>
       <div class="panel-body">
-        <div class="button-row"><button type="button" id="recordBtn" disabled>Gravar saída processada</button><button type="button" id="stopRecordBtn" disabled>Parar gravação</button></div>
+        <div class="button-row"><button type="button" id="recordBtn" disabled>Gravar saída processada</button><button type="button" id="recordDryBtn" disabled>GRAVAR SAÍDA SEM EFEITOS</button><button type="button" id="stopRecordBtn" disabled>Parar gravação</button></div>
         <p class="record-time">REC <time id="recordTime" role="timer" aria-label="Duração da gravação">00:00</time></p>
         <p id="recordStatus" class="status" role="status" aria-live="polite">Conecte uma entrada ou carregue um áudio para gravar.</p>
-        <audio id="recordedAudio" controls hidden aria-label="Ouvir gravação processada"></audio>
+        <audio id="recordedAudio" controls hidden aria-label="Ouvir gravação"></audio>
         <a id="downloadRecording" class="download-link" hidden>BAIXAR GRAVAÇÃO</a>
       </div>
     </details>
