@@ -16,20 +16,23 @@ Site estático com ferramentas de áudio que funcionam no navegador.
 - `assets/cursors/`: imagens dos cursores retrô.
 - `onda/`: página, estilos e animação do easter egg.
 - `scripts/validate-site.js`: valida referências, sintaxe e cobertura do deploy.
+- `tests/e2e/`: testes de navegação, responsividade e teclado com Playwright.
 - `.github/workflows/`: validação de pull requests e publicação na Hostinger.
 - Os arquivos HTML principais e seus estilos ficam na raiz para manter diretos os caminhos do site estático.
 
 ## Desenvolvimento e validação
 
-Requer Node.js e npm.
+Requer Node.js 22 ou superior e npm.
 
 ```sh
-npm install
+npm ci
 npm run check
+npx playwright install chromium
+npm run test:e2e
 npm start
 ```
 
-`npm start` inicia o servidor local Express na porta 3000 (ou na porta definida por `PORT`). O endpoint `/health` verifica o servidor.
+`npm ci` instala as versões registradas no `package-lock.json`. `npm run check` valida referências e arquivos do deploy. Os testes E2E abrem as cinco páginas no Chromium, verificam os atalhos da página inicial, a largura em telas móveis, foco de teclado e interação da onda. `npm start` inicia o servidor Express na porta 3000 (ou na porta definida por `PORT`); o endpoint `/health` verifica o servidor.
 
 ## Publicação
 
