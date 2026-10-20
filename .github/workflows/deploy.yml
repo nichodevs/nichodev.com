@@ -79,14 +79,14 @@ jobs:
             put assets/cursors/cursor-crosshair.png -o assets/cursors/cursor-crosshair.png
             put assets/cursors/cursor-help.png -o assets/cursors/cursor-help.png
             put assets/cursors/cursor-alt.png -o assets/cursors/cursor-alt.png
-              set cmd:fail-exit no
-            mkdir js
-            set cmd:fail-exit yes
-            put js/index.js -o js/index.js
-            put js/voz.js -o js/voz.js
-            put js/guitarra.js -o js/guitarra.js
-            put js/back-sound.js -o js/back-sound.js
-            put js/mixmaster.js -o js/mixmaster.js
+            mkdir -p js
+            cd js
+            put ../js/index.js -o index.js
+            put ../js/voz.js -o voz.js
+            put ../js/guitarra.js -o guitarra.js
+            put ../js/back-sound.js -o back-sound.js
+            put ../js/mixmaster.js -o mixmaster.js
+            cd ..
             put robots.txt -o robots.txt
             put index.html -o index.html
             put voz.html -o voz.html
