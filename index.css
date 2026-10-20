@@ -1,3 +1,11 @@
+:root {
+  --bg: #fff;
+  --fg: #000;
+  --mute: #555;
+  --line: #000;
+  color-scheme: light;
+}
+
 body {
       min-height: 100vh;
       display: flex;
