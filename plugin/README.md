@@ -1,16 +1,26 @@
 # Nichodev Guitar FX (VST3)
 
-Pedaleira nativa para o Guitar FX LAB, pensada para uso como efeito em um DAW. O plugin aceita áudio mono/estéreo, salva seus parâmetros no projeto e expõe os controles ao sistema de automação do host.
+Plugin nativo de efeitos para guitarra, feito com JUCE 9.0.4 e destinado a DAWs compatíveis com VST3. Aceita áudio mono ou estéreo, salva o estado no projeto da DAW e expõe os parâmetros ao sistema de automação do host. Não recebe nem gera MIDI.
 
-## Pedais e amp
+## Recursos
 
-A cadeia inclui os 15 efeitos do Guitar FX LAB: NS-2 (gate), CS-3 (compressor), BD-2 (overdrive), DS-1 (distortion), GE-7 (EQ), CH-1 (chorus), BF-3 (flanger), PH-3 (phaser), FZ-5 (fuzz), OCTAFUZZ, VB-2 (vibrato), TR-2 (tremolo), DD-8 (delay), RV-6 (reverb) e SHIMMER. Cada pedal tem liga/desliga, controle principal e posição reordenável. Inclui MASTER, AMP GAIN, AMP TONE, presets Clean Pixel, 8-Bit Blues, Arcade Crunch, Boss Battle e Space Delay, randomização e reset.
+A cadeia tem 15 efeitos: NS-2 (gate), CS-3 (compressor), BD-2 (overdrive), DS-1 (distortion), GE-7 TILT, CH-1 (chorus), BF-3 (flanger), PH-3 (phaser), FZ-5 (fuzz), OCTAFUZZ, VB-2 (vibrato), TR-2 (tremolo), DD-8 (delay), RV-6 (reverb) e SHIMMER. UP/DN movem cada pedal na cadeia; a ordem é salva junto com o estado do plugin.
 
-Os controles e o fluxo correspondem à pedaleira do site. A geração de áudio foi reimplementada em JUCE e usa aproximações nativas; por isso não é uma comparação idêntica amostra por amostra ao Web Audio do navegador. Afinador, entrada de microfone/dispositivo, gravação e importação de arquivos continuam sendo recursos específicos do site.
+Também inclui controles MASTER, AMP GAIN e AMP TONE, cinco presets (Clean Pixel, 8-Bit Blues, Arcade Crunch, Boss Battle e Space Delay), RANDOM e RESET. Os controles contínuos são suavizados para reduzir artefatos ao ajustar parâmetros ou automatizá-los. Os buffers de atraso são alocados apenas para os efeitos que os utilizam.
 
-## Compilar com o JUCE que você baixou
+## Som e limitações
 
-Requisitos: CMake 3.22+, compilador C++17 e as dependências de interface/áudio do JUCE para o sistema operacional. Aponte `JUCE_LOCAL_PATH` para a pasta raiz extraída do JUCE:
+Os efeitos são aproximações nativas, não emulações oficiais nem uma correspondência idêntica ao processamento Web Audio do Guitar FX LAB. O GE-7 TILT oferece um controle de inclinação tonal; não é um equalizador gráfico de sete bandas. Afinador, seleção de microfone/dispositivo, gravação e importação de arquivos são recursos do site, não deste plugin.
+
+## Download e instalação
+
+Baixe o arquivo para seu sistema na [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest), na seção **Assets**. Extraia o arquivo e copie o bundle `.vst3` para uma pasta VST3 reconhecida pela DAW. No Windows, a pasta comum é `C:\Program Files\Common Files\VST3`; no Linux, use `~/.vst3` ou a pasta VST3 do sistema. Depois, solicite à DAW uma nova varredura de plugins.
+
+## Compilar
+
+Requisitos: CMake 3.22 ou superior, compilador C++17 e dependências de áudio/interface do JUCE para o sistema operacional. O workflow [plugin.yml](../.github/workflows/plugin.yml) mostra as dependências usadas no Ubuntu CI.
+
+Com JUCE já baixado, aponte `JUCE_LOCAL_PATH` para a pasta raiz:
 
 ```sh
 cmake -S plugin -B build/plugin -DJUCE_LOCAL_PATH=/caminho/para/JUCE -DCMAKE_BUILD_TYPE=Release
@@ -24,6 +34,19 @@ cmake -S plugin -B build/plugin -DJUCE_LOCAL_PATH="C:/caminho/para/JUCE" -DCMAKE
 cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3
 ```
 
-Se `JUCE_LOCAL_PATH` for omitido, o CMake baixa JUCE 9.0.4. O bundle VST3 aparece em `build/plugin/NichodevGuitarFX_artefacts/Release/VST3/` (ou no diretório de configuração correspondente).
+Sem `JUCE_LOCAL_PATH`, o CMake baixa JUCE 9.0.4. O bundle gerado fica em `build/plugin/NichodevGuitarFX_artefacts/Release/VST3/` (ou na pasta de configuração correspondente).
 
-O plugin usa JUCE 9; confirme a licença aplicável antes de distribuir builds. Consulte a [licença JUCE 9](https://juce.com/legal/juce-9-licence/).
+## Testes DSP
+
+Os testes unitários cobrem a reordenação de pedais, a seleção e o tamanho dos buffers de atraso e o bloqueio de DC usado pelos sinais retificados. Para executá-los:
+
+```sh
+cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests
+ctest --test-dir build/plugin --build-config Release --output-on-failure
+```
+
+O GitHub Actions compila o plugin e executa esses testes em Windows e Linux. Os testes são verificações determinísticas dos utilitários DSP; não substituem a avaliação auditiva do plugin em diferentes DAWs e taxas de amostragem.
+
+## Licenças
+
+A distribuição do plugin deve seguir os termos aplicáveis da [licença JUCE 9](https://juce.com/legal/juce-9-licence/). A fonte tipográfica incluída está em `Assets/Pixel.ttf`; seu texto de licença está em `Assets/OFL.txt`.
