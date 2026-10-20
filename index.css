@@ -138,3 +138,37 @@ body {
   }
   .repository-qr-card a { transition: none; }
 }
+
+.sound-wave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 24px;
+  margin-top: -2px;
+  color: var(--fg);
+}
+
+.sound-wave span {
+  display: block;
+  width: 3px;
+  height: var(--bar-height);
+  background: currentColor;
+  transform: scaleY(0.18);
+  transform-origin: center;
+  animation: sound-wave-pulse 850ms ease-in-out infinite alternate;
+  animation-delay: var(--wave-delay);
+}
+
+@keyframes sound-wave-pulse {
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sound-wave span {
+    animation: none;
+    transform: scaleY(0.45);
+  }
+}
