@@ -78,3 +78,7 @@ html[data-theme="dark"]{--mix-wave-color:#d5b5ff}
 
 
 .mix-app footer .site-audio-mark{margin-top:14px}
+
+
+/* Tipografia retrô aplicada a todos os elementos do MIXMASTER. */
+body.mix-page,body.mix-page *{font-family:"Press Start 2P",monospace!important}

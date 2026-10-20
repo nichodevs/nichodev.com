@@ -96,3 +96,7 @@ body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-col
 .amp-led-row{color:#ffe5ff}
 .led.on{background:#ff61f1;box-shadow:0 0 8px #ff47eb,0 0 16px #d52aff}
 .power-state{color:#ff8bf6;text-shadow:0 0 8px #ff39ec,0 0 16px #d52aff}
+
+
+/* Tipografia retrô aplicada a todos os elementos da página de Guitarra. */
+body.guitar-page,body.guitar-page *{font-family:"Press Start 2P",monospace!important}
