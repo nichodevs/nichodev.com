@@ -27,6 +27,7 @@ let recorder = null, recordChunks = [], recordUrl = null, recordStarted = 0, rec
 let rawRecordingSource = null, rawRecordingDestination = null;
 let recordedMediaNode = null, recordedPlaybackGain = null, recordedPlaybackStages = [];
 let recordingHasDry = false, recordingEffectsEnabled = false;
+let fileEffectsEnabled = false;
 let tunerFrame = 0, tunerLastUpdate = 0, snapshots = {A:null,B:null}, currentAB = null;
 
 const PRESETS = {
@@ -207,6 +208,9 @@ function rebuildChain(){
   try{inputNode.disconnect()}catch(e){}
   inputNode.connect(analyser);
   if(rawRecordingSource===inputNode&&rawRecordingDestination)inputNode.connect(rawRecordingDestination);
+  if(inputNode===mediaNode&&!fileEffectsEnabled){
+    inputNode.connect(master);updatePower();return;
+  }
   let previous=inputNode;
   for(const id of order){const stage=makeStage(id);activeStages.push(stage);previous.connect(stage.input);previous=stage.output;}
   const ampCab=makeAmpCabStage();activeStages.push(ampCab);previous.connect(ampCab.input);ampCab.output.connect(master);
@@ -256,12 +260,27 @@ async function loadAudioFile(file){
     if(fileUrl)URL.revokeObjectURL(fileUrl);
     fileUrl=URL.createObjectURL(file);$("audioSource").src=fileUrl;$("audioSource").hidden=false;
     if(!mediaNode)mediaNode=ctx.createMediaElementSource($("audioSource"));
+    fileEffectsEnabled=false;updatePlayFileButton();
     setAudioSource(mediaNode);
     $("playFile").disabled=false;$("stopFile").disabled=false;
     announce("inputStatus","Áudio carregado: "+file.name+". Clique em Ouvir com pedais.");
   }catch(error){announce("inputStatus","Não foi possível carregar este áudio neste navegador.");}
 }
-async function playFile(){if(!inputNode)return;try{await ctx.resume();await $("audioSource").play();announce("inputStatus","Reproduzindo com a pedaleira.");}catch(error){announce("inputStatus","Não foi possível reproduzir o arquivo.");}}
+function updatePlayFileButton(){
+  const button=$("playFile");
+  button.textContent=fileEffectsEnabled?"Ouvir sem pedais":"Ouvir com pedais";
+  button.setAttribute("aria-pressed",String(fileEffectsEnabled));
+}
+async function playFile(){
+  if(inputNode!==mediaNode||!mediaNode)return;
+  const audio=$("audioSource"),shouldStart=audio.paused||audio.ended;
+  fileEffectsEnabled=!fileEffectsEnabled;updatePlayFileButton();rebuildChain();
+  try{
+    await ctx.resume();
+    if(shouldStart)await audio.play();
+    announce("inputStatus",fileEffectsEnabled?"Reproduzindo com pedais. Clique para ouvir sem pedais.":"Reproduzindo sem pedais. Clique para ouvir com pedais.");
+  }catch(error){announce("inputStatus","Não foi possível reproduzir o arquivo.");}
+}
 function stopFile(){ $("audioSource").pause();$("audioSource").currentTime=0;announce("inputStatus","Reprodução parada.");}
 function startTuner(){
   cancelAnimationFrame(tunerFrame);
