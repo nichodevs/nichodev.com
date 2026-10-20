@@ -35,7 +35,7 @@ npm run test:e2e
 npm start
 ```
 
-`npm ci` instala as versões registradas no `package-lock.json`. `npm run check` valida referências e arquivos do site. Os testes E2E abrem as páginas no Chromium e verificam os atalhos da inicial, a largura em telas móveis, o foco de teclado e a interação da onda. `npm start` inicia o servidor Express na porta 3000 (ou na porta definida por `PORT)); o endpoint `/health` verifica o servidor.
+`npm ci` instala as versões registradas no `package-lock.json`. `npm run check` valida referências e arquivos do site. Os testes E2E abrem as páginas no Chromium e verificam os atalhos da inicial, a largura em telas móveis, o foco de teclado e a interação da onda. `npm start` inicia o servidor Express na porta 3000 (ou na porta definida por `PORT`); o endpoint `/health` verifica o servidor.
 
 ## VST3
 
@@ -44,4 +44,4 @@ A implementação nativa e suas instruções estão em [plugin/README.md](plugin
 ## Publicação
 
 - **Releases do VST3:** publicados no GitHub; o botão de download do site aponta para o release mais recente.
-- **Site:** o workflow `Publicar site na Hostinger` roda no GitHub Actions em pushes para `main), manualmente ou diariamente às 09:00 UTC (06:00 em Brasília). Ele valida o site e publica por SFTP na Hostinger usando os secrets `HOSTINGER_HOST`, `HOSTINGER_USERNAME`, `HOSTINGER_PASSWORD` e `HOSTINGER_KNOWN_HOSTS`. Esse workflow publica o site; as builds do plugin são distribuídas nos releases do GitHub.
+- **Site:** o workflow `Publicar site na Hostinger` roda no GitHub Actions em pushes para `main`), manualmente ou diariamente às 09:00 UTC (06:00 em Brasília). Ele valida o site e publica por SFTP na Hostinger usando os secrets `HOSTINGER_HOST`, `HOSTINGER_USERNAME`, `HOSTINGER_PASSWORD` e `HOSTINGER_KNOWN_HOSTS`. Esse workflow publica o site; as builds do plugin são distribuídas nos releases do GitHub.
