@@ -333,3 +333,76 @@ h2 .cursor, h3 .cursor { animation: fx-caret-blink 1s steps(1, end) infinite !im
     grid-column: auto;
   }
 }
+
+
+/* Microfone ao vivo: painel amplo logo abaixo do FX LAB. */
+.studio-panels > .microphone-panel {
+  grid-column: 1 / -1;
+}
+.microphone-panel .control-content {
+  padding: 22px;
+}
+.microphone-panel .control-content > fieldset {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 12px 22px;
+  min-height: 320px;
+  margin: 0;
+  padding: 20px;
+  border: 2px solid var(--line);
+}
+.microphone-panel .control-content > fieldset > p:first-child,
+.microphone-panel #micDeviceStatus,
+.microphone-panel .preview-controls,
+.microphone-panel .processed-record-actions,
+.microphone-panel .level-meter,
+.microphone-panel #liveMeterLabel,
+.microphone-panel .waveform-frame,
+.microphone-panel #liveStatus {
+  grid-column: 1 / -1;
+}
+.microphone-panel .control-content > fieldset > p:first-child {
+  margin: 0;
+}
+.microphone-panel label[for="microphoneSelect"] {
+  align-self: end;
+  margin: 0;
+}
+.microphone-panel .microphone-select {
+  align-self: end;
+  margin: 0;
+}
+.microphone-panel #micDeviceStatus,
+.microphone-panel #liveMeterLabel,
+.microphone-panel #liveStatus {
+  margin: 0;
+}
+.microphone-panel .preview-controls,
+.microphone-panel .processed-record-actions {
+  margin-top: 0;
+}
+.microphone-panel .waveform-frame {
+  margin: 0;
+}
+@media (max-width: 700px) {
+  .studio-panels > .microphone-panel {
+    grid-column: auto;
+  }
+}
+@media (max-width: 520px) {
+  .microphone-panel .control-content {
+    padding: 12px;
+  }
+  .microphone-panel .control-content > fieldset {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    min-height: 0;
+    padding: 14px;
+  }
+  .microphone-panel .control-content > fieldset > *,
+  .microphone-panel label[for="microphoneSelect"],
+  .microphone-panel .microphone-select {
+    grid-column: 1;
+  }
+}
