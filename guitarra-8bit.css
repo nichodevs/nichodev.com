@@ -17,7 +17,6 @@ body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-col
 .amp-brand h2{font-size:10px;line-height:2}
 .brand-bolt{color:#d9b2ff;font-size:30px}
 .amp-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.amp-reset{grid-column:1/-1;justify-self:end;color:#d9b2ff!important;border-color:#9877ad!important}
 .amp-control{display:flex;flex-direction:column;gap:5px;color:#d9b2ff;font-size:8px;text-align:center}
 .amp-control input{width:100%;accent-color:#d9b2ff}
 .amp-control output{font-size:8px}
@@ -53,8 +52,10 @@ body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-col
 .preset-grid button{font-size:8px}
 .pedalboard-panel{grid-column:1/-1;padding:14px}
 .section-heading h2{margin:0;color:var(--g-lime);font-size:12px}
-.section-heading-title{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.section-heading-title button{flex:0 0 auto}
+.section-heading-title{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+.heading-actions{display:flex;align-items:center;gap:8px}
+.heading-actions button{flex:0 0 auto}
+.reset-effects-button{color:#d9b2ff!important;border-color:#9877ad!important}
 .section-heading p{margin:4px 0 12px;color:var(--g-mute)}
 .pedal-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
 .pedal{--pedal-color:var(--g-line);min-width:0;padding:10px;border:3px solid var(--pedal-color);background:linear-gradient(160deg,#273121,#151c13);box-shadow:inset 0 0 0 2px #0e130d}
