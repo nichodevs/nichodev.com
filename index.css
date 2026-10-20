@@ -9,6 +9,41 @@ body {
     }
 
     h1 {
+      animation: home-enter 520ms cubic-bezier(.2, .75, .3, 1) both;
+    }
+
+    #startBtn {
+      animation: home-enter 520ms 90ms cubic-bezier(.2, .75, .3, 1) both;
+    }
+
+    a[href="guitarra.html"] {
+      animation: home-enter 520ms 170ms cubic-bezier(.2, .75, .3, 1) both;
+    }
+
+    a[href="mixmaster.html"] {
+      animation: home-enter 520ms 250ms cubic-bezier(.2, .75, .3, 1) both;
+    }
+
+    .repository-qr-card {
+      animation: home-enter 520ms 330ms cubic-bezier(.2, .75, .3, 1) both;
+    }
+
+    .site-footer {
+      animation: home-enter 520ms 410ms cubic-bezier(.2, .75, .3, 1) both;
+    }
+
+    @keyframes home-enter {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h1 {
       font-size: clamp(16px, 4vw, 32px);
       font-weight: 400;
       text-align: center;
@@ -93,5 +128,13 @@ body {
 .repository-qr-card .repository-qr { display: block; width: 100%; height: 100%; }
 
 @media (prefers-reduced-motion: reduce) {
+  h1,
+  #startBtn,
+  a[href="guitarra.html"],
+  a[href="mixmaster.html"],
+  .repository-qr-card,
+  .site-footer {
+    animation: none;
+  }
   .repository-qr-card a { transition: none; }
 }
