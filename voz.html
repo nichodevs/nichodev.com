@@ -94,9 +94,10 @@
   </details>
 
   <details class="control-panel">
-    <summary>Gravar ou importar</summary>
+    <summary>Gravar / Importar / Prévia</summary>
     <div class="control-content">
-  <fieldset id="audioControls" aria-label="Gravar ou importar áudio">
+<fieldset id="audioControls" aria-label="Gravar ou importar áudio">
+    <legend>Gravar ou importar</legend>
     <button type="button" id="recordBtn">Começar gravação</button>
     <p id="recordingState" class="small recording-state" role="status" aria-live="polite">Pronto para gravar.</p>
     <div id="recordMonitor" class="record-monitor" hidden aria-live="polite">
@@ -109,13 +110,8 @@
     <label class="file-label" for="audioFile">Importar arquivo de áudio</label>
     <input id="audioFile" type="file" accept="audio/*">
   </fieldset>
-    </div>
-  </details>
-
-  <details class="control-panel">
-    <summary>Prévia do áudio</summary>
-    <div class="control-content">
-  <fieldset aria-label="Prévia do áudio">
+<fieldset aria-label="Prévia do áudio">
+    <legend>Prévia do áudio</legend>
     <audio id="sourceAudio" controls></audio>
     <p class="small">O player acima toca o áudio original. Use o botão abaixo para ouvir com os efeitos; você pode ajustar os controles durante a reprodução.</p>
     <div class="preview-controls">
