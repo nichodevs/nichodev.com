@@ -139,3 +139,7 @@ h2 .cursor, h3 .cursor { animation: fx-caret-blink 1s steps(1, end) infinite !im
 @media (prefers-reduced-motion: reduce) {
   h2 .cursor, h3 .cursor { animation: none !important; }
 }
+
+
+/* A comparação A/B ocupa a linha inteira entre os ajustes e a prévia. */
+.studio-panels > .fx-lab{column-span:all;display:block;}
