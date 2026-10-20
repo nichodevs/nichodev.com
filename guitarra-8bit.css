@@ -109,3 +109,14 @@ body.guitar-page{font-size:10px;line-height:1.8}
 .guitar-app select,.guitar-app input[type=file]{font-size:10px}
 #tunerFrequency{font-size:10px}
 .pedal label{font-size:9px}
+
+
+/* Escala tipográfica refinada para equilibrar com Voz sem perder a identidade pixel. */
+body.guitar-page{font-size:9px;line-height:1.75}
+.guitar-header h1{font-size:clamp(14px,3.2vw,22px);line-height:1.55}
+.g-panel>summary{font-size:9px}
+.section-heading h2{font-size:10px}
+.guitar-nav a,.preset-grid button,.guitar-app button,.file-button,.download-link{font-size:8px}
+.intro,.notice,.section-heading p,.status,.amp-foot,.amp-led-row,.guitar-nav{font-size:9px;line-height:1.7}
+.panel-body label:not(.file-button),.pedal label{font-size:8px}
+.guitar-app select,.guitar-app input[type=file],#tunerFrequency{font-size:9px}
