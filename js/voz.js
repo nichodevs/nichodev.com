@@ -128,9 +128,10 @@ function markPreset(key){
 document.querySelectorAll('input[type=range]').forEach(r =>
   r.addEventListener('input', () => { markPreset(null); currentAB = null; updateLabels(); applyLiveParams(); applyPreviewParams(); updateFxLabUI(); }));
 
-// Sorteia os controles dos dois painéis, liga os efeitos e atualiza todas as saídas.
+// Sorteia os controles dos dois painéis, preservando volume e estado do pedal Volume.
 function randomizeEffects(){
-  const controls = [...document.querySelectorAll('.advanced-control input[type="range"]')];
+  const controls = [...document.querySelectorAll('.advanced-control input[type="range"]')]
+    .filter(control => control.id !== 'vol');
   if(!controls.length) return;
 
   controls.forEach(control => {
@@ -141,14 +142,17 @@ function randomizeEffects(){
     control.value = String(min + Math.floor(Math.random() * stepCount) * step);
   });
 
-  setAllEffectsEnabled(true);
+  Object.keys(effectEnabled).forEach(effect => {
+    if(effect !== 'volume') effectEnabled[effect] = true;
+  });
+  updateEffectToggleButtons();
   markPreset(null);
   currentAB = null;
   updateLabels();
   applyLiveParams();
   applyPreviewParams();
   updateFxLabUI();
-  say('Configuração aleatória aplicada. Todos os efeitos foram ligados.');
+  say('Configuração aleatória aplicada. O volume foi preservado.');
 }
 
 document.querySelectorAll('.random-effects-btn').forEach(button =>
