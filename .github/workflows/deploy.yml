@@ -68,17 +68,17 @@ jobs:
             mkdir assets
             mkdir assets/cursors
             set cmd:fail-exit yes
-            put cursor.png -o assets/cursors/cursor.png
-            put cursor-pointer.png -o assets/cursors/cursor-pointer.png
-            put cursor-text.png -o assets/cursors/cursor-text.png
-            put cursor-move.png -o assets/cursors/cursor-move.png
-            put cursor-wait.png -o assets/cursors/cursor-wait.png
-            put cursor-not-allowed.png -o assets/cursors/cursor-not-allowed.png
-            put cursor-resize-h.png -o assets/cursors/cursor-resize-h.png
-            put cursor-resize-v.png -o assets/cursors/cursor-resize-v.png
-            put cursor-crosshair.png -o assets/cursors/cursor-crosshair.png
-            put cursor-help.png -o assets/cursors/cursor-help.png
-            put cursor-alt.png -o assets/cursors/cursor-alt.png
+            put assets/cursors/cursor.png -o assets/cursors/cursor.png
+            put assets/cursors/cursor-pointer.png -o assets/cursors/cursor-pointer.png
+            put assets/cursors/cursor-text.png -o assets/cursors/cursor-text.png
+            put assets/cursors/cursor-move.png -o assets/cursors/cursor-move.png
+            put assets/cursors/cursor-wait.png -o assets/cursors/cursor-wait.png
+            put assets/cursors/cursor-not-allowed.png -o assets/cursors/cursor-not-allowed.png
+            put assets/cursors/cursor-resize-h.png -o assets/cursors/cursor-resize-h.png
+            put assets/cursors/cursor-resize-v.png -o assets/cursors/cursor-resize-v.png
+            put assets/cursors/cursor-crosshair.png -o assets/cursors/cursor-crosshair.png
+            put assets/cursors/cursor-help.png -o assets/cursors/cursor-help.png
+            put assets/cursors/cursor-alt.png -o assets/cursors/cursor-alt.png
               set cmd:fail-exit no
             mkdir js
             set cmd:fail-exit yes
