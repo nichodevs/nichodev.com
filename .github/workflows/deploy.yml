@@ -81,11 +81,11 @@ jobs:
             put assets/cursors/cursor-alt.png -o assets/cursors/cursor-alt.png
             mkdir -p js
             cd js
-            put ../js/index.js -o index.js
-            put ../js/voz.js -o voz.js
-            put ../js/guitarra.js -o guitarra.js
-            put ../js/back-sound.js -o back-sound.js
-            put ../js/mixmaster.js -o mixmaster.js
+            put js/index.js -o index.js
+            put js/voz.js -o voz.js
+            put js/guitarra.js -o guitarra.js
+            put js/back-sound.js -o back-sound.js
+            put js/mixmaster.js -o mixmaster.js
             cd ..
             put robots.txt -o robots.txt
             put index.html -o index.html
