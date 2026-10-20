@@ -67,6 +67,8 @@ body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-col
 .pedal-title{margin:0;color:var(--pedal-color);font-size:9px}
 .pedal-switch{min-height:30px!important;padding:4px 7px!important;font-size:8px!important;color:var(--g-lime)!important}
 .pedal-switch[aria-checked="false"]{color:var(--g-mute)!important}
+.pedal-switch[aria-checked="true"]{color:#fff!important;background:#450b10!important;border-color:#ff334b!important;box-shadow:0 0 6px #ff243d,0 0 14px #ff243d,0 0 26px #ff243d88,inset 0 0 0 2px #ff6675!important;text-shadow:0 0 5px #ff8792}
+.pedal-switch[aria-checked="true"]:hover{color:#fff!important;background:#781020!important;border-color:#ff8190!important;box-shadow:0 0 10px #ff243d,0 0 22px #ff243d,inset 0 0 0 2px #ff8792!important}
 .pedal label{display:flex;justify-content:space-between;gap:8px;margin:6px 0 2px;color:var(--g-mute);font:12px system-ui,sans-serif}
 .pedal input[type=range]{width:100%;accent-color:var(--g-lime)}
 .pedal-actions{display:flex;gap:6px;margin-top:8px}
