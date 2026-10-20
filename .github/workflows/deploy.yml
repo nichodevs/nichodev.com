@@ -79,9 +79,7 @@ jobs:
             put assets/cursors/cursor-crosshair.png -o assets/cursors/cursor-crosshair.png
             put assets/cursors/cursor-help.png -o assets/cursors/cursor-help.png
             put assets/cursors/cursor-alt.png -o assets/cursors/cursor-alt.png
-              set cmd:fail-exit no
-            mkdir js
-            set cmd:fail-exit yes
+            mkdir -p js
             put js/index.js -o js/index.js
             put js/voz.js -o js/voz.js
             put js/guitarra.js -o js/guitarra.js
