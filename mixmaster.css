@@ -82,3 +82,10 @@ html[data-theme="dark"]{--mix-wave-color:#d5b5ff}
 
 /* Tipografia retrô aplicada a todos os elementos do MIXMASTER. */
 body.mix-page,body.mix-page *{font-family:"Press Start 2P",monospace!important}
+
+
+/* Escala compacta e consistente com Voz e Guitarra. */
+body.mix-page{font-size:10px;line-height:1.8}
+.quick-start{font:9px/1.7 "Press Start 2P",monospace}
+.inspector-note,.envelope-tools p,.midi-tools p,.mix-help{font-size:9px;line-height:1.7}
+.envelope-status{font-size:9px!important;line-height:1.7!important}

@@ -467,3 +467,12 @@ h2 .cursor, h3 .cursor { animation: fx-caret-blink 1s steps(1, end) infinite !im
 
 /* Tipografia retrô aplicada a todos os elementos da página de Voz. */
 body,body *{font-family:"Press Start 2P",monospace!important}
+
+
+/* Escala comum: texto geral 10 px e apoio 9 px em fonte pixel. */
+body{font-size:10px;line-height:1.8}
+.warn,#status{font-size:10px;line-height:1.7}
+.small{font-size:9px;line-height:1.7}
+label,legend{font-size:9px}
+input[type=file]{font-size:10px}
+#liveMeterLabel,#recordMeterLabel{font-size:9px}

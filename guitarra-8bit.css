@@ -100,3 +100,12 @@ body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-col
 
 /* Tipografia retrô aplicada a todos os elementos da página de Guitarra. */
 body.guitar-page,body.guitar-page *{font-family:"Press Start 2P",monospace!important}
+
+
+/* Escala comum: texto geral 10 px e apoio 9 px em fonte pixel. */
+body.guitar-page{font-size:10px;line-height:1.8}
+.intro,.notice,.section-heading p,.status,.amp-foot,.amp-led-row,.guitar-nav{font-size:10px;line-height:1.7}
+.panel-body label:not(.file-button){font-size:9px}
+.guitar-app select,.guitar-app input[type=file]{font-size:10px}
+#tunerFrequency{font-size:10px}
+.pedal label{font-size:9px}
