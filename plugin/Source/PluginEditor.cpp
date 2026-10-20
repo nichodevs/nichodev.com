@@ -274,8 +274,8 @@ NichodevGuitarFXAudioProcessorEditor::NichodevGuitarFXAudioProcessorEditor(
     }
 
     setResizable(true, true);
-    setResizeLimits(760, 700, 1280, 1120);
-    setSize(760, 700);
+    setResizeLimits(760, 600, 1280, 1120);
+    setSize(760, 600);
 }
 
 NichodevGuitarFXAudioProcessorEditor::~NichodevGuitarFXAudioProcessorEditor()
@@ -306,7 +306,7 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawText("VST3  /  15 PEDAIS  /  AUDIO NATIVO", 24, 58, getWidth() - 48, 16,
                juce::Justification::centredLeft);
 
-    auto amp = juce::Rectangle<float>(18.0f, 82.0f, (float) getWidth() - 36.0f, 168.0f);
+    auto amp = juce::Rectangle<float>(18.0f, 82.0f, (float) getWidth() - 36.0f, 130.0f);
     g.setColour(shadow);
     g.fillRect(amp.translated(6.0f, 6.0f));
     g.setColour(purple);
@@ -316,18 +316,18 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
 
     g.setColour(lavender);
     g.setFont(pixelFont(7.0f));
-    g.drawText("MODEL: PIXEL-8b", 30, 91, 170, 16, juce::Justification::centredLeft);
+    g.drawText("MODEL: PIXEL-8b", 30, 88, 170, 16, juce::Justification::centredLeft);
 
     g.setColour(lavender);
-    g.setFont(pixelFont(15.0f));
-    g.drawText("AMP", 34, 119, 42, 34, juce::Justification::centred);
+    g.setFont(pixelFont(10.0f));
+    g.drawText("AMP", 34, 108, 48, 26, juce::Justification::centred);
 
     g.setColour(fg);
     g.setFont(pixelFont(9.0f));
-    g.drawText("NICHODEV", 30, 157, 160, 20, juce::Justification::centred);
+    g.drawText("NICHODEV", 30, 137, 160, 18, juce::Justification::centred);
     g.setColour(lavender);
     g.setFont(pixelFont(7.0f));
-    g.drawText("ARCADE AMP", 30, 179, 160, 18, juce::Justification::centred);
+    g.drawText("ARCADE AMP", 30, 156, 160, 16, juce::Justification::centred);
 
     const auto controlX = 205;
     const auto controlW = (getWidth() - controlX - 32) / 3;
@@ -336,25 +336,25 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
     {
         g.setColour(lavender);
         g.setFont(pixelFont(7.0f));
-        g.drawText(labels[i], controlX + i * controlW, 108, controlW - 8, 16,
+        g.drawText(labels[i], controlX + i * controlW, 94, controlW - 8, 16,
                    juce::Justification::centred);
     }
 
     g.setColour(lavender.withAlpha(0.45f));
     for (int i = 0; i < 9; ++i)
-        g.fillRect(juce::Rectangle<float>(30.0f + i * 18.0f, 216.0f, 11.0f, 3.0f));
+        g.fillRect(juce::Rectangle<float>(30.0f + i * 18.0f, 201.0f, 11.0f, 3.0f));
 
     g.setColour(lime);
     g.setFont(pixelFont(9.0f));
-    g.drawText("FX CHAIN  /  15 PEDALS", 24, 265, getWidth() - 48, 20,
+    g.drawText("FX CHAIN  /  15 PEDALS", 24, 224, getWidth() - 48, 20,
                juce::Justification::centredLeft);
     g.setColour(muted);
     g.setFont(pixelFont(7.0f));
-    g.drawText("ORDEM DO SINAL DE CIMA PARA BAIXO  /  UP/DN REORDENAM", 24, 285,
+    g.drawText("ORDEM DO SINAL DE CIMA PARA BAIXO  /  UP/DN REORDENAM", 24, 244,
                getWidth() - 48, 16, juce::Justification::centredLeft);
 
-    const int top = 316;
-    const int rowH = juce::jlimit(40, 58, (getHeight() - 350) / 8);
+    const int top = 270;
+    const int rowH = juce::jlimit(33, 48, (getHeight() - top - 42) / 8);
     const int colW = (getWidth() - 58) / 2;
     for (int i = 0; i < NichodevGuitarFXAudioProcessor::pedalCount; ++i)
     {
@@ -371,7 +371,7 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
     g.setColour(muted);
     g.setFont(pixelFont(7.0f));
     g.drawText("OFF MANTEM OS AJUSTES  /  VALORES AUTOMATIZAVEIS NO DAW",
-               24, getHeight() - 25, getWidth() - 48, 16,
+               24, getHeight() - 22, getWidth() - 48, 16,
                juce::Justification::centredLeft);
 }
 
@@ -381,23 +381,23 @@ void NichodevGuitarFXAudioProcessorEditor::resized()
     const int controlX = 205;
     const int controlW = (width - controlX - 32) / 3;
 
-    masterSlider.setBounds(controlX, 124, controlW - 8, 68);
-    gainSlider.setBounds(controlX + controlW, 124, controlW - 8, 68);
-    toneSlider.setBounds(controlX + 2 * controlW, 124, controlW - 8, 68);
+    masterSlider.setBounds(controlX, 108, controlW - 8, 58);
+    gainSlider.setBounds(controlX + controlW, 108, controlW - 8, 58);
+    toneSlider.setBounds(controlX + 2 * controlW, 108, controlW - 8, 58);
 
-    const int presetY = 207;
+    const int presetY = 172;
     const int innerWidth = width - 60;
     const int resetWidth = 80;
     const int randomWidth = 92;
     const int gap = 10;
     const int presetWidth = innerWidth - resetWidth - randomWidth - 2 * gap;
-    presets.setBounds(30, presetY, presetWidth, 28);
-    randomButton.setBounds(30 + presetWidth + gap, presetY, randomWidth, 28);
+    presets.setBounds(30, presetY, presetWidth, 25);
+    randomButton.setBounds(30 + presetWidth + gap, presetY, randomWidth, 25);
     resetButton.setBounds(30 + presetWidth + gap + randomWidth + gap, presetY,
-                          resetWidth, 28);
+                          resetWidth, 25);
 
-    const int top = 316;
-    const int rowH = juce::jlimit(40, 58, (getHeight() - 350) / 8);
+    const int top = 270;
+    const int rowH = juce::jlimit(33, 48, (getHeight() - top - 42) / 8);
     const int colW = (width - 58) / 2;
     for (int i = 0; i < NichodevGuitarFXAudioProcessor::pedalCount; ++i)
     {
