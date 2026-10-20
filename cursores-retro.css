@@ -3,7 +3,7 @@
    Se este CSS ficar dentro de uma subpasta, ajuste os caminhos.
 */
 html, body {
-  cursor: url("cursor.png") 3 1, auto;
+  cursor: url("assets/cursors/cursor.png") 3 1, auto;
 }
 
 a,
@@ -12,29 +12,29 @@ button,
 [role="button"],
 input[type="button"],
 input[type="submit"] {
-  cursor: url("cursor-pointer.png") 12 2, pointer !important;
+  cursor: url("assets/cursors/cursor-pointer.png") 12 2, pointer !important;
 }
 
 input[type="text"], input[type="search"], input[type="email"],
 input[type="password"], textarea, [contenteditable="true"] {
-  cursor: url("cursor-text.png") 16 16, text;
+  cursor: url("assets/cursors/cursor-text.png") 16 16, text;
 }
 
 .drag-handle, [draggable="true"] {
-  cursor: url("cursor-move.png") 16 16, move;
+  cursor: url("assets/cursors/cursor-move.png") 16 16, move;
 }
 
 .is-loading, [aria-busy="true"] {
-  cursor: url("cursor-wait.png") 16 16, wait;
+  cursor: url("assets/cursors/cursor-wait.png") 16 16, wait;
 }
 
 :disabled, [aria-disabled="true"], .not-allowed {
-  cursor: url("cursor-not-allowed.png") 16 16, not-allowed;
+  cursor: url("assets/cursors/cursor-not-allowed.png") 16 16, not-allowed;
 }
 
-.resize-horizontal { cursor: url("cursor-resize-h.png") 16 16, ew-resize; }
-.resize-vertical { cursor: url("cursor-resize-v.png") 16 16, ns-resize; }
-.crosshair { cursor: url("cursor-crosshair.png") 16 16, crosshair; }
+.resize-horizontal { cursor: url("assets/cursors/cursor-resize-h.png") 16 16, ew-resize; }
+.resize-vertical { cursor: url("assets/cursors/cursor-resize-v.png") 16 16, ns-resize; }
+.crosshair { cursor: url("assets/cursors/cursor-crosshair.png") 16 16, crosshair; }
 
 /* Sliders continuam com cursor de ajuste para preservar a usabilidade */
 input[type="range"] { cursor: ew-resize; }

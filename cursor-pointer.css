@@ -1,4 +1,4 @@
-/* Cursor pointer Famicom — coloque cursor-pointer.png na raiz do site */
+/* Cursor pointer Famicom — coloque cursor-pointer.png em assets/cursors/ */
 a,
 button,
 [role="button"],
@@ -6,5 +6,5 @@ input[type="button"],
 input[type="submit"],
 summary,
 label[for] {
-  cursor: url("cursor-pointer.png") 12 2, pointer;
+  cursor: url("assets/cursors/cursor-pointer.png") 12 2, pointer;
 }

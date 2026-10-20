@@ -64,17 +64,21 @@ jobs:
             put cursores-retro.css -o cursores-retro.css
             put guitarra-8bit.css -o guitarra-8bit.css
             put mixmaster.css -o mixmaster.css
-            put cursor.png -o cursor.png
-            put cursor-pointer.png -o cursor-pointer.png
-            put cursor-text.png -o cursor-text.png
-            put cursor-move.png -o cursor-move.png
-            put cursor-wait.png -o cursor-wait.png
-            put cursor-not-allowed.png -o cursor-not-allowed.png
-            put cursor-resize-h.png -o cursor-resize-h.png
-            put cursor-resize-v.png -o cursor-resize-v.png
-            put cursor-crosshair.png -o cursor-crosshair.png
-            put cursor-help.png -o cursor-help.png
-            put cursor-alt.png -o cursor-alt.png
+            set cmd:fail-exit no
+            mkdir assets
+            mkdir assets/cursors
+            set cmd:fail-exit yes
+            put cursor.png -o assets/cursors/cursor.png
+            put cursor-pointer.png -o assets/cursors/cursor-pointer.png
+            put cursor-text.png -o assets/cursors/cursor-text.png
+            put cursor-move.png -o assets/cursors/cursor-move.png
+            put cursor-wait.png -o assets/cursors/cursor-wait.png
+            put cursor-not-allowed.png -o assets/cursors/cursor-not-allowed.png
+            put cursor-resize-h.png -o assets/cursors/cursor-resize-h.png
+            put cursor-resize-v.png -o assets/cursors/cursor-resize-v.png
+            put cursor-crosshair.png -o assets/cursors/cursor-crosshair.png
+            put cursor-help.png -o assets/cursors/cursor-help.png
+            put cursor-alt.png -o assets/cursors/cursor-alt.png
               set cmd:fail-exit no
             mkdir js
             set cmd:fail-exit yes
@@ -94,6 +98,7 @@ jobs:
             put onda/index.html -o onda/index.html
             put onda/onda.css -o onda/onda.css
             put onda/onda.js -o onda/onda.js
+            rm -f cursor-alt.png cursor-crosshair.png cursor-help.png cursor-move.png cursor-not-allowed.png cursor-pointer.png cursor-resize-h.png cursor-resize-v.png cursor-text.png cursor-wait.png cursor.png
             rm -f voz.js modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
             bye
           "
@@ -122,8 +127,17 @@ jobs:
             /js/guitarra.js
             /js/back-sound.js
             /js/mixmaster.js
-            /cursor.png
-            /cursor-pointer.png
+            /assets/cursors/cursor-alt.png
+            /assets/cursors/cursor-crosshair.png
+            /assets/cursors/cursor-help.png
+            /assets/cursors/cursor-move.png
+            /assets/cursors/cursor-not-allowed.png
+            /assets/cursors/cursor-pointer.png
+            /assets/cursors/cursor-resize-h.png
+            /assets/cursors/cursor-resize-v.png
+            /assets/cursors/cursor-text.png
+            /assets/cursors/cursor-wait.png
+            /assets/cursors/cursor.png
           )
           for path in "${paths[@]}"; do
             echo "Conferindo $path"
