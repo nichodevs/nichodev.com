@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="voz.css?v=dark-mode-20261019">
 <link rel="stylesheet" href="cursores-retro.css">
-<link rel="stylesheet" href="voz-compacto.css?v=10">
+<link rel="stylesheet" href="voz-compacto.css?v=11">
 </head>
 <body>
 <main>
@@ -61,7 +61,55 @@
 
 
   <div class="studio-panels" aria-label="Menus do estúdio">
-  <details class="control-panel" open>
+  <details class="control-panel audio-panel">
+    <summary>Gravar / Importar / Prévia</summary>
+    <div class="control-content">
+<fieldset id="audioControls" aria-label="Gravar ou importar áudio">
+    <legend>Gravar ou importar</legend>
+    <button type="button" id="recordBtn">Começar gravação</button>
+    <p id="recordingState" class="small recording-state" role="status" aria-live="polite">Pronto para gravar.</p>
+    <div id="recordMonitor" class="record-monitor" hidden aria-live="polite">
+      <p class="record-time-label">TEMPO DE GRAVAÇÃO</p>
+      <p id="recordTime" class="record-time" role="timer" aria-label="Tempo de gravação">00:00</p>
+      <p class="record-time-label">INTENSIDADE DO MICROFONE</p>
+      <div class="level-meter record-meter" role="meter" aria-label="Intensidade do microfone durante a gravação" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="recordMeterFill"></div></div>
+      <p id="recordMeterLabel">Nível do microfone: 0%</p>
+    </div>
+    <label class="file-label" for="audioFile">Importar arquivo de áudio</label>
+    <input id="audioFile" type="file" accept="audio/*">
+  </fieldset>
+<fieldset aria-label="Prévia do áudio">
+    <legend>Prévia do áudio</legend>
+    <audio id="sourceAudio" controls></audio>
+    <p class="small">O player acima toca o áudio original. Use o botão abaixo para ouvir com os efeitos; você pode ajustar os controles durante a reprodução.</p>
+    <div class="preview-controls">
+      <button type="button" id="effectPreviewBtn" disabled>Ouvir com efeitos</button>
+      <button type="button" class="random-effects-btn">RANDOM</button>
+      <button type="button" id="stopPreviewBtn" disabled>Parar prévia</button>
+    </div>
+    <p id="previewStatus" class="small" role="status">Grave ou importe um áudio para habilitar a prévia com efeitos.</p>
+  </fieldset>
+    </div>
+  </details>
+
+<details class="control-panel export-panel">
+    <summary>Exportar áudio</summary>
+    <div class="control-content">
+  <fieldset aria-label="Exportar áudio">
+    <button type="button" id="processBtn" disabled>Aplicar efeitos e exportar</button>
+    <div id="exportLoader" class="export-loader" hidden role="status" aria-live="polite">
+      <div class="loader-track"><div class="loader-fill"></div></div>
+      <p id="exportLoaderText">PROCESSANDO ÁUDIO...</p>
+      <p class="small">Não feche esta página. Áudios longos podem levar algum tempo.</p>
+    </div>
+    <p class="small" id="resultHint" hidden>Ouça o resultado e baixe quando estiver bom.</p>
+    <audio id="resultAudio" controls hidden></audio>
+    <a id="downloadResult" class="btn" hidden>Baixar áudio modificado</a>
+  </fieldset>
+    </div>
+  </details>
+
+<details class="control-panel" open>
     <summary>Microfone ao vivo</summary>
     <div class="control-content">
   <fieldset aria-label="Microfone ao vivo">
@@ -93,39 +141,7 @@
     </div>
   </details>
 
-  <details class="control-panel">
-    <summary>Gravar / Importar / Prévia</summary>
-    <div class="control-content">
-<fieldset id="audioControls" aria-label="Gravar ou importar áudio">
-    <legend>Gravar ou importar</legend>
-    <button type="button" id="recordBtn">Começar gravação</button>
-    <p id="recordingState" class="small recording-state" role="status" aria-live="polite">Pronto para gravar.</p>
-    <div id="recordMonitor" class="record-monitor" hidden aria-live="polite">
-      <p class="record-time-label">TEMPO DE GRAVAÇÃO</p>
-      <p id="recordTime" class="record-time" role="timer" aria-label="Tempo de gravação">00:00</p>
-      <p class="record-time-label">INTENSIDADE DO MICROFONE</p>
-      <div class="level-meter record-meter" role="meter" aria-label="Intensidade do microfone durante a gravação" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="recordMeterFill"></div></div>
-      <p id="recordMeterLabel">Nível do microfone: 0%</p>
-    </div>
-    <label class="file-label" for="audioFile">Importar arquivo de áudio</label>
-    <input id="audioFile" type="file" accept="audio/*">
-  </fieldset>
-<fieldset aria-label="Prévia do áudio">
-    <legend>Prévia do áudio</legend>
-    <audio id="sourceAudio" controls></audio>
-    <p class="small">O player acima toca o áudio original. Use o botão abaixo para ouvir com os efeitos; você pode ajustar os controles durante a reprodução.</p>
-    <div class="preview-controls">
-      <button type="button" id="effectPreviewBtn" disabled>Ouvir com efeitos</button>
-      <button type="button" class="random-effects-btn">RANDOM</button>
-      <button type="button" id="stopPreviewBtn" disabled>Parar prévia</button>
-    </div>
-    <p id="previewStatus" class="small" role="status">Grave ou importe um áudio para habilitar a prévia com efeitos.</p>
-  </fieldset>
-    </div>
-  </details>
-
-
-  <details class="control-panel" open>
+<details class="control-panel" open>
     <summary>Presets prontos</summary>
     <div class="control-content">
   <div class="presets" id="presets" role="group" aria-label="Predefinições de voz">
@@ -144,7 +160,7 @@
     </div>
   </details>
 
-  <details class="control-panel custom-presets">
+<details class="control-panel custom-presets">
     <summary>Meus efeitos salvos</summary>
     <div class="control-content">
     <p class="small">Salve, renomeie e duplique combinações. Exporte ou importe um arquivo JSON para levar seus presets a outro navegador.</p>
@@ -163,7 +179,7 @@
     </div>
   </details>
 
-  <details class="control-panel effects-panel" open>
+<details class="control-panel effects-panel" open>
     <summary>Efeitos</summary>
     <div class="control-content effect-pedals">
     <p class="small pedal-guide">Cada cartão funciona como um pedal: ligue ou desligue no botão e ajuste o controle deslizante.</p>
@@ -208,23 +224,6 @@
     <button type="button" class="effect-switch" data-effect-toggle="vibrato" role="switch" aria-checked="true" aria-label="Efeito Vibrato: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="vibrato">Intensidade <b data-for="vibrato"></b></label><input id="vibrato" type="range" min="0" max="100" value="0"></fieldset>
   <fieldset class="advanced-control" data-pedal="volume"><legend>Volume</legend>
     <button type="button" class="effect-switch" data-effect-toggle="volume" role="switch" aria-checked="true" aria-label="Efeito Volume: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="vol">Saída <b data-for="vol"></b></label><input id="vol" type="range" min="0" max="150" value="100"></fieldset>
-    </div>
-  </details>
-
-  <details class="control-panel">
-    <summary>Exportar áudio</summary>
-    <div class="control-content">
-  <fieldset aria-label="Exportar áudio">
-    <button type="button" id="processBtn" disabled>Aplicar efeitos e exportar</button>
-    <div id="exportLoader" class="export-loader" hidden role="status" aria-live="polite">
-      <div class="loader-track"><div class="loader-fill"></div></div>
-      <p id="exportLoaderText">PROCESSANDO ÁUDIO...</p>
-      <p class="small">Não feche esta página. Áudios longos podem levar algum tempo.</p>
-    </div>
-    <p class="small" id="resultHint" hidden>Ouça o resultado e baixe quando estiver bom.</p>
-    <audio id="resultAudio" controls hidden></audio>
-    <a id="downloadResult" class="btn" hidden>Baixar áudio modificado</a>
-  </fieldset>
     </div>
   </details>
 
