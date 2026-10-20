@@ -256,6 +256,8 @@ NichodevGuitarFXAudioProcessorEditor::NichodevGuitarFXAudioProcessorEditor(
 
         styleSlider(slider, false);
         button.setButtonText(NichodevGuitarFXAudioProcessor::names[index]);
+        if (i == 4)
+            button.setTooltip("GE-7 TILT: equalizador de inclinacao tonal, nao um grafico de sete bandas.");
         button.setClickingTogglesState(true);
         addAndMakeVisible(button);
         addAndMakeVisible(slider);

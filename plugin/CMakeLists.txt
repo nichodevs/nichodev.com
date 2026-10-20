@@ -69,3 +69,12 @@ target_link_libraries(NichodevGuitarFX
     juce::juce_recommended_lto_flags
     juce::juce_recommended_warning_flags
 )
+
+
+include(CTest)
+if(BUILD_TESTING)
+  add_executable(NichodevGuitarFXDSPTests tests/dsp_tests.cpp)
+  target_include_directories(NichodevGuitarFXDSPTests PRIVATE Source)
+  target_compile_features(NichodevGuitarFXDSPTests PRIVATE cxx_std_17)
+  add_test(NAME NichodevGuitarFXDSPTests COMMAND NichodevGuitarFXDSPTests)
+endif()

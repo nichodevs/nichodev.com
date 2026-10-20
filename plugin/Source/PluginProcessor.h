@@ -2,6 +2,7 @@
 #include <JuceHeader.h>
 #include <array>
 #include <vector>
+#include <mutex>
 
 class NichodevGuitarFXAudioProcessor final : public juce::AudioProcessor
 {
@@ -48,5 +49,10 @@ private:
     std::array<std::atomic<int>,pedalCount> order {};
     std::atomic<float>* master=nullptr; std::atomic<float>* gain=nullptr; std::atomic<float>* tone=nullptr;
     double rate=44100.0;
+    std::array<juce::SmoothedValue<float>, pedalCount> pedalValueSmoothers;
+    juce::SmoothedValue<float> masterSmoother, gainSmoother, toneCoefficientSmoother;
+    std::atomic<unsigned int> orderRevision{0};
+    std::mutex orderWriteMutex;
+    std::array<int, pedalCount> lastAudioOrder{};
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(NichodevGuitarFXAudioProcessor)
 };

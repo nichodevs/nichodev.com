@@ -57,6 +57,11 @@ jobs:
 
       - name: Compilar bundle VST3
         run: cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3
+      
+      - name: Compilar e executar testes DSP
+        run: |
+          cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests
+          ctest --test-dir build/plugin --build-config Release --output-on-failure
 
       - name: Publicar artefato VST3
         uses: actions/upload-artifact@v4
