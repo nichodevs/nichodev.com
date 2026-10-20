@@ -139,3 +139,136 @@ h2 .cursor, h3 .cursor { animation: fx-caret-blink 1s steps(1, end) infinite !im
 @media (prefers-reduced-motion: reduce) {
   h2 .cursor, h3 .cursor { animation: none !important; }
 }
+
+
+/* Pedais de efeitos: painel amplo, controles em cartões e cores por função. */
+.studio-panels > .effects-panel {
+  display: block;
+  width: auto;
+  column-span: all;
+  margin-bottom: 16px;
+}
+.control-content.effect-pedals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 14px;
+  padding: 18px;
+}
+.effect-pedals .pedal-guide {
+  grid-column: 1 / -1;
+  margin: 0 0 2px;
+}
+.control-content.effect-pedals > .advanced-control {
+  --pedal-color: #3b82f6;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  min-height: 190px;
+  margin: 0;
+  padding: 15px 14px 14px;
+  border: 3px solid var(--pedal-color);
+  border-radius: 12px;
+  background-color: color-mix(in srgb, var(--pedal-color) 10%, var(--bg));
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--pedal-color) 45%, var(--bg));
+}
+.effect-pedals .advanced-control legend {
+  max-width: 100%;
+  padding: 0 7px;
+  color: var(--pedal-color);
+  font-size: 9px;
+  line-height: 1.6;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.effect-pedals .advanced-control label {
+  align-items: center;
+  gap: 8px;
+  margin: 7px 0 2px;
+  color: var(--fg);
+  font-size: 10px;
+}
+.effect-pedals .advanced-control label b {
+  color: var(--pedal-color);
+  font-variant-numeric: tabular-nums;
+}
+.effect-pedals .effect-switch {
+  align-self: flex-start;
+  margin: 1px 0 5px;
+  border-color: var(--pedal-color);
+  border-radius: 999px;
+}
+.effect-pedals .effect-switch[aria-checked="true"] {
+  background: var(--pedal-color);
+  color: #10131a;
+  border-color: var(--pedal-color);
+}
+.effect-pedals .effect-switch[aria-checked="true"] .effect-switch-track {
+  background: #10131a;
+  border-color: #10131a;
+}
+.effect-pedals .effect-switch[aria-checked="true"] .effect-switch-thumb {
+  background: var(--pedal-color);
+}
+.effect-pedals .effect-switch.is-off {
+  background: transparent;
+  color: var(--mute);
+}
+.effect-pedals input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--pedal-color);
+}
+.effect-pedals input[type="range"]::-moz-range-track {
+  background: var(--pedal-color);
+}
+.effect-pedals input[type="range"]::-webkit-slider-thumb {
+  border-color: var(--pedal-color);
+}
+.effect-pedals input[type="range"]::-moz-range-thumb {
+  border-color: var(--pedal-color);
+}
+.effect-pedals .advanced-control .small {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* Cores associadas ao caráter de cada pedal. */
+.effect-pedals [data-pedal="pitch"] { --pedal-color: #3b82f6; }
+.effect-pedals [data-pedal="formant"] { --pedal-color: #a855f7; }
+.effect-pedals [data-pedal="eq"] { --pedal-color: #14b8a6; }
+.effect-pedals [data-pedal="drive"] { --pedal-color: #f97316; }
+.effect-pedals [data-pedal="chorus"] { --pedal-color: #06b6d4; }
+.effect-pedals [data-pedal="reverb"] { --pedal-color: #6366f1; }
+.effect-pedals [data-pedal="tremolo"] { --pedal-color: #eab308; }
+.effect-pedals [data-pedal="phaser"] { --pedal-color: #8b5cf6; }
+.effect-pedals [data-pedal="delay"] { --pedal-color: #22c55e; }
+.effect-pedals [data-pedal="octave"] { --pedal-color: #ec4899; }
+.effect-pedals [data-pedal="distortion"] { --pedal-color: #ef4444; }
+.effect-pedals [data-pedal="wah"] { --pedal-color: #d97706; }
+.effect-pedals [data-pedal="fuzz"] { --pedal-color: #b45309; }
+.effect-pedals [data-pedal="octafuzz"] { --pedal-color: #f43f5e; }
+.effect-pedals [data-pedal="vibrato"] { --pedal-color: #0d9488; }
+.effect-pedals [data-pedal="volume"] { --pedal-color: #64748b; }
+
+@media (max-width: 760px) {
+  .control-content.effect-pedals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+@media (max-width: 460px) {
+  .control-content.effect-pedals {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px;
+  }
+  .effect-pedals .advanced-control {
+    min-height: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .effect-pedals .advanced-control {
+    scroll-behavior: auto;
+  }
+}
