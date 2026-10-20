@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="voz.css?v=dark-mode-20261019">
 <link rel="stylesheet" href="cursores-retro.css">
-<link rel="stylesheet" href="voz-compacto.css?v=12">
+<link rel="stylesheet" href="voz-compacto.css?v=13">
 </head>
 <body>
 <main>
@@ -72,7 +72,6 @@
     <p class="small" id="micDeviceStatus" role="status" aria-live="polite">O navegador escolherá o microfone padrão.</p>
     <div class="preview-controls">
       <button type="button" id="liveBtn">Ligar microfone</button>
-      <button type="button" class="random-effects-btn">RANDOM</button>
     </div>
     <div class="processed-record-actions">
       <button type="button" id="recordProcessedBtn" disabled>Gravar voz processada</button>
@@ -115,7 +114,6 @@
     <p class="small">O player acima toca o áudio original. Use o botão abaixo para ouvir com os efeitos; você pode ajustar os controles durante a reprodução.</p>
     <div class="preview-controls">
       <button type="button" id="effectPreviewBtn" disabled>Ouvir com efeitos</button>
-      <button type="button" class="random-effects-btn">RANDOM</button>
       <button type="button" id="stopPreviewBtn" disabled>Parar prévia</button>
     </div>
     <p id="previewStatus" class="small" role="status">Grave ou importe um áudio para habilitar a prévia com efeitos.</p>
@@ -181,7 +179,10 @@
 <details class="control-panel effects-panel" open>
     <summary>Efeitos</summary>
     <div class="control-content effect-pedals">
-    <p class="small pedal-guide">Cada cartão funciona como um pedal: ligue ou desligue no botão e ajuste o controle deslizante.</p>
+    <div class="effects-toolbar">
+      <p class="small pedal-guide">Cada cartão funciona como um pedal: ligue ou desligue no botão e ajuste o controle deslizante.</p>
+      <button type="button" class="random-effects-btn effects-random-btn">RANDOM</button>
+    </div>
   <fieldset class="advanced-control" data-pedal="pitch"><legend>Tom</legend>
     <button type="button" class="effect-switch" data-effect-toggle="pitch" role="switch" aria-checked="true" aria-label="Efeito Tom: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="pitch">Semitons <b data-for="pitch"></b></label><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></fieldset>
   <fieldset class="advanced-control" data-pedal="formant">
