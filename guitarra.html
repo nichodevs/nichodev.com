@@ -37,8 +37,7 @@
         <label class="amp-control" for="ampGain"><span>GAIN</span><input id="ampGain" type="range" min="0" max="100" value="12"><output id="ampGainValue" for="ampGain">12%</output></label>
         <label class="amp-control" for="ampTone"><span>TONE</span><input id="ampTone" type="range" min="0" max="100" value="58"><output id="ampToneValue" for="ampTone">58%</output></label>
       </div>
-      <button type="button" id="resetAmp" class="amp-reset">RESETAR EFEITOS</button>
-      <div class="amp-grill" aria-hidden="true"><span>▦ ▦ ▦ ▦ ▦ ▦ ▦ ▦</span></div>
+            <div class="amp-grill" aria-hidden="true"><span>▦ ▦ ▦ ▦ ▦ ▦ ▦ ▦</span></div>
       <div class="amp-led-row"><span class="led" id="inputLed"></span><span id="inputLedLabel">INPUT DESCONECTADA</span><span class="led" id="clipLed"></span><span>CLIP</span></div>
     </div>
     <div class="amp-foot">8-BIT SOLID STATE / 44.1 KHZ / 1 PLAYER</div>
@@ -87,7 +86,7 @@
     </details>
 
     <section id="pedalboard" class="g-panel pedalboard-panel" aria-labelledby="pedalboardTitle">
-      <div class="section-heading"><div class="section-heading-title"><h2 id="pedalboardTitle">04 / PEDALEIRA</h2><button type="button" id="randomizePedals">RANDOM</button></div><p>Ative, ajuste e mova os pedais. OFF preserva o ajuste.</p></div>
+      <div class="section-heading"><div class="section-heading-title"><h2 id="pedalboardTitle">04 / PEDALEIRA</h2><div class="heading-actions"><button type="button" id="randomizePedals">RANDOM</button><button type="button" id="resetAmp" class="reset-effects-button">RESETAR EFEITOS</button></div></div><p>Ative, ajuste e mova os pedais. OFF preserva o ajuste.</p></div>
       <div id="pedalList" class="pedal-list" aria-live="polite"></div>
       <p id="pedalStatus" class="status" role="status" aria-live="polite">A ordem dos pedais é aplicada da esquerda para a direita.</p>
     </section>
