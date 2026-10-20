@@ -53,7 +53,7 @@ function setupAudio(){
   if(ctx)return;
   const AudioContextClass=window.AudioContext||window.webkitAudioContext;
   if(!AudioContextClass)throw new Error("Este navegador não oferece Web Audio.");
-  ctx=new AudioContextClass();
+  ctx=new AudioContextClass({latencyHint:"interactive"});
   analyser=ctx.createAnalyser(); analyser.fftSize=2048;
   master=ctx.createGain(); master.gain.value=Number($("masterVolume").value)/100;
   recordDestination=ctx.createMediaStreamDestination();
@@ -138,7 +138,15 @@ function makeAmpCabStage(){
   const input=ctx.createGain(),output=ctx.createGain(),pre=ctx.createGain(),shaper=ctx.createWaveShaper();
   const tone=ctx.createBiquadFilter(),highpass=ctx.createBiquadFilter(),lowpass=ctx.createBiquadFilter();
   const gain=Number($("ampGain").value)/100,toneValue=Number($("ampTone").value)/100;
-  pre.gain.value=1+gain*12;shaper.curve=curveFor("overdrive",gain*.55);shaper.oversample="4x";
+  // Keep gain at zero transparent; introduce soft clipping gradually as the
+  // knob rises, with a smaller preamp boost to avoid runaway level.
+  pre.gain.value=1+gain*1.5;
+  const curve=new Float32Array(2048),drive=1+gain*7;
+  for(let i=0;i<curve.length;i++){
+    const x=i*2/(curve.length-1)-1;
+    curve[i]=gain===0?x:Math.tanh(x*drive);
+  }
+  shaper.curve=curve;shaper.oversample="2x";
   tone.type="lowpass";tone.frequency.value=1200+toneValue*10500;tone.Q.value=.35;
   highpass.type="highpass";highpass.frequency.value=65;highpass.Q.value=.7;
   lowpass.type="lowpass";lowpass.frequency.value=3800+toneValue*1800;lowpass.Q.value=.7;
@@ -177,7 +185,9 @@ async function connectGuitar(){
     setupAudio();await ctx.resume();
     if(inputStream){inputStream.getTracks().forEach(t=>t.stop());}
     const deviceId=$("inputSelect").value;
-    inputStream=await navigator.mediaDevices.getUserMedia({audio:deviceId?{deviceId:{exact:deviceId},echoCancellation:false,noiseSuppression:false,autoGainControl:false}:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    const audioConstraints={echoCancellation:false,noiseSuppression:false,autoGainControl:false,latency:0.01,channelCount:1};
+    if(deviceId)audioConstraints.deviceId={exact:deviceId};
+    inputStream=await navigator.mediaDevices.getUserMedia({audio:audioConstraints});
     if($("audioSource").src){$("audioSource").pause();$("audioSource").removeAttribute("src");$("audioSource").load();}
     if(inputNode){try{inputNode.disconnect()}catch(e){}}
     setAudioSource(ctx.createMediaStreamSource(inputStream));
@@ -265,8 +275,19 @@ $("pedalList").addEventListener("input",e=>{
 function applyPreset(key){
   const p=PRESETS[key];if(!p)return;
   Object.assign(values,p.values);PEDALS.forEach(x=>enabled[x.id]=p.enabled.includes(x.id));
-  currentAB=null;$("ampGain").value=key==="crunch"||key==="fuzz"?72:42;$("ampTone").value=key==="blues"?62:58;
+  currentAB=null;$("ampGain").value=key==="crunch"||key==="fuzz"?58:key==="blues"?30:12;$("ampTone").value=key==="blues"?62:58;
   syncAmpControls();renderPedals();rebuildChain();announce("pedalStatus","Preset "+key.toUpperCase()+" carregado.");
+}
+function resetEffects(){
+  const defaults={ns2:35,cs3:30,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0,shimmer:0};
+  Object.assign(values,defaults);
+  PEDALS.forEach(p=>enabled[p.id]=["ns2","cs3","ge7"].includes(p.id));
+  order=PEDALS.map(p=>p.id);
+  $("masterVolume").value=55;$("ampGain").value=12;$("ampTone").value=58;
+  snapshots={A:null,B:null};currentAB=null;$("toggleAB").disabled=true;
+  syncAmpControls();renderPedals();rebuildChain();
+  announce("pedalStatus","Efeitos e controles restaurados à configuração inicial.");
+  announce("abState","Configuração reiniciada. Capture novas versões A e B para comparar.");
 }
 function snapshot(){
   return{values:{...values},enabled:{...enabled},order:[...order],gain:$("ampGain").value,tone:$("ampTone").value,master:$("masterVolume").value};
@@ -321,6 +342,7 @@ $("audioSource").addEventListener("ended",()=>announce("inputStatus","Áudio pro
 $("masterVolume").addEventListener("input",syncAmpControls);
 $("ampGain").addEventListener("input",()=>{syncAmpControls();rebuildChain();});
 $("ampTone").addEventListener("input",()=>{syncAmpControls();rebuildChain();});
+$("resetAmp").addEventListener("click",resetEffects);
 document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>applyPreset(b.dataset.preset)));
 $("captureA").addEventListener("click",()=>captureAB("A"));$("captureB").addEventListener("click",()=>captureAB("B"));$("toggleAB").addEventListener("click",toggleAB);
 $("recordBtn").addEventListener("click",startRecording);$("stopRecordBtn").addEventListener("click",stopRecording);

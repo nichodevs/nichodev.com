@@ -17,6 +17,7 @@ body.guitar-page{margin:0;min-height:100vh;padding:20px 16px 56px;background-col
 .amp-brand h2{font-size:10px;line-height:2}
 .brand-bolt{color:#d9b2ff;font-size:30px}
 .amp-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.amp-reset{grid-column:1/-1;justify-self:end;color:#d9b2ff!important;border-color:#9877ad!important}
 .amp-control{display:flex;flex-direction:column;gap:5px;color:#d9b2ff;font-size:8px;text-align:center}
 .amp-control input{width:100%;accent-color:#d9b2ff}
 .amp-control output{font-size:8px}
