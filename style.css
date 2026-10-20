@@ -99,3 +99,14 @@ button:disabled {
   .cursor { animation: none; }
   .btn, button { transition: none; }
 }
+
+
+/* Rodapé de áudio compartilhado pelas páginas dos estúdios. */
+.site-audio-footer{width:min(100%,1600px);margin:24px auto 0;padding:16px 12px 24px;color:inherit;text-align:center}
+.site-audio-mark{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:inherit}
+.site-audio-credit{margin:0;font:8px/1.8 var(--font,"Press Start 2P",monospace);text-align:center}
+.sound-wave{display:flex;align-items:center;justify-content:center;gap:3px;height:24px;margin-top:-2px;color:currentColor}
+.sound-wave span{display:block;width:3px;height:var(--bar-height);background:currentColor;transform:scaleY(.18);transform-origin:center;animation:sound-wave-pulse 850ms ease-in-out infinite alternate;animation-delay:var(--wave-delay)}
+@keyframes sound-wave-pulse{to{transform:scaleY(1)}}
+@media(prefers-reduced-motion:reduce){.sound-wave span{animation-duration:1400ms}}
+.guitar-app footer .site-audio-mark{align-self:center}
