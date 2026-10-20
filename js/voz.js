@@ -405,8 +405,9 @@ renderCustomPresets();
 /* ---------- Cadeia compartilhada de efeitos ---------- */
 async function createEffectChain(p){
   const fx = {
-    pitch: new Tone.PitchShift({pitch:p.pitch, windowSize:0.08, wet:p.pitch === 0 ? 0 : 1}),
-    octave: new Tone.PitchShift({pitch:p.octave * 12, windowSize:0.08, wet:p.octave === 0 ? 0 : 1}),
+    highpass: new Tone.Filter({frequency:75, type:"highpass", rolloff:-12}),
+    pitch: new Tone.PitchShift({pitch:p.pitch, windowSize:0.05, wet:p.pitch === 0 ? 0 : 1}),
+    octave: new Tone.PitchShift({pitch:p.octave * 12, windowSize:0.05, wet:p.octave === 0 ? 0 : 1}),
     formant1: new Tone.Filter({frequency:500, type:"peaking", Q:1.2, gain:0}),
     formant2: new Tone.Filter({frequency:1500, type:"peaking", Q:1.2, gain:0}),
     formant3: new Tone.Filter({frequency:2600, type:"peaking", Q:1.2, gain:0}),
@@ -414,7 +415,7 @@ async function createEffectChain(p){
     drive: new Tone.Distortion({distortion:0.2 + p.drive * 0.8, wet:p.drive}),
     distortion: new Tone.Distortion({distortion:0.95, wet:p.distortion}),
     fuzz: new Tone.Distortion({distortion:0.98, wet:p.fuzz}),
-    octafuzzPitch: new Tone.PitchShift({pitch:12, windowSize:0.08, wet:p.octafuzz}),
+    octafuzzPitch: new Tone.PitchShift({pitch:12, windowSize:0.05, wet:p.octafuzz}),
     octafuzz: new Tone.Distortion({distortion:0.98, wet:p.octafuzz}),
     wah: new Tone.AutoWah({baseFrequency:100, octaves:6, sensitivity:0, Q:2, gain:2, wet:p.wah}),
     tremolo: new Tone.Tremolo(9, 0.8).start(),
@@ -423,12 +424,13 @@ async function createEffectChain(p){
     vibrato: new Tone.Vibrato(5, 0.1),
     chorus: new Tone.Chorus({frequency:1.8, delayTime:3.5, depth:0.7, wet:p.chorus}).start(),
     reverb: new Tone.Reverb({decay:2.5, wet:p.reverb}),
+    compressor: new Tone.Compressor({threshold:-12, knee:10, ratio:2, attack:0.006, release:0.15}),
     volume: new Tone.Volume(Tone.gainToDb(Math.max(p.volume, 0.0001))),
     limiter: new Tone.Limiter(-1)
   };
   await fx.reverb.generate();
   applyChainParams(fx,p);
-  fx.nodes = [fx.pitch, fx.octave, fx.formant1, fx.formant2, fx.formant3, fx.eq, fx.drive, fx.distortion, fx.fuzz, fx.octafuzzPitch, fx.octafuzz, fx.wah, fx.tremolo, fx.phaser, fx.delay, fx.vibrato, fx.chorus, fx.reverb, fx.volume, fx.limiter];
+  fx.nodes = [fx.highpass, fx.pitch, fx.octave, fx.formant1, fx.formant2, fx.formant3, fx.eq, fx.drive, fx.distortion, fx.fuzz, fx.octafuzzPitch, fx.octafuzz, fx.wah, fx.tremolo, fx.phaser, fx.delay, fx.vibrato, fx.chorus, fx.reverb, fx.compressor, fx.volume, fx.limiter];
   return fx;
 }
 
@@ -767,7 +769,7 @@ async function startLive(){
     const chain = await createEffectChain(readParams());
     liveFx = {...chain, src, analyser, microphoneName:liveMicName};
     // Tone.connect conecta corretamente um AudioNode nativo ao primeiro efeito Tone.js.
-    Tone.connect(src, liveFx.pitch);
+    Tone.connect(src, liveFx.highpass);
     liveFx.nodes[0].chain(...liveFx.nodes.slice(1), Tone.getDestination());
     processedDestination = ctx.createMediaStreamDestination();
     // Captura a saída já processada, sem alterar a saída normal para fones/alto-falantes.
