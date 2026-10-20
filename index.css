@@ -168,7 +168,6 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .sound-wave span {
-    animation: none;
-    transform: scaleY(0.45);
+    animation-duration: 1400ms;
   }
 }
