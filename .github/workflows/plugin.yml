@@ -58,3 +58,11 @@ jobs:
 
       - name: Compilar bundle VST3
         run: cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3
+
+      - name: Publicar artefato VST3
+        uses: actions/upload-artifact@v4
+        with:
+          name: NichodevGuitarFX-${{ matrix.os }}
+          path: build/plugin/NichodevGuitarFX_artefacts/Release/VST3/
+          if-no-files-found: error
+          retention-days: 14
