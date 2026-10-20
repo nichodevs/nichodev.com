@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="voz.css?v=dark-mode-20261019">
 <link rel="stylesheet" href="cursores-retro.css">
-<link rel="stylesheet" href="voz-compacto.css?v=11">
+<link rel="stylesheet" href="voz-compacto.css?v=12">
 </head>
 <body>
 <main>
@@ -61,7 +61,39 @@
 
 
   <div class="studio-panels" aria-label="Menus do estúdio">
-  <details class="control-panel audio-panel">
+  <details class="control-panel microphone-panel" open>
+    <summary>Microfone ao vivo</summary>
+    <div class="control-content">
+  <fieldset aria-label="Microfone ao vivo">
+    <p class="small">Use fones de ouvido. Fale no microfone e escute sua voz com os efeitos aplicados em tempo real.</p>
+    <label for="microphoneSelect">Entrada de microfone</label>
+    <select id="microphoneSelect" class="microphone-select" aria-describedby="micDeviceStatus">
+      <option value="">Microfone padrão do navegador</option>
+    </select>
+    <p class="small" id="micDeviceStatus" role="status" aria-live="polite">O navegador escolherá o microfone padrão.</p>
+    <div class="preview-controls">
+      <button type="button" id="liveBtn">Ligar microfone</button>
+      <button type="button" class="random-effects-btn">RANDOM</button>
+    </div>
+    <div class="processed-record-actions">
+      <button type="button" id="recordProcessedBtn" disabled>Gravar voz processada</button>
+      <button type="button" id="stopProcessedBtn" disabled>Parar gravação processada</button>
+    </div>
+    <p class="small processed-record-time">Duração: <time id="processedRecordTime" role="timer" aria-label="Duração da gravação processada">00:00</time></p>
+    <p class="small" id="processedRecordStatus" role="status" aria-live="polite">Ligue o microfone para gravar a saída com os efeitos aplicados.</p>
+    <div class="level-meter" role="meter" aria-label="Nível de entrada do microfone" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="liveMeterFill"></div></div>
+    <p id="liveMeterLabel">Nível do microfone: 0%</p>
+    <div class="waveform-frame">
+      <div class="waveform-heading">FORMA DE ONDA / AO VIVO</div>
+      <canvas id="liveWaveform" height="112" role="img" aria-label="Visualizador da forma de onda do microfone em tempo real"></canvas>
+      <p class="waveform-caption">A onda acompanha a entrada do microfone.</p>
+    </div>
+    <p class="small" id="liveStatus" role="status">Microfone desligado.</p>
+  </fieldset>
+    </div>
+  </details>
+
+<details class="control-panel audio-panel">
     <summary>Gravar / Importar / Prévia</summary>
     <div class="control-content">
 <fieldset id="audioControls" aria-label="Gravar ou importar áudio">
@@ -105,38 +137,6 @@
     <p class="small" id="resultHint" hidden>Ouça o resultado e baixe quando estiver bom.</p>
     <audio id="resultAudio" controls hidden></audio>
     <a id="downloadResult" class="btn" hidden>Baixar áudio modificado</a>
-  </fieldset>
-    </div>
-  </details>
-
-<details class="control-panel" open>
-    <summary>Microfone ao vivo</summary>
-    <div class="control-content">
-  <fieldset aria-label="Microfone ao vivo">
-    <p class="small">Use fones de ouvido. Fale no microfone e escute sua voz com os efeitos aplicados em tempo real.</p>
-    <label for="microphoneSelect">Entrada de microfone</label>
-    <select id="microphoneSelect" class="microphone-select" aria-describedby="micDeviceStatus">
-      <option value="">Microfone padrão do navegador</option>
-    </select>
-    <p class="small" id="micDeviceStatus" role="status" aria-live="polite">O navegador escolherá o microfone padrão.</p>
-    <div class="preview-controls">
-      <button type="button" id="liveBtn">Ligar microfone</button>
-      <button type="button" class="random-effects-btn">RANDOM</button>
-    </div>
-    <div class="processed-record-actions">
-      <button type="button" id="recordProcessedBtn" disabled>Gravar voz processada</button>
-      <button type="button" id="stopProcessedBtn" disabled>Parar gravação processada</button>
-    </div>
-    <p class="small processed-record-time">Duração: <time id="processedRecordTime" role="timer" aria-label="Duração da gravação processada">00:00</time></p>
-    <p class="small" id="processedRecordStatus" role="status" aria-live="polite">Ligue o microfone para gravar a saída com os efeitos aplicados.</p>
-    <div class="level-meter" role="meter" aria-label="Nível de entrada do microfone" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="liveMeterFill"></div></div>
-    <p id="liveMeterLabel">Nível do microfone: 0%</p>
-    <div class="waveform-frame">
-      <div class="waveform-heading">FORMA DE ONDA / AO VIVO</div>
-      <canvas id="liveWaveform" height="112" role="img" aria-label="Visualizador da forma de onda do microfone em tempo real"></canvas>
-      <p class="waveform-caption">A onda acompanha a entrada do microfone.</p>
-    </div>
-    <p class="small" id="liveStatus" role="status">Microfone desligado.</p>
   </fieldset>
     </div>
   </details>
