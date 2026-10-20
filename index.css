@@ -17,33 +17,33 @@ body {
     }
 
     h1 {
-      animation: home-enter 520ms cubic-bezier(.2, .75, .3, 1) both;
+      animation: home-enter 820ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
     #startBtn {
-      animation: home-enter 520ms 90ms cubic-bezier(.2, .75, .3, 1) both;
+      animation: home-enter 820ms 130ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
     a[href="guitarra.html"] {
-      animation: home-enter 520ms 170ms cubic-bezier(.2, .75, .3, 1) both;
+      animation: home-enter 820ms 260ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
     a[href="mixmaster.html"] {
-      animation: home-enter 520ms 250ms cubic-bezier(.2, .75, .3, 1) both;
+      animation: home-enter 820ms 390ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
     .repository-qr-card {
-      animation: home-enter 520ms 330ms cubic-bezier(.2, .75, .3, 1) both;
+      animation: home-enter 820ms 520ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
     .site-footer {
-      animation: home-enter 520ms 410ms cubic-bezier(.2, .75, .3, 1) both;
+      animation: home-enter 820ms 650ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
     @keyframes home-enter {
       from {
         opacity: 0;
-        transform: translateY(14px);
+        transform: translateY(10px);
       }
       to {
         opacity: 1;
