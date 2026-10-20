@@ -85,14 +85,8 @@
       </div>
     </details>
 
-    <section id="pedalboard" class="g-panel pedalboard-panel" aria-labelledby="pedalboardTitle">
-      <div class="section-heading"><div class="section-heading-title"><h2 id="pedalboardTitle">04 / PEDALEIRA</h2><div class="heading-actions"><button type="button" id="randomizePedals">RANDOM</button><button type="button" id="resetAmp" class="reset-effects-button">RESETAR EFEITOS</button></div></div><p>Ative, ajuste e mova os pedais. OFF preserva o ajuste.</p></div>
-      <div id="pedalList" class="pedal-list" aria-live="polite"></div>
-      <p id="pedalStatus" class="status" role="status" aria-live="polite">A ordem dos pedais é aplicada da esquerda para a direita.</p>
-    </section>
-
     <details class="g-panel" open>
-      <summary>05 / Comparação A/B</summary>
+      <summary>04 / Comparação A/B</summary>
       <div class="panel-body">
         <div class="ab-buttons">
           <button type="button" id="captureA">Salvar versão A</button><button type="button" id="captureB">Salvar versão B</button>
@@ -101,9 +95,8 @@
         <p id="abState" class="status" role="status" aria-live="polite">Capture duas configurações para comparar.</p>
       </div>
     </details>
-
     <details id="recordPanel" class="g-panel" open>
-      <summary>06 / Gravação e exportação</summary>
+      <summary>05 / Gravação e exportação</summary>
       <div class="panel-body">
         <div class="button-row"><button type="button" id="recordBtn" disabled>Gravar saída processada</button><button type="button" id="stopRecordBtn" disabled>Parar gravação</button></div>
         <p class="record-time">REC <time id="recordTime" role="timer" aria-label="Duração da gravação">00:00</time></p>
@@ -112,6 +105,11 @@
         <a id="downloadRecording" class="download-link" hidden>BAIXAR GRAVAÇÃO</a>
       </div>
     </details>
+    <section id="pedalboard" class="g-panel pedalboard-panel" aria-labelledby="pedalboardTitle">
+      <div class="section-heading"><div class="section-heading-title"><h2 id="pedalboardTitle">06 / PEDALEIRA</h2><div class="heading-actions"><button type="button" id="randomizePedals">RANDOM</button><button type="button" id="resetAmp" class="reset-effects-button">RESETAR EFEITOS</button></div></div><p>Ative, ajuste e mova os pedais. OFF preserva o ajuste.</p></div>
+      <div id="pedalList" class="pedal-list" aria-live="polite"></div>
+      <p id="pedalStatus" class="status" role="status" aria-live="polite">A ordem dos pedais é aplicada da esquerda para a direita.</p>
+    </section>
   </div>
 
   <footer><div class="footer-actions"><a href="voz.html">ABRIR VOICE STUDIO</a><a href="mixmaster.html">ABRIR MIXMASTER</a><a href="index.html">VOLTAR</a></div><span>GUITAR FX LAB / BROWSER EDITION</span></footer>
