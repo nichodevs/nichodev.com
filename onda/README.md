@@ -6,4 +6,4 @@ Página surpresa aberta ao clicar na onda animada no rodapé da página inicial.
 - `onda.css`: apresentação responsiva em estilo arcade retrô.
 - `onda.js`: onda interativa com mouse, toque e teclado.
 
-Endereço publicado: `https://nichodev.com/easter-egg/onda/`.
+Endereço publicado: `https://nichodev.com/onda/`.

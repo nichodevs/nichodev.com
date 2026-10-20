@@ -87,12 +87,11 @@ jobs:
             put guitarra.html -o guitarra.html
             put mixmaster.html -o mixmaster.html
             set cmd:fail-exit no
-            mkdir easter-egg
-            mkdir easter-egg/onda
+            mkdir onda
             set cmd:fail-exit yes
-            put easter-egg/onda/index.html -o easter-egg/onda/index.html
-            put easter-egg/onda/onda.css -o easter-egg/onda/onda.css
-            put easter-egg/onda/onda.js -o easter-egg/onda/onda.js
+            put onda/index.html -o onda/index.html
+            put onda/onda.css -o onda/onda.css
+            put onda/onda.js -o onda/onda.js
             rm -f modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
             bye
           "
@@ -106,9 +105,9 @@ jobs:
             /voz.html
             /guitarra.html
             /mixmaster.html
-            /easter-egg/onda/
-            /easter-egg/onda/onda.css
-            /easter-egg/onda/onda.js
+            /onda/
+            /onda/onda.css
+            /onda/onda.js
             /style.css
             /index.css
             /voz.css
