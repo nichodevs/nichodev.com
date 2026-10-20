@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <iterator>
 
 namespace guitarfx::dsp
 {
