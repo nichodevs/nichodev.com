@@ -61,7 +61,8 @@ void NichodevGuitarFXAudioProcessor::processBlock(juce::AudioBuffer<float>& b,ju
   x=ampFilter[channel]+(x-ampEnv[channel])*.22f;b.setSample(c,n,x*mg);
  }
 }
-void NichodevGuitarFXAudioProcessor::movePedal(int from,int delta){int to=from+delta;if(from<0||to<0||from>=pedalCount||to>=pedalCount)return;int a=order[(size_t)from],z=order[(size_t)to];order[(size_t)from]=z;order[(size_t)to]=a;juce::String v;for(int i=0;i<pedalCount;++i){if(i)v<<",";v<<order[(size_t)i].load();}parameters.state.setProperty("pedalOrder",v,nullptr);}
+int NichodevGuitarFXAudioProcessor::getPedalAtPosition(int position) const{if(position<0||position>=pedalCount)return -1;return order[(size_t)position].load();}
+void NichodevGuitarFXAudioProcessor::movePedal(int pedalId,int delta){if(pedalId<0||pedalId>=pedalCount)return;int from=-1;for(int i=0;i<pedalCount;++i)if(order[(size_t)i].load()==pedalId){from=i;break;}const int to=from+delta;if(from<0||to<0||to>=pedalCount)return;const int a=order[(size_t)from].load(),z=order[(size_t)to].load();order[(size_t)from]=z;order[(size_t)to]=a;juce::String v;for(int i=0;i<pedalCount;++i){if(i)v<<",";v<<order[(size_t)i].load();}parameters.state.setProperty("pedalOrder",v,nullptr);}
 void NichodevGuitarFXAudioProcessor::restoreOrder(){auto v=parameters.state.getProperty("pedalOrder").toString();if(v.isEmpty()){for(int i=0;i<pedalCount;++i)order[(size_t)i]=i;return;}juce::StringArray p;p.addTokens(v,",","");if(p.size()!=pedalCount)return;std::array<bool,15> seen{};for(int i=0;i<pedalCount;++i){int n=p[i].getIntValue();if(n<0||n>=pedalCount||seen[(size_t)n])return;seen[(size_t)n]=true;order[(size_t)i]=n;}}
 void NichodevGuitarFXAudioProcessor::applyPreset(const juce::String& name)
 {

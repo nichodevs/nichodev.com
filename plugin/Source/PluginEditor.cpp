@@ -264,8 +264,8 @@ NichodevGuitarFXAudioProcessorEditor::NichodevGuitarFXAudioProcessorEditor(
 
         upButtons[index].setButtonText("UP");
         downButtons[index].setButtonText("DN");
-        upButtons[index].onClick = [this, i] { processor.movePedal(i, -1); };
-        downButtons[index].onClick = [this, i] { processor.movePedal(i, 1); };
+        upButtons[index].onClick = [this, i] { processor.movePedal(i, -1); resized(); };
+        downButtons[index].onClick = [this, i] { processor.movePedal(i, 1); resized(); };
 
         const auto id = juce::String(NichodevGuitarFXAudioProcessor::ids[index]);
         sliderAttachments[index] = std::make_unique<SliderAttachment>(processor.parameters, id, slider);
@@ -399,13 +399,15 @@ void NichodevGuitarFXAudioProcessorEditor::resized()
     const int top = 270;
     const int rowH = juce::jlimit(33, 48, (getHeight() - top - 42) / 8);
     const int colW = (width - 58) / 2;
-    for (int i = 0; i < NichodevGuitarFXAudioProcessor::pedalCount; ++i)
+    for (int position = 0; position < NichodevGuitarFXAudioProcessor::pedalCount; ++position)
     {
-        const int col = i < 8 ? 0 : 1;
-        const int row = i < 8 ? i : i - 8;
+        const int col = position < 8 ? 0 : 1;
+        const int row = position < 8 ? position : position - 8;
         const int x = 24 + col * (colW + 10);
         const int y = top + row * rowH + 4;
-        const auto index = (size_t) i;
+        const auto index = (size_t) processor.getPedalAtPosition(position);
+        if (index >= NichodevGuitarFXAudioProcessor::pedalCount)
+            continue;
 
         pedalButtons[index].setBounds(x + 6, y + 2, 110, rowH - 13);
         pedalSliders[index].setBounds(x + 120, y + 2, colW - 187, rowH - 13);
