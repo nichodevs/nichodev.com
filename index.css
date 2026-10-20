@@ -157,3 +157,10 @@ body {
 /* Mantém a fonte retrô em todo o texto da página inicial. */
 body{font-family:"Press Start 2P",monospace!important}
 body *{font-family:inherit!important}
+
+
+/* A onda do rodapé também é a entrada discreta para a surpresa sonora. */
+.site-footer .sound-wave-link{display:inline-flex;align-items:center;justify-content:center;padding:4px;border:0;background:transparent;color:var(--fg);text-decoration:none;transition:transform 180ms ease,filter 180ms ease}
+.site-footer .sound-wave-link:hover{background:transparent;color:var(--fg);transform:scale(1.1);filter:drop-shadow(0 0 7px currentColor)}
+.site-footer .sound-wave-link:focus-visible{outline:3px dashed var(--fg);outline-offset:5px}
+@media(prefers-reduced-motion:reduce){.site-footer .sound-wave-link{transition:none}.site-footer .sound-wave-link:hover{transform:none}}

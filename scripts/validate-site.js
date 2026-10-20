@@ -4,11 +4,16 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const root = path.resolve(__dirname, "..");
-const pages = ["index.html", "voz.html", "guitarra.html", "mixmaster.html"];
+const pages = ["index.html", "voz.html", "guitarra.html", "mixmaster.html", "easter-egg/onda/index.html"];
 const errors = [];
 const requiredDeployFiles = new Set(pages);
 const read = file => fs.readFileSync(path.join(root, file), "utf8");
 const localPath = value => decodeURIComponent(value.split(/[?#]/, 1)[0]);
+const resolveLocal = (fromFile, value) => {
+  const clean = localPath(value).replace(/^\/+/, "").replace(/\\/g, "/");
+  const relative = path.posix.normalize(path.posix.join(path.posix.dirname(fromFile), clean));
+  return { relative, absolute: path.resolve(root, ...relative.split("/")) };
+};
 const attrs = tag => Object.fromEntries(
   [...tag.matchAll(/([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)]
     .map(match => [match[1].toLowerCase(), match[2] ?? match[3]])
@@ -40,11 +45,18 @@ for (const page of pages) {
     for (const key of ["src", "href"]) {
       const value = attributes[key];
       if (!value || /^(?:[a-z]+:|\/\/|#)/i.test(value)) continue;
-      const local = localPath(value);
-      if (!local) continue;
-      requiredDeployFiles.add(local);
-      if (!fs.existsSync(path.resolve(root, local))) {
-        errors.push(`${page}: arquivo local ausente: ${local}`);
+      const resolved = resolveLocal(page, value);
+      if (!resolved.relative || resolved.relative.startsWith("../")) {
+        errors.push(`${page}: caminho local fora do projeto: ${value}`);
+        continue;
+      }
+      let deployPath = resolved.relative;
+      if (fs.existsSync(resolved.absolute) && fs.statSync(resolved.absolute).isDirectory()) {
+        deployPath = path.posix.join(deployPath, "index.html");
+      }
+      requiredDeployFiles.add(deployPath);
+      if (!fs.existsSync(resolved.absolute)) {
+        errors.push(`${page}: arquivo local ausente: ${resolved.relative}`);
       }
     }
   }
@@ -53,8 +65,9 @@ for (const page of pages) {
     .map(match => match[1])
     .filter(src => !/^(?:[a-z]+:|\/\/)/i.test(src));
   for (const src of scripts) {
-    const file = localPath(src);
-    const syntax = spawnSync(process.execPath, ["--check", path.join(root, file)], { encoding: "utf8" });
+    const resolved = resolveLocal(page, src);
+    const file = resolved.relative;
+    const syntax = spawnSync(process.execPath, ["--check", path.join(root, ...file.split("/"))], { encoding: "utf8" });
     if (syntax.status !== 0) {
       errors.push(`${page}: erro de sintaxe em ${file}: ${(syntax.stderr || syntax.stdout).trim()}`);
       continue;
@@ -68,18 +81,34 @@ for (const page of pages) {
   }
 }
 
-for (const file of fs.readdirSync(root).filter(name => name.endsWith(".css"))) {
+const cssFiles = [];
+function collectCss(directory) {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    if (entry.name === ".git" || entry.name === "node_modules") continue;
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) collectCss(absolute);
+    else if (entry.isFile() && entry.name.endsWith(".css")) {
+      cssFiles.push(path.relative(root, absolute).split(path.sep).join("/"));
+    }
+  }
+}
+collectCss(root);
+
+for (const file of cssFiles) {
   const css = read(file);
   if ((css.match(/{/g) || []).length !== (css.match(/}/g) || []).length) {
     errors.push(`${file}: chaves CSS desbalanceadas`);
   }
   for (const [, value] of css.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/gi)) {
     if (/^(?:[a-z]+:|\/\/|data:|#)/i.test(value)) continue;
-    const local = localPath(value);
-    if (!local) continue;
-    requiredDeployFiles.add(local);
-    if (!fs.existsSync(path.resolve(root, local))) {
-      errors.push(`${file}: recurso CSS ausente: ${local}`);
+    const resolved = resolveLocal(file, value);
+    if (!resolved.relative || resolved.relative.startsWith("../")) {
+      errors.push(`${file}: recurso CSS fora do projeto: ${value}`);
+      continue;
+    }
+    requiredDeployFiles.add(resolved.relative);
+    if (!fs.existsSync(resolved.absolute)) {
+      errors.push(`${file}: recurso CSS ausente: ${resolved.relative}`);
     }
   }
 }

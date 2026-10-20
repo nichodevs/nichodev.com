@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090610">
+  <meta name="description" content="Uma onda sonora interativa e uma mensagem de carinho para quem dedicou seu tempo ao estúdio nichodev.com.">
+  <title>Uma onda de gratidão — nichodev.com</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+  <link rel="stylesheet" href="onda.css">
+</head>
+<body>
+  <main class="gratitude-page">
+    <a class="back-link" href="../../index.html">← VOLTAR AO ESTÚDIO</a>
+    <p class="eyebrow">UMA PEQUENA SURPRESA</p>
+    <h1>UMA ONDA DE GRATIDÃO</h1>
+    <p class="gratitude-message">A todos que dedicaram um pedaço do seu tempo a este estúdio: obrigado por fazerem parte desta história. Cada nota, teste e ideia ajudou esta onda a seguir em frente. Este espaço também é de vocês.</p>
+
+    <section class="wave-section" aria-label="Onda sonora interativa">
+      <div id="waveStage" class="wave-stage" tabindex="0" role="group" aria-label="Onda interativa. Use o mouse, toque ou as setas do teclado." aria-describedby="waveHelp">
+        <canvas id="soundWave" aria-hidden="true"></canvas>
+        <span class="wave-cursor" aria-hidden="true">✦</span>
+      </div>
+      <p id="waveHelp" class="wave-help">Mova o mouse ou arraste o dedo para conduzir a onda. Com o foco aqui, use as setas do teclado.</p>
+    </section>
+    <p class="signature">COM CARINHO · NICHODEV.COM</p>
+  </main>
+  <script src="onda.js" defer></script>
+</body>
+</html>

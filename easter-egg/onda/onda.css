@@ -1,0 +1,18 @@
+:root{color-scheme:dark;--bg:#090610;--panel:#120d1d;--fg:#f6efff;--muted:#c0b4ce;--violet:#c66bff;--pink:#ff62cf;--line:#76528e}
+*{box-sizing:border-box}
+body{min-height:100vh;margin:0;padding:clamp(20px,5vw,64px) 18px;background:radial-gradient(ellipse at 50% 43%,#21102f 0,#100a19 44%,var(--bg) 78%);color:var(--fg);font-family:"Press Start 2P",monospace}
+.gratitude-page{width:min(900px,100%);margin:0 auto;text-align:center}
+.back-link{display:inline-block;margin-bottom:clamp(40px,8vh,90px);color:var(--muted);font-size:9px;text-decoration:none}
+.back-link:hover,.back-link:focus-visible{color:#fff;text-shadow:0 0 12px var(--violet)}
+.eyebrow{margin:0 0 18px;color:var(--pink);font-size:8px;letter-spacing:.12em}
+h1{max-width:850px;margin:0 auto;color:#f4e7ff;font-size:clamp(17px,3.6vw,30px);line-height:1.8;text-shadow:0 0 12px #c66bff77}
+.gratitude-message{max-width:700px;margin:26px auto 0;color:#e3d9ec;font-size:clamp(9px,1.25vw,12px);line-height:2.3}
+.wave-section{margin:clamp(38px,8vh,76px) auto 0}
+.wave-stage{position:relative;display:grid;place-items:center;min-height:clamp(190px,34vw,300px);overflow:hidden;border:2px solid #55366d;background:linear-gradient(180deg,#100a19,#0b0711);box-shadow:0 0 0 5px #170e21,0 0 32px #a43cff32,inset 0 0 40px #8a35d522;cursor:crosshair;touch-action:pan-y}
+.wave-stage:focus-visible{outline:3px dashed var(--pink);outline-offset:8px}
+#waveStage canvas{display:block;width:100%;height:100%;position:absolute;inset:0}
+.wave-cursor{position:absolute;z-index:1;left:50%;top:50%;color:#fff;opacity:.75;transform:translate(-50%,-50%);font-size:18px;pointer-events:none;text-shadow:0 0 12px var(--pink),0 0 22px var(--violet)}
+.wave-help{margin:18px auto 0;color:var(--muted);font-size:8px;line-height:2}
+.signature{margin:clamp(36px,7vh,64px) 0 0;color:var(--violet);font-size:8px;letter-spacing:.1em}
+@media(max-width:520px){body{padding-inline:16px}.back-link{font-size:7px;margin-bottom:44px}.eyebrow,.wave-help,.signature{font-size:7px}.gratitude-message{font-size:9px;line-height:2.1}.wave-section{margin-top:38px}.wave-stage{min-height:190px}}
+@media(prefers-reduced-motion:reduce){.back-link{transition:none}}
