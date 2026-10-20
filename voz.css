@@ -316,3 +316,32 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
   gap: 12px;
   margin: 18px 0 36px;
 }
+
+
+/* Tema manual do Voice Studio */
+html[data-theme="light"]{
+  --bg:#fff;
+  --fg:#000;
+  --mute:#555;
+  --line:#000;
+  color-scheme:light;
+}
+html[data-theme="dark"]{
+  --bg:#0b0d12;
+  --fg:#edf0f7;
+  --mute:#b8bdca;
+  --line:#757d8e;
+  color-scheme:dark;
+}
+.voice-toolbar{display:flex;justify-content:flex-end;margin:0 0 10px}
+.theme-toggle{display:flex;align-items:center;gap:6px;padding:8px 10px;border:2px solid var(--line);background:var(--bg);color:var(--fg);font:7px var(--font);white-space:nowrap;cursor:pointer}
+.theme-toggle small{font:6px var(--font)}
+.theme-toggle:hover{background:var(--fg);color:var(--bg)}
+html[data-theme="dark"] .warn{background:#131722}
+html[data-theme="dark"] fieldset,
+html[data-theme="dark"] .control-panel,
+html[data-theme="dark"] .ab-card,
+html[data-theme="dark"] .fx-lab{background:#131722;color:var(--fg)}
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] audio{color-scheme:dark}
