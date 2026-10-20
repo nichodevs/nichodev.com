@@ -51,6 +51,7 @@
     <div class="fx-lab-actions">
       <p id="abCurrentStatus" class="small" role="status" aria-live="polite">Ajustes livres. As versões A e B ficam guardadas separadamente.</p>
       <button type="button" id="toggleABBtn" disabled>Alternar para B</button>
+      <button type="button" id="resetVoiceBtn" title="Restaurar controles e efeitos à configuração inicial">RESETAR</button>
       <span id="abStatus" class="small" role="status" aria-live="polite">Ajuste os efeitos e capture A e B para comparar.</span>
     </div>
     <p class="small fx-tip">Dica: capture A com um som mais limpo, mude drive, chorus, delay ou reverb e capture B. Use “Ouvir com efeitos” na seção de prévia para testar o áudio importado, ou o monitoramento ao vivo com fones.</p>
@@ -246,7 +247,7 @@
 <!-- Para travar a versão com segurança, copie o hash SRI desta URL em cdnjs.com e adicione integrity="sha512-..." -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>window.Tone || document.write('<script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js" crossorigin="anonymous"><\/script>')</script>
-<script src="js/voz.js?v=random-effects-fix-20261019" defer></script>
+<script src="js/voz.js?v=reset-voice-controls-20261019" defer></script>
 <script src="js/back-sound.js?v=1" defer></script>
 </body>
 </html>
