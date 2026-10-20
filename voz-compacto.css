@@ -310,7 +310,7 @@ h2 .cursor, h3 .cursor { animation: fx-caret-blink 1s steps(1, end) infinite !im
   align-items: start;
   gap: 18px;
   column-count: initial;
-  column-gap: 0;
+  column-gap: 18px;
 }
 .studio-panels > .control-panel {
   display: block;
@@ -328,6 +328,7 @@ h2 .cursor, h3 .cursor { animation: fx-caret-blink 1s steps(1, end) infinite !im
   .studio-panels {
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
+    column-gap: 14px;
   }
   .studio-panels > .effects-panel {
     grid-column: auto;
