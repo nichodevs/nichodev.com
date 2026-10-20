@@ -130,7 +130,7 @@ void GuitarFxRetroLookAndFeel::drawToggleButton(juce::Graphics& g,
     g.fillRect(bounds.reduced(1.0f));
     g.setColour(button.getToggleState() ? lime : line);
     g.drawRect(bounds.reduced(1.0f), 2.0f);
-    g.setFont(juce::FontOptions(9.0f, juce::Font::bold));
+    g.setFont(pixelFont(7.0f));
     g.setColour(button.getToggleState() ? bg : fg);
     g.drawFittedText(button.getButtonText(),
                      button.getLocalBounds().reduced(4, 2),
@@ -292,7 +292,7 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawRect(outer, 3.0f);
 
     g.setColour(orange);
-    g.setFont(juce::FontOptions(9.0f, juce::Font::bold));
+    g.setFont(pixelFont(7.0f));
     g.drawText("NICHODEVS / AUDIO ARCADE", 24, 14, getWidth() - 48, 16,
                juce::Justification::centredLeft);
 
@@ -315,7 +315,7 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
     g.drawRect(amp, 4.0f);
 
     g.setColour(lavender);
-    g.setFont(juce::FontOptions(9.0f, juce::Font::bold));
+    g.setFont(pixelFont(7.0f));
     g.drawText("MODEL: PIXEL-8b", 30, 91, 170, 16, juce::Justification::centredLeft);
 
     g.setColour(lavender);
@@ -326,7 +326,7 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
     g.setFont(pixelFont(9.0f));
     g.drawText("NICHODEV", 30, 157, 160, 20, juce::Justification::centred);
     g.setColour(lavender);
-    g.setFont(juce::FontOptions(9.0f, juce::Font::bold));
+    g.setFont(pixelFont(7.0f));
     g.drawText("ARCADE AMP", 30, 179, 160, 18, juce::Justification::centred);
 
     const auto controlX = 205;
@@ -335,7 +335,7 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
     for (int i = 0; i < 3; ++i)
     {
         g.setColour(lavender);
-        g.setFont(juce::FontOptions(9.0f, juce::Font::bold));
+        g.setFont(pixelFont(7.0f));
         g.drawText(labels[i], controlX + i * controlW, 108, controlW - 8, 16,
                    juce::Justification::centred);
     }
@@ -345,11 +345,11 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
         g.fillRect(juce::Rectangle<float>(30.0f + i * 18.0f, 216.0f, 11.0f, 3.0f));
 
     g.setColour(lime);
-    g.setFont(juce::FontOptions(11.0f, juce::Font::bold));
+    g.setFont(pixelFont(9.0f));
     g.drawText("FX CHAIN  /  15 PEDALS", 24, 265, getWidth() - 48, 20,
                juce::Justification::centredLeft);
     g.setColour(muted);
-    g.setFont(juce::FontOptions(9.0f));
+    g.setFont(pixelFont(7.0f));
     g.drawText("ORDEM DO SINAL DE CIMA PARA BAIXO  •  ↑ ↓ REORDENA", 24, 285,
                getWidth() - 48, 16, juce::Justification::centredLeft);
 
@@ -369,7 +369,7 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
     }
 
     g.setColour(muted);
-    g.setFont(juce::FontOptions(9.0f));
+    g.setFont(pixelFont(7.0f));
     g.drawText("OFF MANTEM OS AJUSTES  /  VALORES AUTOMATIZAVEIS NO DAW",
                24, getHeight() - 25, getWidth() - 48, 16,
                juce::Justification::centredLeft);
