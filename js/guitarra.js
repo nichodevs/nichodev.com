@@ -19,7 +19,7 @@ const PEDALS = [
   {id:"shimmer", name:"SHIMMER", type:"shimmer", desc:"Shimmer Reverb", color:"purple", control:"Shimmer"}
 ];
 const values = Object.fromEntries(PEDALS.map(p => [p.id, ({ns2:35,cs3:18,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0,shimmer:0})[p.id]]));
-const enabled = Object.fromEntries(PEDALS.map(p => [p.id, ["ns2","cs3","ge7"].includes(p.id)]));
+const enabled = Object.fromEntries(PEDALS.map(p => [p.id, ["ge7"].includes(p.id)]));
 let order = PEDALS.map(p => p.id);
 let ctx = null, inputNode = null, inputStream = null, mediaNode = null, fileUrl = null;
 let analyser = null, master = null, recordDestination = null, activeStages = [];
@@ -31,7 +31,7 @@ let fileEffectsEnabled = false;
 let tunerFrame = 0, tunerLastUpdate = 0, snapshots = {A:null,B:null}, currentAB = null;
 
 const PRESETS = {
-  clean:{values:{ns2:30,cs3:18,bd2:0,ds1:0,ge7:54,ch1:0,bf3:0,ph3:0,tr2:0,dd8:0,rv6:0},enabled:["ns2","cs3","ge7"]},
+  clean:{values:{ns2:30,cs3:18,bd2:0,ds1:0,ge7:54,ch1:0,bf3:0,ph3:0,tr2:0,dd8:0,rv6:0},enabled:["ge7"]},
   blues:{values:{ns2:28,cs3:38,bd2:36,ds1:0,ge7:58,ch1:10,bf3:0,ph3:0,tr2:0,dd8:12,rv6:14},enabled:["ns2","cs3","bd2","ge7","ch1","dd8","rv6"]},
   crunch:{values:{ns2:35,cs3:26,bd2:28,ds1:46,ge7:60,ch1:0,bf3:0,ph3:0,tr2:0,dd8:8,rv6:15},enabled:["ns2","cs3","bd2","ds1","ge7","dd8","rv6"]},
   fuzz:{values:{ns2:46,cs3:40,bd2:0,ds1:78,ge7:42,ch1:0,bf3:0,ph3:0,tr2:0,dd8:12,rv6:10},enabled:["ns2","cs3","ds1","ge7","dd8","rv6"]},
@@ -140,7 +140,7 @@ function disconnectStages(){
 }
 function makeAmpCabStage(){
   const input=ctx.createGain(),output=ctx.createGain(),pre=ctx.createGain(),shaper=ctx.createWaveShaper();
-  const tone=ctx.createBiquadFilter(),highpass=ctx.createBiquadFilter(),lowpass=ctx.createBiquadFilter();
+  const tone=ctx.createBiquadFilter(),highpass=ctx.createBiquadFilter(),body=ctx.createBiquadFilter(),mudCut=ctx.createBiquadFilter(),presence=ctx.createBiquadFilter(),lowpass=ctx.createBiquadFilter();
   const gain=Number($("ampGain").value)/100,toneValue=Number($("ampTone").value)/100;
   // Keep gain at zero transparent; introduce soft clipping gradually as the
   // knob rises, with a smaller preamp boost to avoid runaway level.
@@ -153,9 +153,12 @@ function makeAmpCabStage(){
   shaper.curve=curve;shaper.oversample="2x";
   tone.type="lowpass";tone.frequency.value=1200+toneValue*10500;tone.Q.value=.35;
   highpass.type="highpass";highpass.frequency.value=65;highpass.Q.value=.7;
-  lowpass.type="lowpass";lowpass.frequency.value=3800+toneValue*1800;lowpass.Q.value=.7;
-  input.connect(pre);pre.connect(shaper);shaper.connect(tone);tone.connect(highpass);highpass.connect(lowpass);lowpass.connect(output);
-  return{input,output,nodes:[input,pre,shaper,tone,highpass,lowpass,output],oscillators:[]};
+  lowpass.type="lowpass";lowpass.frequency.value=4200+toneValue*1500;lowpass.Q.value=.65;
+  body.type="peaking";body.frequency.value=145;body.Q.value=.8;body.gain.value=1.2;
+  mudCut.type="peaking";mudCut.frequency.value=360;mudCut.Q.value=.9;mudCut.gain.value=-1.8;
+  presence.type="peaking";presence.frequency.value=2100;presence.Q.value=.75;presence.gain.value=1.4;
+  input.connect(pre);pre.connect(shaper);shaper.connect(tone);tone.connect(highpass);highpass.connect(body);body.connect(mudCut);mudCut.connect(presence);presence.connect(lowpass);lowpass.connect(output);
+  return{input,output,nodes:[input,pre,shaper,tone,highpass,body,mudCut,presence,lowpass,output],oscillators:[]};
 }
 function ensureRecordedPlayback(){
   if(!ctx)return;
