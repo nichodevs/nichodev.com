@@ -272,3 +272,33 @@ h2 .cursor, h3 .cursor { animation: fx-caret-blink 1s steps(1, end) infinite !im
     scroll-behavior: auto;
   }
 }
+
+/* Faixas e tons mais evidentes: cada pedal tem uma cor própria. */
+.effect-pedals .advanced-control::before {
+  content: "";
+  display: block;
+  flex: 0 0 10px;
+  height: 10px;
+  margin: 0 0 7px;
+  border-radius: 4px;
+  background: var(--pedal-color);
+}
+.effect-pedals .advanced-control {
+  background-color: color-mix(in srgb, var(--pedal-color) 16%, var(--bg));
+}
+.effect-pedals [data-pedal="pitch"] { --pedal-color: #2563eb; }
+.effect-pedals [data-pedal="formant"] { --pedal-color: #9333ea; }
+.effect-pedals [data-pedal="eq"] { --pedal-color: #0891b2; }
+.effect-pedals [data-pedal="drive"] { --pedal-color: #ea580c; }
+.effect-pedals [data-pedal="chorus"] { --pedal-color: #0d9488; }
+.effect-pedals [data-pedal="reverb"] { --pedal-color: #4338ca; }
+.effect-pedals [data-pedal="tremolo"] { --pedal-color: #ca8a04; }
+.effect-pedals [data-pedal="phaser"] { --pedal-color: #c026d3; }
+.effect-pedals [data-pedal="delay"] { --pedal-color: #16a34a; }
+.effect-pedals [data-pedal="octave"] { --pedal-color: #db2777; }
+.effect-pedals [data-pedal="distortion"] { --pedal-color: #dc2626; }
+.effect-pedals [data-pedal="wah"] { --pedal-color: #a16207; }
+.effect-pedals [data-pedal="fuzz"] { --pedal-color: #78350f; }
+.effect-pedals [data-pedal="octafuzz"] { --pedal-color: #e11d48; }
+.effect-pedals [data-pedal="vibrato"] { --pedal-color: #65a30d; }
+.effect-pedals [data-pedal="volume"] { --pedal-color: #475569; }
