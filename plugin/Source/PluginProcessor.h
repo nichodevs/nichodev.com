@@ -31,6 +31,7 @@ public:
     void getStateInformation(juce::MemoryBlock&) override;
     void setStateInformation(const void*, int) override;
     void movePedal(int, int);
+    int getPedalAtPosition(int) const;
     void applyPreset(const juce::String&);
     void resetGuitar();
     void randomizeGuitar();
