@@ -406,3 +406,59 @@ h2 .cursor, h3 .cursor { animation: fx-caret-blink 1s steps(1, end) infinite !im
     grid-column: 1;
   }
 }
+
+
+/* RANDOM global dos efeitos: botão único, destacado e fácil de localizar. */
+.effects-toolbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+.effects-toolbar .pedal-guide {
+  flex: 1 1 240px;
+  grid-column: auto;
+  margin: 0;
+}
+.effects-random-btn {
+  flex: 0 0 auto;
+  min-width: 150px;
+  padding: 13px 20px;
+  border: 3px solid #527600;
+  border-radius: 6px;
+  background: #b7f000;
+  color: #101500;
+  box-shadow: 0 5px 0 #385200;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+.effects-random-btn:hover {
+  background: #d2ff35;
+  box-shadow: 0 6px 0 #385200, 0 0 18px rgb(183 240 0 / 48%);
+  transform: translateY(-1px);
+}
+.effects-random-btn:active {
+  box-shadow: 0 2px 0 #385200;
+  transform: translateY(3px);
+}
+.effects-random-btn:focus-visible {
+  outline: 3px dashed #b7f000;
+  outline-offset: 4px;
+}
+@media (max-width: 460px) {
+  .effects-toolbar {
+    align-items: stretch;
+  }
+  .effects-random-btn {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .effects-random-btn {
+    transform: none;
+  }
+}
