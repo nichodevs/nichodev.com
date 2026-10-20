@@ -2,17 +2,25 @@ cmake_minimum_required(VERSION 3.22)
 
 project(NichodevGuitarFX VERSION 0.1.0 LANGUAGES CXX)
 
-include(FetchContent)
 set(JUCE_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JUCE_BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
+set(JUCE_LOCAL_PATH "" CACHE PATH "Caminho para a pasta local do JUCE")
 
-FetchContent_Declare(
-  JUCE
-  GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-  GIT_TAG 9.0.4
-  GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(JUCE)
+if(JUCE_LOCAL_PATH)
+  if(NOT EXISTS "${JUCE_LOCAL_PATH}/CMakeLists.txt")
+    message(FATAL_ERROR "JUCE_LOCAL_PATH deve apontar para a pasta raiz do JUCE.")
+  endif()
+  add_subdirectory("${JUCE_LOCAL_PATH}" "${CMAKE_BINARY_DIR}/JUCE")
+else()
+  include(FetchContent)
+  FetchContent_Declare(
+    JUCE
+    GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+    GIT_TAG 9.0.4
+    GIT_SHALLOW TRUE
+  )
+  FetchContent_MakeAvailable(JUCE)
+endif()
 
 juce_add_plugin(NichodevGuitarFX
   COMPANY_NAME "Nichodev"
