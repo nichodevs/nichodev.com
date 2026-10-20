@@ -135,6 +135,21 @@ function randomizeEffects(){
 document.querySelectorAll('.random-effects-btn').forEach(button =>
   button.addEventListener('click', randomizeEffects));
 
+function resetVoiceStudio(){
+  Object.entries(DEFAULTS).forEach(([id, value]) => { $(id).value = value; });
+  setAllEffectsEnabled(true);
+  markPreset('normal');
+  currentAB = null;
+  updateLabels();
+  applyLiveParams();
+  applyPreviewParams();
+  updateFxLabUI();
+  $('abStatus').textContent = 'Controles restaurados à configuração inicial. Presets salvos e gravações foram mantidos.';
+  say('Controles e efeitos restaurados à configuração inicial.');
+}
+
+$('resetVoiceBtn').addEventListener('click', resetVoiceStudio);
+
 document.querySelectorAll('[data-effect-toggle]').forEach(button =>
   button.addEventListener('click', () => {
     const effect = button.dataset.effectToggle;
