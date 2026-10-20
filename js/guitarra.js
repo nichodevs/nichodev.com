@@ -24,6 +24,7 @@ let order = PEDALS.map(p => p.id);
 let ctx = null, inputNode = null, inputStream = null, mediaNode = null, fileUrl = null;
 let analyser = null, master = null, recordDestination = null, activeStages = [];
 let recorder = null, recordChunks = [], recordUrl = null, recordStarted = 0, recordTicker = 0;
+let rawRecordingSource = null, rawRecordingDestination = null;
 let tunerFrame = 0, tunerLastUpdate = 0, snapshots = {A:null,B:null}, currentAB = null;
 
 const PRESETS = {
@@ -158,6 +159,7 @@ function rebuildChain(){
   disconnectStages();
   try{inputNode.disconnect()}catch(e){}
   inputNode.connect(analyser);
+  if(rawRecordingSource===inputNode&&rawRecordingDestination)inputNode.connect(rawRecordingDestination);
   let previous=inputNode;
   for(const id of order){const stage=makeStage(id);activeStages.push(stage);previous.connect(stage.input);previous=stage.output;}
   const ampCab=makeAmpCabStage();activeStages.push(ampCab);previous.connect(ampCab.input);ampCab.output.connect(master);
@@ -166,7 +168,7 @@ function rebuildChain(){
 function setAudioSource(node){
   inputNode=node;
   rebuildChain();
-  $("recordBtn").disabled=false;
+  $("recordBtn").disabled=false;$("recordDryBtn").disabled=false;
   $("disconnectInput").disabled=false;
   updatePower();
   startTuner();
@@ -177,7 +179,7 @@ async function stopInput(){
   if($("audioSource").src){$("audioSource").pause();$("audioSource").currentTime=0;}
   if(inputNode){try{inputNode.disconnect()}catch(e){}}
   inputNode=null;disconnectStages();cancelAnimationFrame(tunerFrame);
-  $("disconnectInput").disabled=true;$("recordBtn").disabled=true;$("playFile").disabled=true;$("stopFile").disabled=true;
+  $("disconnectInput").disabled=true;$("recordBtn").disabled=true;$("recordDryBtn").disabled=true;$("playFile").disabled=true;$("stopFile").disabled=true;
   updatePower();$("clipLed").classList.remove("clip");announce("inputStatus","Entrada desconectada.");
 }
 async function connectGuitar(){
@@ -311,24 +313,33 @@ function syncAmpControls(){
   if(master)master.gain.setTargetAtTime(Number($("masterVolume").value)/100,ctx.currentTime,.015);
   currentAB=null;
 }
-function startRecording(){
-  if(!recordDestination||!inputNode)return;
+function startRecording(withoutEffects=false){
+  if(!inputNode||(!withoutEffects&&!recordDestination))return;
   if(!window.MediaRecorder){announce("recordStatus","Este navegador não oferece gravação de áudio.");return;}
   if(recordUrl&&!window.confirm("Começar uma nova gravação substituirá a gravação anterior. Continuar?"))return;
   if(recordUrl)URL.revokeObjectURL(recordUrl);
   recordUrl=null;$("recordedAudio").removeAttribute("src");$("recordedAudio").hidden=true;$("downloadRecording").removeAttribute("href");$("downloadRecording").hidden=true;$("recordTime").textContent="00:00";
   recordChunks=[];
+  const destination=withoutEffects?ctx.createMediaStreamDestination():recordDestination;
+  if(withoutEffects){rawRecordingSource=inputNode;rawRecordingDestination=destination;inputNode.connect(destination);}
+  const releaseRawTap=()=>{
+    if(rawRecordingSource&&rawRecordingDestination){try{rawRecordingSource.disconnect(rawRecordingDestination)}catch(e){}}
+    rawRecordingSource=null;rawRecordingDestination=null;
+  };
   const mime=["audio/webm;codecs=opus","audio/ogg;codecs=opus","audio/webm"].find(t=>MediaRecorder.isTypeSupported(t));
-  try{recorder=new MediaRecorder(recordDestination.stream,mime?{mimeType:mime}:undefined);}catch(error){announce("recordStatus","Não foi possível iniciar a gravação.");return;}
+  try{recorder=new MediaRecorder(destination.stream,mime?{mimeType:mime}:undefined);}catch(error){releaseRawTap();announce("recordStatus","Não foi possível iniciar a gravação.");return;}
   recorder.ondataavailable=e=>{if(e.data.size)recordChunks.push(e.data);};
   recorder.onerror=()=>announce("recordStatus","Houve um erro durante a gravação.");
   recorder.onstop=()=>{
     const blob=new Blob(recordChunks,{type:recorder.mimeType||"audio/webm"});recordUrl=URL.createObjectURL(blob);
     $("recordedAudio").src=recordUrl;$("recordedAudio").hidden=false;$("downloadRecording").href=recordUrl;
-    $("downloadRecording").download="guitar-fx-lab-"+new Date().toISOString().replace(/[:.]/g,"-")+".webm";$("downloadRecording").hidden=false;
-    announce("recordStatus","Gravação processada pronta para ouvir e baixar.");recorder=null;clearInterval(recordTicker);$("recordBtn").disabled=!inputNode;$("stopRecordBtn").disabled=true;
+    $("downloadRecording").download="guitar-fx-lab-"+(withoutEffects?"sem-efeitos-":"")+new Date().toISOString().replace(/[:.]/g,"-")+".webm";$("downloadRecording").hidden=false;
+    releaseRawTap();
+    announce("recordStatus",withoutEffects?"Gravação sem efeitos pronta para ouvir e baixar.":"Gravação processada pronta para ouvir e baixar.");
+    recorder=null;clearInterval(recordTicker);$("recordBtn").disabled=!inputNode;$("recordDryBtn").disabled=!inputNode;$("stopRecordBtn").disabled=true;
   };
-  recorder.start();recordStarted=Date.now();$("recordBtn").disabled=true;$("stopRecordBtn").disabled=false;announce("recordStatus","Gravando saída processada…");
+  recorder.start();recordStarted=Date.now();$("recordBtn").disabled=true;$("recordDryBtn").disabled=true;$("stopRecordBtn").disabled=false;
+  announce("recordStatus",withoutEffects?"Gravando saída sem efeitos (sinal direto da entrada)…":"Gravando saída processada…");
   clearInterval(recordTicker);recordTicker=setInterval(()=>{$("recordTime").textContent=formatTime((Date.now()-recordStarted)/1000);},250);
 }
 function formatTime(seconds){const s=Math.floor(seconds);return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
@@ -345,7 +356,7 @@ $("ampTone").addEventListener("input",()=>{syncAmpControls();rebuildChain();});
 $("resetAmp").addEventListener("click",resetEffects);
 document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>applyPreset(b.dataset.preset)));
 $("captureA").addEventListener("click",()=>captureAB("A"));$("captureB").addEventListener("click",()=>captureAB("B"));$("toggleAB").addEventListener("click",toggleAB);
-$("recordBtn").addEventListener("click",startRecording);$("stopRecordBtn").addEventListener("click",stopRecording);
+$("recordBtn").addEventListener("click",()=>startRecording(false));$("recordDryBtn").addEventListener("click",()=>startRecording(true));$("stopRecordBtn").addEventListener("click",stopRecording);
 if(navigator.mediaDevices){refreshInputs();navigator.mediaDevices.addEventListener?.("devicechange",()=>refreshInputs(inputStream?.getAudioTracks()[0]?.getSettings().deviceId||""));}
 renderPedals();syncAmpControls();
 
