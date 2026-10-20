@@ -64,10 +64,7 @@ jobs:
             put cursores-retro.css -o cursores-retro.css
             put guitarra-8bit.css -o guitarra-8bit.css
             put mixmaster.css -o mixmaster.css
-            set cmd:fail-exit no
-            mkdir assets
-            mkdir assets/cursors
-            set cmd:fail-exit yes
+            mkdir -p assets/cursors
             put assets/cursors/cursor.png -o assets/cursors/cursor.png
             put assets/cursors/cursor-pointer.png -o assets/cursors/cursor-pointer.png
             put assets/cursors/cursor-text.png -o assets/cursors/cursor-text.png
@@ -90,9 +87,7 @@ jobs:
             put voz.html -o voz.html
             put guitarra.html -o guitarra.html
             put mixmaster.html -o mixmaster.html
-            set cmd:fail-exit no
-            mkdir onda
-            set cmd:fail-exit yes
+            mkdir -p onda
             put onda/index.html -o onda/index.html
             put onda/onda.css -o onda/onda.css
             put onda/onda.js -o onda/onda.js

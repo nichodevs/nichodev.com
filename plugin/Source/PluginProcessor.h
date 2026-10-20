@@ -42,6 +42,8 @@ private:
     void restoreOrder();
     std::array<Params,pedalCount> pedalParams {};
     std::array<std::array<State,2>,pedalCount> fx {};
+    std::array<float,2> ampFilter {};
+    std::array<float,2> ampEnv {};
     std::array<std::atomic<int>,pedalCount> order {};
     std::atomic<float>* master=nullptr; std::atomic<float>* gain=nullptr; std::atomic<float>* tone=nullptr;
     double rate=44100.0;
