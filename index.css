@@ -169,3 +169,9 @@ body *{font-family:inherit!important}
 .site-footer .sound-wave-link:hover{background:transparent;color:var(--fg);transform:scale(1.1);filter:drop-shadow(0 0 7px currentColor)}
 .site-footer .sound-wave-link:focus-visible{outline:3px dashed var(--fg);outline-offset:5px}
 @media(prefers-reduced-motion:reduce){.site-footer .sound-wave-link{transition:none}.site-footer .sound-wave-link:hover{transform:none}}
+
+.site-footer .social-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
