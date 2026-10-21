@@ -172,6 +172,7 @@ function resetVoiceStudio(){
 }
 
 $('resetVoiceBtn').addEventListener('click', resetVoiceStudio);
+$('resetVoiceToolbarBtn').addEventListener('click', resetVoiceStudio);
 
 document.querySelectorAll('[data-effect-toggle]').forEach(button =>
   button.addEventListener('click', () => {
