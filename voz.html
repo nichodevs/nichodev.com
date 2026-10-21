@@ -182,7 +182,10 @@
     <div class="control-content effect-pedals">
     <div class="effects-toolbar">
       <p class="small pedal-guide">Cada cartão funciona como um pedal: ligue ou desligue no botão e ajuste o controle deslizante.</p>
-      <button type="button" class="random-effects-btn effects-random-btn">RANDOM</button>
+      <div class="effects-toolbar-actions">
+        <button type="button" class="random-effects-btn effects-random-btn">RANDOM</button>
+        <button type="button" id="resetVoiceToolbarBtn" class="reset-toolbar-btn" title="Restaurar controles e efeitos à configuração inicial">RESETAR</button>
+      </div>
     </div>
   <fieldset class="advanced-control" data-pedal="pitch"><legend>Tom</legend>
     <button type="button" class="effect-switch" data-effect-toggle="pitch" role="switch" aria-checked="true" aria-label="Efeito Tom: ligado"><span class="effect-switch-track" aria-hidden="true"><span class="effect-switch-thumb"></span></span><span class="effect-switch-state" aria-hidden="true">ON</span></button><label for="pitch">Semitons <b data-for="pitch"></b></label><input id="pitch" type="range" min="-12" max="12" step="1" value="0"></fieldset>
