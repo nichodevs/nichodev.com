@@ -97,6 +97,52 @@ int main()
                    "preset parameter values stay inside the host range");
     }
 
+    for (int step = 0; step <= 1024; ++step)
+    {
+        constexpr float twoPi = 6.28318530717958647692f;
+        const float phase = twoPi * static_cast<float>(step) / 1024.0f;
+        const float coefficient = guitarfx::dsp::phaserFilterCoefficient(phase);
+        expect(std::isfinite(coefficient) && coefficient >= .002f && coefficient <= .035001f,
+               "PH-3 modulation keeps its filter coefficient positive and bounded");
+    }
+
+    {
+        constexpr double testSampleRate = 44100.0;
+        constexpr int testSamples = 44100 * 4;
+        constexpr float twoPi = 6.28318530717958647692f;
+        std::array<float, 15> amounts {{
+            .20f,.20f,0,0,.52f,.38f,.22f,.35f,0,0,0,.15f,.62f,.58f,0
+        }};
+        std::array<float, 15> sevenEnabled {{
+            0,1,0,0,1,1,1,0,0,0,0,1,1,1,0
+        }};
+        auto eightEnabled = sevenEnabled;
+        eightEnabled[7] = 1.0f;
+        std::array<int, 15> order{};
+        std::iota(order.begin(), order.end(), 0);
+        guitarfx::dsp::GuitarFxEngine sevenEffectEngine;
+        guitarfx::dsp::GuitarFxEngine eightEffectEngine;
+        sevenEffectEngine.prepare(testSampleRate);
+        eightEffectEngine.prepare(testSampleRate);
+        float phaserDifference = 0.0f;
+        bool eightEffectOutputFinite = true;
+        for (int sample = 0; sample < testSamples; ++sample)
+        {
+            const float input = .25f * std::sin(twoPi * 110.0f
+                                                * static_cast<float>(sample) / testSampleRate);
+            const float sevenOutput = sevenEffectEngine.processSample(
+                input, 0, amounts, sevenEnabled, order, .718f, .12f, .2f);
+            const float eightOutput = eightEffectEngine.processSample(
+                input, 0, amounts, eightEnabled, order, .718f, .12f, .2f);
+            eightEffectOutputFinite = eightEffectOutputFinite && std::isfinite(eightOutput);
+            phaserDifference = std::max(phaserDifference, std::abs(eightOutput - sevenOutput));
+        }
+        expect(eightEffectOutputFinite,
+               "the seven-effect chain remains finite when PH-3 is the eighth pedal enabled");
+        expect(phaserDifference > 1.0e-4f,
+               "PH-3 continues to process audio when enabled as the eighth pedal");
+    }
+
     std::array<int, 15> defaultOrder{};
     std::iota(defaultOrder.begin(), defaultOrder.end(), 0);
     if (spacePreset != nullptr)

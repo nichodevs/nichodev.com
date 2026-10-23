@@ -142,6 +142,15 @@ private:
 
 inline float removeRectifierDc(float input, float& lowpass, float coefficient) noexcept;
 
+inline float phaserFilterCoefficient(float phase) noexcept
+{
+    // A negative one-pole coefficient reverses damping during part of the LFO cycle.
+    constexpr float minimumCoefficient = 0.002f;
+    if (!std::isfinite(phase))
+        return minimumCoefficient;
+    return std::max(minimumCoefficient, .015f + .02f * std::sin(phase));
+}
+
 inline float processDelayPedal(int pedalIndex, float input, float amount,
                                double sampleRate, DelayLine& delay, float& phase,
                                float& filter, float dcBlockCoefficient) noexcept
@@ -383,7 +392,7 @@ public:
                         / static_cast<float>(rate);
                     if (state.phase > 6.28318530717958647692f)
                         state.phase -= 6.28318530717958647692f;
-                    state.filter += (.015f + .02f * std::sin(state.phase)) * (in - state.filter);
+                    state.filter += phaserFilterCoefficient(state.phase) * (in - state.filter);
                     wet = .4f * in + .6f * (in - 2.0f * state.filter);
                     break;
                 case 8: wet = std::tanh(in * (1.0f + 24.0f * amount) * 1.8f); break;
