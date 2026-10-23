@@ -42,6 +42,17 @@ int main()
     expect(bytesPerInstance < 2u * 1024u * 1024u,
            "48 kHz delay buffers stay below two megabytes per instance");
 
+    expect(guitarfx::dsp::mixEffect(0.25f, -0.25f, 0.0f) == 0.25f,
+           "disabled effect returns the dry signal");
+    expect(guitarfx::dsp::mixEffect(0.25f, -0.25f, 1.0f) == -0.25f,
+           "enabled effect returns the processed signal");
+    expect(std::abs(guitarfx::dsp::mixEffect(0.25f, -0.25f, 0.5f)) < 1.0e-6f,
+           "effect transitions blend dry and processed signals linearly");
+    expect(guitarfx::dsp::mixEffect(0.25f, -0.25f, -1.0f) == 0.25f,
+           "effect blend clamps below zero");
+    expect(guitarfx::dsp::mixEffect(0.25f, -0.25f, 2.0f) == -0.25f,
+           "effect blend clamps above one");
+
     float lowpass = 0.0f;
     constexpr float dcCoefficient = 0.0026f;
     expect(guitarfx::dsp::removeRectifierDc(0.0f, lowpass, dcCoefficient) == 0.0f,
