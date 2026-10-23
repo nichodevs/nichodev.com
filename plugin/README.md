@@ -16,6 +16,8 @@ Os efeitos são aproximações nativas, não emulações oficiais nem uma corres
 
 Baixe o arquivo para seu sistema na [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest), na seção **Assets**. Extraia o arquivo e copie o bundle `.vst3` para uma pasta VST3 reconhecida pela DAW. No Windows, a pasta comum é `C:\Program Files\Common Files\VST3`; no Linux, use `~/.vst3` ou a pasta VST3 do sistema. Depois, solicite à DAW uma nova varredura de plugins.
 
+Os artefatos baixados diretamente de uma execução do GitHub Actions são temporários e expiram após 14 dias. O workflow de build não publica um GitHub Release; os downloads permanentes ficam anexados à versão correspondente. Veja o [processo de release](RELEASING.md).
+
 ## Compilar
 
 Requisitos: CMake 3.22 ou superior, compilador C++17 e dependências de áudio/interface do JUCE para o sistema operacional. O workflow [plugin.yml](../.github/workflows/plugin.yml) mostra as dependências usadas no Ubuntu CI.
@@ -36,16 +38,16 @@ cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3
 
 Sem `JUCE_LOCAL_PATH`, o CMake baixa JUCE 9.0.4. O bundle gerado fica em `build/plugin/NichodevGuitarFX_artefacts/Release/VST3/` (ou na pasta de configuração correspondente).
 
-## Testes DSP
+## Testes automatizados
 
-Os testes DSP cobrem a reordenação de pedais, os valores dos cinco presets, a cadeia completa do Space Delay e os ecos do DD-8/RV-6, drenagem de buffers em bypass, isolamento entre canais, controles inválidos, limites dos buffers, mistura gradual entre sinal seco e processado e bloqueio de DC. Para executá-los:
+Os testes DSP cobrem a reordenação de pedais, os valores dos cinco presets, a cadeia completa do Space Delay e os ecos do DD-8/RV-6, drenagem de buffers em bypass, isolamento entre canais, controles inválidos, limites dos buffers, mistura gradual entre sinal seco e processado e bloqueio de DC. O teste do processador cria a classe JUCE real, aplica `space`, confere os parâmetros e verifica a resposta atrasada através de `processBlock`. Para executá-los:
 
 ```sh
-cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests
+cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests
 ctest --test-dir build/plugin --build-config Release --output-on-failure
 ```
 
-O GitHub Actions compila o plugin e executa esses testes em Windows e Linux. Eles exercitam a mesma classe DSP usada pelo processador, mas não cobrem a automação específica de cada host nem substituem a avaliação auditiva do plugin em diferentes DAWs e taxas de amostragem.
+O GitHub Actions compila o plugin e executa os dois testes em Windows e Linux. O teste do processador cobre `applyPreset` → parâmetros → `processBlock`, mas não simula o clique no seletor da interface nem carrega o bundle VST3 em uma DAW. Portanto, esses testes não cobrem automação específica de cada host e não substituem a avaliação auditiva em diferentes DAWs e taxas de amostragem.
 
 ## Licenças
 

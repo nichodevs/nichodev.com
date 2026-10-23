@@ -18,14 +18,14 @@ O botão **DOWNLOAD VST** na página inicial abre a [página do release mais rec
 - `js/`: lógica das ferramentas de áudio e navegação.
 - `assets/cursors/`: cursores retrô.
 - `onda/`: página, estilos e animação do easter egg.
-- `plugin/`: projeto JUCE/CMake do VST3, assets e testes DSP.
+- `plugin/`: projeto JUCE/CMake do VST3, assets, testes DSP e testes do processador.
 - `scripts/validate-site.js`: valida referências, sintaxe e cobertura dos arquivos do site.
 - `tests/e2e/`: testes de navegação, responsividade e teclado com Playwright.
 - `.github/workflows/`: validação do site, compilação/testes do plugin e publicação do site.
 
 ## Desenvolvimento do site
 
-Requer Node.js 22 ou superior e npm.
+Requer Node.js 24 ou superior e npm.
 
 ```sh
 npm ci
@@ -39,9 +39,9 @@ npm start
 
 ## VST3
 
-A implementação nativa e suas instruções estão em [plugin/README.md](plugin/README.md). O GitHub Actions compila o VST3 para Windows e Linux e executa os testes DSP quando há alterações no plugin.
+A implementação nativa e suas instruções estão em [plugin/README.md](plugin/README.md). O GitHub Actions compila o VST3 para Windows e Linux e executa os testes DSP e de integração do processador quando há alterações no plugin.
 
 ## Publicação
 
-- **Releases do VST3:** publicados no GitHub; o botão de download do site aponta para o release mais recente.
-- **Site:** o workflow `Publicar site na Hostinger` roda no GitHub Actions em pushes para `main`), manualmente ou diariamente às 09:00 UTC (06:00 em Brasília). Ele valida o site e publica por SFTP na Hostinger usando os secrets `HOSTINGER_HOST`, `HOSTINGER_USERNAME`, `HOSTINGER_PASSWORD` e `HOSTINGER_KNOWN_HOSTS`. Esse workflow publica o site; as builds do plugin são distribuídas nos releases do GitHub.
+- **Releases do VST3:** os ZIPs anexados a um GitHub Release são os downloads permanentes; o botão do site aponta para o release mais recente. O workflow de build gera artefatos temporários, retidos por 14 dias, mas não cria o release. Consulte o [processo de release do plugin](plugin/RELEASING.md).
+- **Site:** o workflow `Publicar site na Hostinger` roda no GitHub Actions quando arquivos do site mudam em pushes para `main`, manualmente ou diariamente às 09:00 UTC (06:00 em Brasília). Ele valida o site e publica por SFTP na Hostinger usando os secrets `HOSTINGER_HOST`, `HOSTINGER_USERNAME`, `HOSTINGER_PASSWORD` e `HOSTINGER_KNOWN_HOSTS`. Esse workflow publica o site; as builds do plugin são distribuídas nos releases do GitHub.

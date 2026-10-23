@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Baixar arquivos do repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Instalar dependências de compilação (Linux)
         if: runner.os == 'Linux'
@@ -58,13 +58,13 @@ jobs:
       - name: Compilar bundle VST3
         run: cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3
       
-      - name: Compilar e executar testes DSP
+      - name: Compilar e executar testes DSP e do processador
         run: |
-          cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests
+          cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests
           ctest --test-dir build/plugin --build-config Release --output-on-failure
 
       - name: Publicar artefato VST3
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: NichodevGuitarFX-${{ matrix.os }}
           path: build/plugin/NichodevGuitarFX_artefacts/Release/VST3/
