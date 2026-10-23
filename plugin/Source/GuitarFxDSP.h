@@ -6,6 +6,8 @@
 #include <cstddef>
 #include <iterator>
 #include <limits>
+#include <new>
+#include <stdexcept>
 #include <string_view>
 #include <vector>
 
@@ -15,6 +17,21 @@ constexpr bool needsDelayBuffer(int pedalIndex) noexcept
 {
     return pedalIndex == 5 || pedalIndex == 6 || pedalIndex == 10
         || pedalIndex == 12 || pedalIndex == 13 || pedalIndex == 14;
+}
+
+// Maximum read time for each pedal at a normalized amount of 1.0.
+constexpr double maximumDelaySeconds(int pedalIndex) noexcept
+{
+    switch (pedalIndex)
+    {
+        case 5: return .030;
+        case 6: return .0075;
+        case 10: return .0186;
+        case 12: return .41;
+        case 13: return .55;
+        case 14: return .71;
+        default: return 0.0;
+    }
 }
 
 struct Preset
@@ -47,11 +64,12 @@ inline const Preset* findPreset(std::string_view id) noexcept
     return nullptr;
 }
 
-inline std::size_t delayBufferLength(double sampleRate) noexcept
+inline std::size_t delayBufferLength(double sampleRate, double delaySeconds = .75) noexcept
 {
-    if (!std::isfinite(sampleRate) || sampleRate <= 0.0)
+    if (!std::isfinite(sampleRate) || sampleRate <= 0.0
+        || !std::isfinite(delaySeconds) || delaySeconds <= 0.0)
         return 2;
-    const double requestedSamples = std::ceil(sampleRate * 0.75);
+    const double requestedSamples = std::ceil(sampleRate * delaySeconds);
     const auto maxSize = std::numeric_limits<std::size_t>::max();
     if (requestedSamples >= static_cast<double>(maxSize - 2u))
         return maxSize;
@@ -208,6 +226,219 @@ inline float removeRectifierDc(float input, float& lowpass, float coefficient) n
     lowpass += coefficient * (rectified - lowpass);
     return rectified - lowpass;
 }
+
+struct PedalState
+{
+    DelayLine delay;
+    float env = 0.0f;
+    float smooth = 1.0f;
+    float filter = 0.0f;
+    float phase = 0.0f;
+    bool wasBypassed = true;
+};
+
+class GuitarFxEngine
+{
+public:
+    static constexpr int pedalCount = 15;
+
+    void prepare(double sampleRate)
+    {
+        rate = std::isfinite(sampleRate) && sampleRate > 0.0 ? sampleRate : 44100.0;
+        dcBlockCoefficient = 1.0f
+            - std::exp(-6.28318530717958647692f * 20.0f / static_cast<float>(rate));
+        try
+        {
+            for (int pedal = 0; pedal < pedalCount; ++pedal)
+                for (auto& state : states[static_cast<std::size_t>(pedal)])
+                    if (needsDelayBuffer(pedal))
+                        state.delay.prepare(delayBufferLength(
+                            rate, maximumDelaySeconds(pedal)));
+                    else
+                        state.delay.release();
+        }
+        catch (const std::bad_alloc&)
+        {
+            releaseDelayBuffers();
+        }
+        catch (const std::length_error&)
+        {
+            releaseDelayBuffers();
+        }
+
+        for (auto& pedal : states)
+            for (auto& state : pedal)
+                resetState(state);
+        ampFilter.fill(0.0f);
+        ampEnv.fill(0.0f);
+    }
+
+    void release() noexcept
+    {
+        for (auto& pedal : states)
+            for (auto& state : pedal)
+            {
+                state.delay.clear();
+                resetState(state);
+            }
+        ampFilter.fill(0.0f);
+        ampEnv.fill(0.0f);
+    }
+
+    float processSample(float input, int channel,
+                        const std::array<float, pedalCount>& amounts,
+                        const std::array<float, pedalCount>& enabled,
+                        const std::array<int, pedalCount>& order,
+                        float master, float gain, float toneCoefficient) noexcept
+    {
+        if (!std::isfinite(input)) input = 0.0f;
+        master = std::isfinite(master) ? std::clamp(master, 0.0f, 1.0f) : 0.0f;
+        gain = std::isfinite(gain) ? std::clamp(gain, 0.0f, 1.0f) : 0.0f;
+        toneCoefficient = std::isfinite(toneCoefficient)
+            ? std::clamp(toneCoefficient, 0.0f, 1.0f) : 0.0f;
+        const auto channelIndex = static_cast<std::size_t>(std::clamp(channel, 0, 1));
+
+        for (const int pedal : order)
+        {
+            if (pedal < 0 || pedal >= pedalCount)
+                continue;
+
+            const auto index = static_cast<std::size_t>(pedal);
+            auto& state = states[index][channelIndex];
+            const float amount = std::isfinite(amounts[index])
+                ? std::clamp(amounts[index], 0.0f, 1.0f) : 0.0f;
+            const float mix = std::isfinite(enabled[index])
+                ? std::clamp(enabled[index], 0.0f, 1.0f) : 0.0f;
+
+            if (needsDelayBuffer(pedal) && state.delay.size() < 3)
+                continue;
+
+            if (mix <= 0.0f)
+            {
+                if (!needsDelayBuffer(pedal))
+                {
+                    if (!state.wasBypassed)
+                        resetState(state);
+                    continue;
+                }
+
+                state.delay.drain();
+                if (!state.wasBypassed)
+                    resetState(state);
+                state.wasBypassed = true;
+                continue;
+            }
+
+            state.wasBypassed = false;
+            const float dry = input;
+            const float in = input;
+            float wet = in;
+
+            switch (pedal)
+            {
+                case 0:
+                {
+                    state.env += (std::abs(in) > state.env ? .04f : .002f)
+                        * (std::abs(in) - state.env);
+                    const float target = state.env < (.012f + .11f * amount) ? .08f : 1.0f;
+                    state.smooth += .004f * (target - state.smooth);
+                    wet = in * state.smooth;
+                    break;
+                }
+                case 1:
+                {
+                    state.env += (std::abs(in) > state.env ? .03f : .003f)
+                        * (std::abs(in) - state.env);
+                    const float threshold = .30f - .22f * amount;
+                    const float target = state.env > threshold
+                        ? std::pow(threshold / std::max(state.env, .0001f),
+                                   1.0f - 1.0f / (1.0f + 6.0f * amount))
+                        : 1.0f;
+                    state.smooth += .01f * (target - state.smooth);
+                    wet = in * state.smooth;
+                    break;
+                }
+                case 2: wet = std::tanh(in * (1.0f + 18.0f * amount) * .75f); break;
+                case 3:
+                {
+                    const float drive = 1.0f + 25.0f * amount;
+                    wet = drive * in / (1.0f + drive * std::abs(in));
+                    break;
+                }
+                case 4:
+                    state.filter += .025f * (in - state.filter);
+                    wet = in + (amount - .5f) * (in - state.filter) * 1.6f;
+                    break;
+                case 5:
+                case 6:
+                case 10:
+                case 12:
+                case 13:
+                case 14:
+                    wet = processDelayPedal(pedal, in, amount, rate, state.delay,
+                                            state.phase, state.filter, dcBlockCoefficient);
+                    break;
+                case 7:
+                    state.phase += 6.28318530717958647692f * (.15f + 1.4f * amount)
+                        / static_cast<float>(rate);
+                    if (state.phase > 6.28318530717958647692f)
+                        state.phase -= 6.28318530717958647692f;
+                    state.filter += (.015f + .02f * std::sin(state.phase)) * (in - state.filter);
+                    wet = .4f * in + .6f * (in - 2.0f * state.filter);
+                    break;
+                case 8: wet = std::tanh(in * (1.0f + 24.0f * amount) * 1.8f); break;
+                case 9:
+                {
+                    const float octave = removeRectifierDc(in, state.filter, dcBlockCoefficient);
+                    wet = std::tanh(octave * (1.0f + 20.0f * amount) * 1.8f);
+                    break;
+                }
+                case 11:
+                    state.phase += 6.28318530717958647692f * (2.0f + 8.0f * amount)
+                        / static_cast<float>(rate);
+                    if (state.phase > 6.28318530717958647692f)
+                        state.phase -= 6.28318530717958647692f;
+                    wet = in * (1.0f - .48f * amount
+                        + .48f * amount * (.5f + .5f * std::sin(state.phase)));
+                    break;
+                default: break;
+            }
+
+            input = mixEffect(dry, wet, mix);
+        }
+
+        float output = std::tanh(input * (1.0f + gain * 1.5f) * (1.0f + gain * 7.0f));
+        if (!std::isfinite(output)) output = 0.0f;
+        ampFilter[channelIndex] += toneCoefficient * (output - ampFilter[channelIndex]);
+        ampEnv[channelIndex] += .009f * (output - ampEnv[channelIndex]);
+        output = ampFilter[channelIndex] + (output - ampEnv[channelIndex]) * .22f;
+        output *= master;
+        return std::isfinite(output) ? output : 0.0f;
+    }
+
+private:
+    static void resetState(PedalState& state) noexcept
+    {
+        state.env = 0.0f;
+        state.smooth = 1.0f;
+        state.filter = 0.0f;
+        state.phase = 0.0f;
+        state.wasBypassed = true;
+    }
+
+    void releaseDelayBuffers() noexcept
+    {
+        for (auto& pedal : states)
+            for (auto& state : pedal)
+                state.delay.release();
+    }
+
+    std::array<std::array<PedalState, 2>, pedalCount> states {};
+    std::array<float, 2> ampFilter {};
+    std::array<float, 2> ampEnv {};
+    double rate = 44100.0;
+    float dcBlockCoefficient = 0.0f;
+};
 
 template <std::size_t Size>
 bool movePedal(std::array<int, Size>& order, int pedalId, int delta) noexcept
