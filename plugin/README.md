@@ -6,7 +6,7 @@ Plugin nativo de efeitos para guitarra, feito com JUCE 9.0.4 e destinado a DAWs 
 
 A cadeia tem 15 efeitos: NS-2 (gate), CS-3 (compressor), BD-2 (overdrive), DS-1 (distortion), GE-7 TILT, CH-1 (chorus), BF-3 (flanger), PH-3 (phaser), FZ-5 (fuzz), OCTAFUZZ, VB-2 (vibrato), TR-2 (tremolo), DD-8 (delay), RV-6 (reverb) e SHIMMER. UP/DN movem cada pedal na cadeia; a ordem é salva junto com o estado do plugin.
 
-Também inclui controles MASTER, AMP GAIN e AMP TONE, cinco presets (Clean Pixel, 8-Bit Blues, Arcade Crunch, Boss Battle e Space Delay), RANDOM e RESET. Os controles contínuos são suavizados para reduzir artefatos ao ajustar parâmetros ou automatizá-los. Os buffers de atraso são alocados apenas para os efeitos que os utilizam.
+Também inclui controles MASTER, AMP GAIN e AMP TONE, cinco presets (Clean Pixel, 8-Bit Blues, Arcade Crunch, Boss Battle e Space Delay), RANDOM e RESET. Os controles contínuos e os estados liga/desliga dos pedais são suavizados em 20 ms para reduzir estalos ao ajustar parâmetros, automatizar controles ou trocar de preset. Os buffers de atraso são alocados apenas para os efeitos que os utilizam.
 
 ## Som e limitações
 
@@ -38,7 +38,7 @@ Sem `JUCE_LOCAL_PATH`, o CMake baixa JUCE 9.0.4. O bundle gerado fica em `build/
 
 ## Testes DSP
 
-Os testes unitários cobrem a reordenação de pedais, a seleção e o tamanho dos buffers de atraso e o bloqueio de DC usado pelos sinais retificados. Para executá-los:
+Os testes unitários cobrem a reordenação de pedais, a seleção e o tamanho dos buffers de atraso, a mistura gradual entre sinal seco e processado e o bloqueio de DC usado pelos sinais retificados. Para executá-los:
 
 ```sh
 cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests
