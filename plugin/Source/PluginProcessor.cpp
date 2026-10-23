@@ -39,6 +39,9 @@ void NichodevGuitarFXAudioProcessor::prepareToPlay(double sr,int)
   auto& smoother=pedalValueSmoothers[(size_t)pedal];
   smoother.reset(sr,0.02);
   smoother.setCurrentAndTargetValue(pedalParams[(size_t)pedal].value->load());
+  auto& enableSmoother=pedalEnableSmoothers[(size_t)pedal];
+  enableSmoother.reset(sr,0.02);
+  enableSmoother.setCurrentAndTargetValue(pedalParams[(size_t)pedal].on->load()>=.5f?1.0f:0.0f);
  }
  masterSmoother.reset(sr,0.02);masterSmoother.setCurrentAndTargetValue(master->load());
  gainSmoother.reset(sr,0.02);gainSmoother.setCurrentAndTargetValue(gain->load());
@@ -55,15 +58,15 @@ void NichodevGuitarFXAudioProcessor::processBlock(juce::AudioBuffer<float>& b,ju
  masterSmoother.setTargetValue(master->load());gainSmoother.setTargetValue(gain->load());
  const float toneTarget=tone->load();
  toneCoefficientSmoother.setTargetValue(1-std::exp(-juce::MathConstants<float>::twoPi*(1200+10500*toneTarget)/(float)rate));
- for(int i=0;i<pedalCount;++i)pedalValueSmoothers[(size_t)i].setTargetValue(pedalParams[(size_t)i].value->load());
+ for(int i=0;i<pedalCount;++i){pedalValueSmoothers[(size_t)i].setTargetValue(pedalParams[(size_t)i].value->load());pedalEnableSmoothers[(size_t)i].setTargetValue(pedalParams[(size_t)i].on->load()>=.5f?1.0f:0.0f);}
  auto blockOrder=lastAudioOrder;const auto revisionBefore=orderRevision.load(std::memory_order_acquire);
  if((revisionBefore&1u)==0){std::array<int,pedalCount> candidate{};for(int i=0;i<pedalCount;++i)candidate[(size_t)i]=order[(size_t)i].load(std::memory_order_relaxed);const auto revisionAfter=orderRevision.load(std::memory_order_acquire);if(revisionBefore==revisionAfter){blockOrder=candidate;lastAudioOrder=candidate;}}
  const float dcBlockCoefficient=1-std::exp(-juce::MathConstants<float>::twoPi*20.0f/(float)rate);
- for(int n=0;n<b.getNumSamples();++n){const float mg=masterSmoother.getNextValue(),g=gainSmoother.getNextValue(),toneA=toneCoefficientSmoother.getNextValue();std::array<float,pedalCount> amounts{};for(int i=0;i<pedalCount;++i)amounts[(size_t)i]=pedalValueSmoothers[(size_t)i].getNextValue();
+ for(int n=0;n<b.getNumSamples();++n){const float mg=masterSmoother.getNextValue(),g=gainSmoother.getNextValue(),toneA=toneCoefficientSmoother.getNextValue();std::array<float,pedalCount> amounts{},enabled{};for(int i=0;i<pedalCount;++i){amounts[(size_t)i]=pedalValueSmoothers[(size_t)i].getNextValue();enabled[(size_t)i]=pedalEnableSmoothers[(size_t)i].getNextValue();}
   for(int c=0;c<b.getNumChannels();++c){
   float x=b.getSample(c,n);
-  for(int k=0;k<pedalCount;++k){int i=blockOrder[(size_t)k];float a=amounts[(size_t)i];if(pedalParams[(size_t)i].on->load()<.5f)continue;
-   auto& s=fx[(size_t)i][(size_t)std::min(c,1)];float in=x;
+  for(int k=0;k<pedalCount;++k){int i=blockOrder[(size_t)k];float a=amounts[(size_t)i],enable=enabled[(size_t)i];if(enable<=0.0f&&!pedalEnableSmoothers[(size_t)i].isSmoothing())continue;
+   auto& s=fx[(size_t)i][(size_t)std::min(c,1)];float dry=x,in=x;
    auto read=[&](float sec){int len=(int)s.delay.size();float p=(float)s.write-sec*(float)rate;while(p<0)p+=len;int q=(int)p;float f=p-q;return s.delay[(size_t)q]*(1-f)+s.delay[(size_t)((q+1)%len)]*f;};
    auto write=[&](float v){s.delay[(size_t)s.write]=v;s.write=(s.write+1)%(int)s.delay.size();};
    switch(i){
@@ -82,6 +85,7 @@ void NichodevGuitarFXAudioProcessor::processBlock(juce::AudioBuffer<float>& b,ju
     case 13:{float w=read(.17f+.38f*a);write(in+w*(.25f+.55f*a));float m=.04f+.34f*a;x=in*(1-m)+w*m;break;}
     case 14:{float w=read(.36f+.35f*a);float octave=guitarfx::dsp::removeRectifierDc(in,s.filter,dcBlockCoefficient);write(octave*.7f+w*.55f);x=in*.82f+w*(.16f+.68f*a);break;}
    }
+   x=guitarfx::dsp::mixEffect(dry,x,enable);
   }
   x=std::tanh(x*(1+g*1.5f)*(1+g*7));
   const auto channel=(size_t)std::min(c,1);ampFilter[channel]+=toneA*(x-ampFilter[channel]);ampEnv[channel]+=.009f*(x-ampEnv[channel]);
