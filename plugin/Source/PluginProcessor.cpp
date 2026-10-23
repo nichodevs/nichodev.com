@@ -133,8 +133,9 @@ void NichodevGuitarFXAudioProcessor::applyPreset(const juce::String& name)
  {"blues",{.28f,.38f,.36f,0,.58f,.10f,0,0,0,0,0,0,.12f,.14f,0},{1,1,1,0,1,1,0,0,0,0,0,0,1,1,0},.30f,.62f},
  {"crunch",{.35f,.26f,.28f,.46f,.60f,0,0,0,0,0,0,0,.08f,.15f,0},{1,1,1,1,1,0,0,0,0,0,0,0,1,1,0},.58f,.58f},
  {"fuzz",{.46f,.40f,0,.78f,.42f,0,0,0,0,0,0,0,.12f,.10f,0},{1,1,0,1,1,0,0,0,0,0,0,0,1,1,0},.58f,.58f},
- {"space",{.20f,.20f,0,0,.52f,.38f,.22f,.35f,0,0,0,.15f,.62f,.58f,0},{1,1,0,0,1,1,1,1,0,0,0,1,1,1,0},.12f,.58f}};
- for(auto& p:ps)if(name==p.id){for(int i=0;i<pedalCount;++i){if(i==8||i==9||i==10||i==14)continue;auto* v=parameters.getParameter(ids[(size_t)i]);v->setValueNotifyingHost(v->convertTo0to1(p.v[i]));auto* on=parameters.getParameter(juce::String(ids[(size_t)i])+"On");on->setValueNotifyingHost(on->convertTo0to1(p.on[i]?1.f:0.f));}auto* a=parameters.getParameter(gainId);a->setValueNotifyingHost(a->convertTo0to1(p.gain));auto* t=parameters.getParameter(toneId);t->setValueNotifyingHost(t->convertTo0to1(p.tone));}
+ // Ambient preset: keep the input gate off to preserve soft notes and long tails.
+ {"space",{.20f,.20f,0,0,.52f,.38f,.22f,.35f,0,0,0,.15f,.62f,.58f,0},{0,1,0,0,1,1,1,1,0,0,0,1,1,1,0},.12f,.58f}};
+ for(auto& p:ps)if(name==p.id){for(int i=0;i<pedalCount;++i){auto* v=parameters.getParameter(ids[(size_t)i]);v->setValueNotifyingHost(v->convertTo0to1(p.v[i]));auto* on=parameters.getParameter(juce::String(ids[(size_t)i])+"On");on->setValueNotifyingHost(on->convertTo0to1(p.on[i]?1.f:0.f));}auto* a=parameters.getParameter(gainId);a->setValueNotifyingHost(a->convertTo0to1(p.gain));auto* t=parameters.getParameter(toneId);t->setValueNotifyingHost(t->convertTo0to1(p.tone));}
 }
 void NichodevGuitarFXAudioProcessor::resetGuitar()
 {
