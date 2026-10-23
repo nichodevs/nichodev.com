@@ -1,7 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
+#include "GuitarFxDSP.h"
 #include <array>
-#include <vector>
 #include <mutex>
 
 class NichodevGuitarFXAudioProcessor final : public juce::AudioProcessor
@@ -38,7 +38,7 @@ public:
     void randomizeGuitar();
     juce::AudioProcessorValueTreeState parameters;
 private:
-    struct State { std::vector<float> delay; int write=0; float env=0, smooth=1, filter=0, phase=0; };
+    struct State { guitarfx::dsp::DelayLine delay; float env=0, smooth=1, filter=0, phase=0; bool wasBypassed=true; };
     struct Params { std::atomic<float>* value=nullptr; std::atomic<float>* on=nullptr; };
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     void restoreOrder();
