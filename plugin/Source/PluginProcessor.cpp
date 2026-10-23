@@ -1,10 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "GuitarFxDSP.h"
-#include <algorithm>
 #include <cmath>
-#include <new>
-#include <stdexcept>
 
 const std::array<const char*,15> NichodevGuitarFXAudioProcessor::ids={"ns2","cs3","bd2","ds1","ge7","ch1","bf3","ph3","fuzz","octfuzz","vibrato","tr2","dd8","rv6","shimmer"};
 const std::array<const char*,15> NichodevGuitarFXAudioProcessor::names={"NS-2","CS-3","BD-2","DS-1","GE-7 TILT","CH-1","BF-3","PH-3","FZ-5","OCTAFUZZ","VB-2","TR-2","DD-8","RV-6","SHIMMER"};
@@ -31,22 +28,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout NichodevGuitarFXAudioProcess
 void NichodevGuitarFXAudioProcessor::prepareToPlay(double sr,int)
 {
  rate=std::isfinite(sr)&&sr>0.0?sr:44100.0;
- const auto delayLength=guitarfx::dsp::delayBufferLength(rate);
- try{
-  for(int pedal=0;pedal<pedalCount;++pedal)
-   for(auto& s:fx[(size_t)pedal]){
-    if(guitarfx::dsp::needsDelayBuffer(pedal))s.delay.prepare(delayLength);
-    else s.delay.release();
-   }
- }catch(const std::bad_alloc&){
-  for(auto& pedal:fx)for(auto& state:pedal)state.delay.release();
- }catch(const std::length_error&){
-  for(auto& pedal:fx)for(auto& state:pedal)state.delay.release();
- }
+ dspEngine.prepare(rate);
  for(int pedal=0;pedal<pedalCount;++pedal){
-  for(auto& s:fx[(size_t)pedal]){
-   s.env=0;s.smooth=1;s.filter=0;s.phase=0;
-  }
   auto& smoother=pedalValueSmoothers[(size_t)pedal];
   smoother.reset(rate,0.02);
   smoother.setCurrentAndTargetValue(pedalParams[(size_t)pedal].value->load());
@@ -59,9 +42,8 @@ void NichodevGuitarFXAudioProcessor::prepareToPlay(double sr,int)
  toneCoefficientSmoother.reset(rate,0.02);
  const float coefficient=1-std::exp(-juce::MathConstants<float>::twoPi*(1200+10500*tone->load())/(float)rate);
  toneCoefficientSmoother.setCurrentAndTargetValue(coefficient);
- ampFilter.fill(0);ampEnv.fill(0);
 }
-void NichodevGuitarFXAudioProcessor::releaseResources(){for(auto& p:fx)for(auto& s:p)s.delay.clear();}
+void NichodevGuitarFXAudioProcessor::releaseResources(){dspEngine.release();}
 bool NichodevGuitarFXAudioProcessor::isBusesLayoutSupported(const BusesLayout& l)const{auto o=l.getMainOutputChannelSet();return o==l.getMainInputChannelSet()&&(o==juce::AudioChannelSet::mono()||o==juce::AudioChannelSet::stereo());}
 void NichodevGuitarFXAudioProcessor::processBlock(juce::AudioBuffer<float>& b,juce::MidiBuffer& midi)
 {
@@ -72,45 +54,10 @@ void NichodevGuitarFXAudioProcessor::processBlock(juce::AudioBuffer<float>& b,ju
  for(int i=0;i<pedalCount;++i){pedalValueSmoothers[(size_t)i].setTargetValue(pedalParams[(size_t)i].value->load());pedalEnableSmoothers[(size_t)i].setTargetValue(pedalParams[(size_t)i].on->load()>=.5f?1.0f:0.0f);}
  auto blockOrder=lastAudioOrder;const auto revisionBefore=orderRevision.load(std::memory_order_acquire);
  if((revisionBefore&1u)==0){std::array<int,pedalCount> candidate{};for(int i=0;i<pedalCount;++i)candidate[(size_t)i]=order[(size_t)i].load(std::memory_order_relaxed);const auto revisionAfter=orderRevision.load(std::memory_order_acquire);if(revisionBefore==revisionAfter){blockOrder=candidate;lastAudioOrder=candidate;}}
- const float dcBlockCoefficient=1-std::exp(-juce::MathConstants<float>::twoPi*20.0f/(float)rate);
  for(int n=0;n<b.getNumSamples();++n){const float mg=masterSmoother.getNextValue(),g=gainSmoother.getNextValue(),toneA=toneCoefficientSmoother.getNextValue();std::array<float,pedalCount> amounts{},enabled{};for(int i=0;i<pedalCount;++i){amounts[(size_t)i]=pedalValueSmoothers[(size_t)i].getNextValue();enabled[(size_t)i]=pedalEnableSmoothers[(size_t)i].getNextValue();}
   for(int c=0;c<b.getNumChannels();++c){
-  float x=b.getSample(c,n);
-  if(!std::isfinite(x))x=0.0f;
-  for(int k=0;k<pedalCount;++k){int i=blockOrder[(size_t)k];float a=amounts[(size_t)i],enable=enabled[(size_t)i];
-   auto& s=fx[(size_t)i][(size_t)std::min(c,1)];
-   if(guitarfx::dsp::needsDelayBuffer(i)&&s.delay.size()<3)continue;
-   if(enable<=0.0f&&!pedalEnableSmoothers[(size_t)i].isSmoothing()){
-    if(!guitarfx::dsp::needsDelayBuffer(i)){
-     if(!s.wasBypassed){s.env=0;s.smooth=1;s.filter=0;s.phase=0;s.wasBypassed=true;}
-     continue;
-    }
-    s.delay.drain();
-    if(!s.wasBypassed){s.env=0;s.smooth=1;s.filter=0;s.phase=0;}
-    s.wasBypassed=true;
-    continue;
-   }
-   s.wasBypassed=false;
-   float dry=x,in=x;
-   switch(i){
-    case 0:{s.env+=(std::abs(in)>s.env?.04f:.002f)*(std::abs(in)-s.env);float target=s.env<(.012f+.11f*a)?.08f:1;s.smooth+=.004f*(target-s.smooth);x=in*s.smooth;break;}
-    case 1:{s.env+=(std::abs(in)>s.env?.03f:.003f)*(std::abs(in)-s.env);float th=.30f-.22f*a;float target=s.env>th?std::pow(th/std::max(s.env,.0001f),1-1/(1+6*a)):1;s.smooth+=.01f*(target-s.smooth);x=in*s.smooth;break;}
-    case 2:x=std::tanh(in*(1+18*a)*.75f);break;
-    case 3:x=(1+25*a)*in/(1+(1+25*a)*std::abs(in));break;
-    case 4:s.filter+=.025f*(in-s.filter);x=in+(a-.5f)*(in-s.filter)*1.6f;break;
-    case 5:case 6:
-    case 10:case 12:case 13:case 14:
-     x=guitarfx::dsp::processDelayPedal(i,in,a,rate,s.delay,s.phase,s.filter,dcBlockCoefficient);break;
-    case 7:s.phase+=juce::MathConstants<float>::twoPi*(.15f+1.4f*a)/(float)rate;s.filter+=(.015f+.02f*std::sin(s.phase))*(in-s.filter);x=.4f*in+.6f*(in-2*s.filter);break;
-    case 8:x=std::tanh(in*(1+24*a)*1.8f);break;
-    case 9:{float octave=guitarfx::dsp::removeRectifierDc(in,s.filter,dcBlockCoefficient);x=std::tanh(octave*(1+20*a)*1.8f);break;}
-    case 11:s.phase+=juce::MathConstants<float>::twoPi*(2+8*a)/(float)rate;x=in*(1-.48f*a+.48f*a*(.5f+.5f*std::sin(s.phase)));break;
-   }
-   x=guitarfx::dsp::mixEffect(dry,x,enable);
-  }
-  x=std::tanh(x*(1+g*1.5f)*(1+g*7));
-  const auto channel=(size_t)std::min(c,1);ampFilter[channel]+=toneA*(x-ampFilter[channel]);ampEnv[channel]+=.009f*(x-ampEnv[channel]);
-  x=ampFilter[channel]+(x-ampEnv[channel])*.22f;b.setSample(c,n,x*mg);
+   const auto output=dspEngine.processSample(b.getSample(c,n),c,amounts,enabled,blockOrder,mg,g,toneA);
+   b.setSample(c,n,output);
   }
  }
 }

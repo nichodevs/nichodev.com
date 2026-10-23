@@ -38,14 +38,11 @@ public:
     void randomizeGuitar();
     juce::AudioProcessorValueTreeState parameters;
 private:
-    struct State { guitarfx::dsp::DelayLine delay; float env=0, smooth=1, filter=0, phase=0; bool wasBypassed=true; };
     struct Params { std::atomic<float>* value=nullptr; std::atomic<float>* on=nullptr; };
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     void restoreOrder();
     std::array<Params,pedalCount> pedalParams {};
-    std::array<std::array<State,2>,pedalCount> fx {};
-    std::array<float,2> ampFilter {};
-    std::array<float,2> ampEnv {};
+    guitarfx::dsp::GuitarFxEngine dspEngine;
     std::array<std::atomic<int>,pedalCount> order {};
     std::atomic<float>* master=nullptr; std::atomic<float>* gain=nullptr; std::atomic<float>* tone=nullptr;
     double rate=44100.0;

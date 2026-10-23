@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(NichodevGuitarFX VERSION 0.1.0 LANGUAGES C CXX)
+project(NichodevGuitarFX VERSION 0.1.5 LANGUAGES C CXX)
 
 set(JUCE_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JUCE_BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
