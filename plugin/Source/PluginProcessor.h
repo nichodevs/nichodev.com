@@ -50,6 +50,7 @@ private:
     std::atomic<float>* master=nullptr; std::atomic<float>* gain=nullptr; std::atomic<float>* tone=nullptr;
     double rate=44100.0;
     std::array<juce::SmoothedValue<float>, pedalCount> pedalValueSmoothers;
+    std::array<juce::SmoothedValue<float>, pedalCount> pedalEnableSmoothers;
     juce::SmoothedValue<float> masterSmoother, gainSmoother, toneCoefficientSmoother;
     std::atomic<unsigned int> orderRevision{0};
     std::mutex orderWriteMutex;
