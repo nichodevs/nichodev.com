@@ -77,4 +77,16 @@ if(BUILD_TESTING)
   target_include_directories(NichodevGuitarFXDSPTests PRIVATE Source)
   target_compile_features(NichodevGuitarFXDSPTests PRIVATE cxx_std_17)
   add_test(NAME NichodevGuitarFXDSPTests COMMAND NichodevGuitarFXDSPTests)
+
+  add_executable(NichodevGuitarFXProcessorTests tests/processor_tests.cpp)
+  target_include_directories(NichodevGuitarFXProcessorTests PRIVATE
+    Source
+    $<TARGET_PROPERTY:NichodevGuitarFX,INCLUDE_DIRECTORIES>
+  )
+  target_compile_definitions(NichodevGuitarFXProcessorTests PRIVATE
+    $<TARGET_PROPERTY:NichodevGuitarFX,COMPILE_DEFINITIONS>
+  )
+  target_compile_features(NichodevGuitarFXProcessorTests PRIVATE cxx_std_17)
+  target_link_libraries(NichodevGuitarFXProcessorTests PRIVATE NichodevGuitarFX)
+  add_test(NAME NichodevGuitarFXProcessorTests COMMAND NichodevGuitarFXProcessorTests)
 endif()
