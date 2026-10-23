@@ -14,29 +14,31 @@ Os efeitos são aproximações nativas, não emulações oficiais nem uma corres
 
 ## Download e instalação
 
-Baixe o arquivo para seu sistema na [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest), na seção **Assets**. Extraia o arquivo e copie o bundle `.vst3` para uma pasta VST3 reconhecida pela DAW. No Windows, a pasta comum é `C:\Program Files\Common Files\VST3`; no Linux, use `~/.vst3` ou a pasta VST3 do sistema. Depois, solicite à DAW uma nova varredura de plugins.
+Baixe o ZIP para seu sistema na [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest), na seção **Assets**. Extraia-o e copie o bundle completo `Nichodev Guitar FX.vst3` para uma pasta VST3 reconhecida pela DAW; não copie apenas a pasta `Contents` de dentro do bundle. No Windows, a pasta compartilhada comum é `C:\Program Files\Common Files\VST3` e pode exigir permissão de administrador. No Linux, use `~/.vst3` ou a pasta VST3 do sistema. Se usar outra pasta, adicione-a à lista de busca da DAW. Após instalar, solicite uma nova varredura de plugins. Para evitar carregar uma versão antiga, remova cópias duplicadas das pastas que a DAW verifica.
+
+Se o plugin não aparecer, não produzir áudio ou gerar estalos, siga o [guia de instalação e diagnóstico](TROUBLESHOOTING.md).
 
 Os artefatos baixados diretamente de uma execução do GitHub Actions são temporários e expiram após 14 dias. O workflow de build não publica um GitHub Release; os downloads permanentes ficam anexados à versão correspondente. Veja o [processo de release](RELEASING.md).
 
 ## Compilar
 
-Requisitos: CMake 3.22 ou superior, compilador C++17 e dependências de áudio/interface do JUCE para o sistema operacional. O workflow [plugin.yml](../.github/workflows/plugin.yml) mostra as dependências usadas no Ubuntu CI.
+Requisitos: CMake 3.22 ou superior, compilador C++17 e as dependências de áudio/interface do JUCE para o sistema operacional. Na primeira configuração, o CMake baixa JUCE 9.0.4 do GitHub, portanto precisa de acesso à internet. O workflow [plugin.yml](../.github/workflows/plugin.yml) mostra as dependências Linux usadas no CI.
 
-Com JUCE já baixado, aponte `JUCE_LOCAL_PATH` para a pasta raiz:
+O caminho mais curto é deixar o CMake obter o JUCE automaticamente:
 
 ```sh
-cmake -S plugin -B build/plugin -DJUCE_LOCAL_PATH=/caminho/para/JUCE -DCMAKE_BUILD_TYPE=Release
+cmake -S plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release
 cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3
 ```
 
-No PowerShell:
+Se já tiver o JUCE no computador ou quiser usar uma cópia local, informe a pasta raiz com `JUCE_LOCAL_PATH`:
 
 ```powershell
 cmake -S plugin -B build/plugin -DJUCE_LOCAL_PATH="C:/caminho/para/JUCE" -DCMAKE_BUILD_TYPE=Release
 cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3
 ```
 
-Sem `JUCE_LOCAL_PATH`, o CMake baixa JUCE 9.0.4. O bundle gerado fica em `build/plugin/NichodevGuitarFX_artefacts/Release/VST3/` (ou na pasta de configuração correspondente).
+O bundle gerado fica em `build/plugin/NichodevGuitarFX_artefacts/Release/VST3/` (ou na pasta de configuração correspondente).
 
 ## Testes automatizados
 
@@ -47,7 +49,7 @@ cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests Ni
 ctest --test-dir build/plugin --build-config Release --output-on-failure
 ```
 
-O GitHub Actions compila o plugin e executa os dois testes em Windows e Linux. O teste do processador cobre `applyPreset` → parâmetros → `processBlock`, mas não simula o clique no seletor da interface nem carrega o bundle VST3 em uma DAW. Portanto, esses testes não cobrem automação específica de cada host e não substituem a avaliação auditiva em diferentes DAWs e taxas de amostragem.
+O GitHub Actions compila o plugin e executa os dois testes em Windows e Linux. O teste do processador cobre `applyPreset` → parâmetros → `processBlock`, mas não simula o clique no seletor da interface nem carrega o bundle VST3 em uma DAW. Portanto, esses testes não cobrem automação específica de cada host e não substituem a avaliação auditiva em diferentes DAWs e taxas de amostragem. Para uma verificação manual organizada, use o [guia de troubleshooting](TROUBLESHOOTING.md).
 
 ## Licenças
 

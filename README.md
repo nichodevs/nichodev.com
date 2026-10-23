@@ -10,7 +10,7 @@ Site estático com ferramentas de áudio para navegador e um plugin VST3 para us
 - [Onda sonora](onda/): página interativa acessada pelo ícone animado no rodapé.
 - **Nichodev Guitar FX VST3**: versão nativa da pedaleira para Windows e Linux.
 
-O botão **DOWNLOAD VST** na página inicial abre a [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest). Os arquivos de instalação estão em **Assets**. Para detalhes, instalação e compilação, consulte [plugin/README.md](plugin/README.md).
+O botão **DOWNLOAD VST** na página inicial abre a [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest). Os arquivos de instalação estão em **Assets**. Para instalação e compilação, consulte [plugin/README.md](plugin/README.md); para diagnóstico no Reaper e em outras DAWs, veja o [guia de troubleshooting](plugin/TROUBLESHOOTING.md).
 
 ## Estrutura
 
@@ -44,4 +44,4 @@ A implementação nativa e suas instruções estão em [plugin/README.md](plugin
 ## Publicação
 
 - **Releases do VST3:** os ZIPs anexados a um GitHub Release são os downloads permanentes; o botão do site aponta para o release mais recente. O workflow de build gera artefatos temporários, retidos por 14 dias, mas não cria o release. Consulte o [processo de release do plugin](plugin/RELEASING.md).
-- **Site:** o workflow `Publicar site na Hostinger` roda no GitHub Actions quando arquivos do site mudam em pushes para `main`, manualmente ou diariamente às 09:00 UTC (06:00 em Brasília). Ele valida o site e publica por SFTP na Hostinger usando os secrets `HOSTINGER_HOST`, `HOSTINGER_USERNAME`, `HOSTINGER_PASSWORD` e `HOSTINGER_KNOWN_HOSTS`. Esse workflow publica o site; as builds do plugin são distribuídas nos releases do GitHub.
+- **Site:** o workflow `Publicar site na Hostinger` publica por SFTP em pushes para `main` que alterem páginas HTML/CSS da raiz, `assets/`, `js/`, `onda/` ou `robots.txt`; também pode ser iniciado manualmente e roda diariamente às 09:00 UTC (06:00 em Brasília). Ele executa `npm run check` e uma verificação HTTP após o envio, mas não roda os testes E2E. Veja os [detalhes do deploy](DEPLOYMENT.md), inclusive os arquivos que precisam ser atualizados quando uma página ou asset novo for adicionado. As builds do plugin são distribuídas nos releases do GitHub.
