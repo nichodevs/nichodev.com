@@ -19,6 +19,12 @@ inline std::size_t delayBufferLength(double sampleRate) noexcept
     return static_cast<std::size_t>(std::ceil(sampleRate * 0.75)) + 2;
 }
 
+inline float mixEffect(float dry, float wet, float enabled) noexcept
+{
+    const float mix = std::clamp(enabled, 0.0f, 1.0f);
+    return dry + (wet - dry) * mix;
+}
+
 inline float removeRectifierDc(float input, float& lowpass, float coefficient) noexcept
 {
     const float rectified = std::abs(input);
