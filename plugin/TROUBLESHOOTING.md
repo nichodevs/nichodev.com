@@ -1,11 +1,11 @@
 # Instalação e diagnóstico do VST3
 
-Este guia ajuda a confirmar a instalação do Nichodev Guitar FX e a reunir informações úteis quando uma DAW não detecta o plugin, não produz áudio ou apresenta estalos. Os nomes dos menus variam entre versões da DAW.
+Este guia ajuda a confirmar a instalação do Nichodev Guitar FX e do Nichodev Deluxe 65 Amp e a reunir informações úteis quando uma DAW não detecta os plugins, não produz áudio ou apresenta estalos. Os nomes dos menus variam entre versões da DAW.
 
 ## Instalar ou atualizar
 
 1. Baixe o ZIP de Windows ou Linux na [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest). Use os arquivos em **Assets** para uma instalação permanente; artefatos baixados de uma execução do GitHub Actions expiram após 14 dias.
-2. Feche a DAW, extraia o ZIP e copie o bundle completo `Nichodev Guitar FX.vst3` para uma pasta VST3 reconhecida. Preserve a estrutura interna do bundle; não copie apenas `Contents`.
+2. Feche a DAW, extraia o ZIP e copie os bundles completos que quiser instalar (`Nichodev Guitar FX.vst3` e/ou `Nichodev Deluxe 65 Amp.vst3`) para uma pasta VST3 reconhecida. Preserve a estrutura interna de cada bundle; não copie apenas `Contents`.
 3. No Windows, a pasta compartilhada comum é `C:\Program Files\Common Files\VST3`, que pode exigir permissão de administrador. No Linux, a pasta de usuário comum é `~/.vst3`. Também é possível usar outra pasta gravável, desde que esteja configurada na busca de plugins da DAW.
 4. Evite cópias antigas em outras pastas VST3 que a DAW também verifica. Reabra a DAW e faça uma nova varredura dos plugins. Se o VST3 não aparecer, confira as pastas configuradas e solicite uma varredura completa.
 
@@ -17,6 +17,13 @@ Este guia ajuda a confirmar a instalação do Nichodev Guitar FX e a reunir info
 4. Para testar o preset **Space Delay**, selecione-o novamente e confirme visualmente que **DD-8** e **RV-6** estão ligados e com seus níveis acima de zero. Confira que o NS-2 não está cortando as notas suaves.
 5. Compare a reprodução com o plugin habilitado e em bypass. Se o sinal some apenas com o plugin ligado, registre o preset, os pedais ativos e os níveis usados.
 6. Salve uma cópia do projeto antes de alterar a cadeia ou os parâmetros, para poder voltar ao estado original.
+
+## Deluxe 65 Amp
+
+1. Confirme que a entrada de áudio chega à track e que o canal selecionado é **Normal / Clean** ou **Vibrato / Dirty**. No segundo canal, teste **Input I** antes de usar **Input II (-6 dB)**.
+2. Ajuste **Normal Volume** ou **Vibrato Drive**, depois suba **Master**. Com Master em zero, a saída fica muda.
+3. O reverb de mola e o vibrato de afinação estão associados ao canal **Vibrato / Dirty**. Para testar vibrato, ligue **PITCH VIBRATO** e ajuste **Vibrato Depth** acima de zero; para o reverb, aumente **Spring Reverb**.
+4. Compare o plugin ativo com o bypass da DAW. Se o medidor antes do plugin se move, mas a saída some somente com o Deluxe 65 ativo, registre canal, entrada e controles usados.
 
 ## Estalos ou interrupções
 
