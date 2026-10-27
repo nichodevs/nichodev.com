@@ -18,7 +18,8 @@ public:
                           juce::Slider::SliderStyle, juce::Slider&) override;
 };
 
-class NichodevGuitarFXAudioProcessorEditor final : public juce::AudioProcessorEditor
+class NichodevGuitarFXAudioProcessorEditor final : public juce::AudioProcessorEditor,
+                                                   private juce::Timer
 {
 public:
     explicit NichodevGuitarFXAudioProcessorEditor(NichodevGuitarFXAudioProcessor&);
@@ -26,6 +27,8 @@ public:
     void paint(juce::Graphics&) override;
     void resized() override;
 private:
+    void timerCallback() override;
+    unsigned int displayedOrderRevision = 0;
     using SliderAttachment=juce::AudioProcessorValueTreeState::SliderAttachment;
     using ButtonAttachment=juce::AudioProcessorValueTreeState::ButtonAttachment;
     GuitarFxRetroLookAndFeel retroLookAndFeel;

@@ -23,7 +23,8 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 4.0; }
+    // RV-6 tails outlast 30 s when reordered before high-gain pedals.
+    double getTailLengthSeconds() const override { return 60.0; }
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
     void setCurrentProgram(int) override {}
@@ -33,6 +34,7 @@ public:
     void setStateInformation(const void*, int) override;
     void movePedal(int, int);
     int getPedalAtPosition(int) const;
+    unsigned int getOrderRevision() const noexcept { return orderRevision.load(std::memory_order_acquire); }
     void applyPreset(const juce::String&);
     void resetGuitar();
     void randomizeGuitar();

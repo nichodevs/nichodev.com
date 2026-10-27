@@ -240,12 +240,14 @@ NichodevGuitarFXAudioProcessorEditor::NichodevGuitarFXAudioProcessorEditor(
             case 6: processor.applyPreset("space"); break;
             default: break;
         }
+        presets.setSelectedId(1, juce::dontSendNotification);
     };
     randomButton.onClick = [this] { processor.randomizeGuitar(); };
     resetButton.onClick = [this]
     {
         processor.resetGuitar();
         presets.setSelectedId(1, juce::dontSendNotification);
+        resized();
     };
 
     for (int i = 0; i < NichodevGuitarFXAudioProcessor::pedalCount; ++i)
@@ -278,11 +280,20 @@ NichodevGuitarFXAudioProcessorEditor::NichodevGuitarFXAudioProcessorEditor(
     setResizable(true, true);
     setResizeLimits(760, 600, 1280, 1120);
     setSize(760, 600);
+    startTimerHz(30);
 }
 
 NichodevGuitarFXAudioProcessorEditor::~NichodevGuitarFXAudioProcessorEditor()
 {
+    stopTimer();
     setLookAndFeel(nullptr);
+}
+
+void NichodevGuitarFXAudioProcessorEditor::timerCallback()
+{
+    const auto revision = processor.getOrderRevision();
+    if ((revision & 1u) == 0 && revision != displayedOrderRevision)
+        resized();
 }
 
 void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
@@ -379,6 +390,7 @@ void NichodevGuitarFXAudioProcessorEditor::paint(juce::Graphics& g)
 
 void NichodevGuitarFXAudioProcessorEditor::resized()
 {
+    const auto revision = processor.getOrderRevision();
     const int width = getWidth();
     const int controlX = 205;
     const int controlW = (width - controlX - 32) / 3;
@@ -416,4 +428,5 @@ void NichodevGuitarFXAudioProcessorEditor::resized()
         upButtons[index].setBounds(x + colW - 58, y + 2, 24, rowH - 13);
         downButtons[index].setBounds(x + colW - 29, y + 2, 24, rowH - 13);
     }
+    displayedOrderRevision = revision;
 }

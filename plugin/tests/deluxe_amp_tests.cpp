@@ -164,6 +164,49 @@ void testTruePitchVibrato()
            "modulated delay varies pitch instead of only changing amplitude");
 }
 
+
+void testNormalVolumeZero()
+{
+    constexpr double sampleRate = 48000.0;
+    deluxe65::dsp::Deluxe65Engine engine;
+    engine.prepare(sampleRate);
+    deluxe65::dsp::Controls controls;
+    controls.normalVolume = 0.0f;
+    controls.master = 7.0f;
+    controls.reverb = 0.0f;
+
+    float peak = 0.0f;
+    for (int sample = 0; sample < 12000; ++sample)
+    {
+        const auto input = 0.35f * std::sin(6.28318530718f * 220.0f
+                                             * static_cast<float>(sample / sampleRate));
+        peak = std::max(peak, std::abs(engine.processSample(input, 0, controls)));
+    }
+    expect(peak < 1.0e-7f, "Normal Volume zero silences the Clean channel");
+}
+
+void testVibratoDepthContinuity()
+{
+    constexpr double sampleRate = 48000.0;
+    deluxe65::dsp::PitchVibrato zeroDepth;
+    deluxe65::dsp::PitchVibrato smallDepth;
+    zeroDepth.prepare(sampleRate);
+    smallDepth.prepare(sampleRate);
+
+    float difference = 0.0f;
+    for (int sample = 0; sample < 12000; ++sample)
+    {
+        const auto input = 0.5f * std::sin(6.28318530718f * 100.0f
+                                            * static_cast<float>(sample / sampleRate));
+        const auto zero = zeroDepth.process(input, 0.0f, 4.0f);
+        const auto small = smallDepth.process(input, 0.00011f, 4.0f);
+        if (sample > 1000)
+            difference = std::max(difference, std::abs(zero - small));
+    }
+    expect(difference < 0.001f,
+           "crossing zero vibrato depth keeps the same continuous delayed path");
+}
+
 void testSpringReverbTail()
 {
     constexpr double sampleRate = 48000.0;
@@ -187,6 +230,8 @@ int main()
     testChannelVoicings();
     testSecondInputAttenuation();
     testTruePitchVibrato();
+    testVibratoDepthContinuity();
+    testNormalVolumeZero();
     testSpringReverbTail();
 
     if (failures != 0)

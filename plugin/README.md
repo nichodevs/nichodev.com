@@ -12,11 +12,11 @@ Também inclui controles MASTER, AMP GAIN e AMP TONE, cinco presets (Clean Pixel
 
 ## Som e limitações
 
-Os efeitos são aproximações nativas, não emulações oficiais nem uma correspondência idêntica ao processamento Web Audio do Guitar FX LAB. O GE-7 TILT oferece um controle de inclinação tonal; não é um equalizador gráfico de sete bandas. Afinador, seleção de microfone/dispositivo, gravação e importação de arquivos são recursos do site, não deste plugin.
+Os efeitos são aproximações nativas, não emulações oficiais nem uma correspondência idêntica ao processamento Web Audio do Guitar FX LAB. O GE-7 TILT oferece um controle de inclinação tonal; não é um equalizador gráfico de sete bandas. Afinador, seleção de microfone/dispositivo, gravação e importação de arquivos são recursos do site, não deste plugin. O Guitar FX declara até 60 segundos de cauda para acomodar reverb seguido de pedais de ganho alto; hosts que usam esse metadado podem acrescentar esse tempo à renderização.
 
 ## Download e instalação
 
-Baixe o ZIP para seu sistema na [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest), na seção **Assets**. O pacote contém os bundles completos `Nichodev Guitar FX.vst3` e `Nichodev Deluxe 65 Amp.vst3`; copie os plugins que quiser usar para uma pasta VST3 reconhecida pela DAW. Não copie apenas a pasta `Contents` de dentro de um bundle. No Windows, a pasta compartilhada comum é `C:\Program Files\Common Files\VST3` e pode exigir permissão de administrador. No Linux, use `~/.vst3` ou a pasta VST3 do sistema. Se usar outra pasta, adicione-a à lista de busca da DAW. Após instalar, solicite uma nova varredura de plugins. Para evitar carregar uma versão antiga, remova cópias duplicadas das pastas que a DAW verifica.
+Baixe o ZIP para seu sistema na [página de releases](https://github.com/nichodevs/nichodev.com/releases), na seção **Assets**. Confira os plugins anunciados na versão: o release v0.1.6 contém apenas o Guitar FX. Os pacotes `NichodevVST3-*` da suite contêm os bundles completos `Nichodev Guitar FX.vst3` e `Nichodev Deluxe 65 Amp.vst3`; enquanto um release da suite não estiver publicado, obtenha-os nos artefatos de uma execução bem-sucedida da `main` no [workflow dos plugins](https://github.com/nichodevs/nichodev.com/actions/workflows/plugin.yml). Copie os plugins que quiser usar para uma pasta VST3 reconhecida pela DAW. Não copie apenas a pasta `Contents` de dentro de um bundle. No Windows, a pasta compartilhada comum é `C:\Program Files\Common Files\VST3` e pode exigir permissão de administrador. No Linux, use `~/.vst3` ou a pasta VST3 do sistema. Se usar outra pasta, adicione-a à lista de busca da DAW. Após instalar, solicite uma nova varredura de plugins. Para evitar carregar uma versão antiga, remova cópias duplicadas das pastas que a DAW verifica.
 
 Se o plugin não aparecer, não produzir áudio ou gerar estalos, siga o [guia de instalação e diagnóstico](TROUBLESHOOTING.md).
 
@@ -51,7 +51,7 @@ cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests Ni
 ctest --test-dir build/plugin --build-config Release --output-on-failure
 ```
 
-O GitHub Actions compila os dois plugins e executa os testes DSP e de integração em Windows e Linux. O teste do Guitar FX cobre `applyPreset` → parâmetros → `processBlock`; os testes do Deluxe Amp exercitam os dois canais, entradas atenuadas, estabilidade em diferentes taxas, cauda do reverb e variação de pitch. Os testes automatizados não substituem a avaliação auditiva em diferentes DAWs e interfaces. Para uma verificação manual organizada do Guitar FX, use o [guia de troubleshooting](TROUBLESHOOTING.md).
+O GitHub Actions compila os dois plugins e executa os testes DSP e de integração em Windows e Linux. O teste do Guitar FX cobre `applyPreset` → parâmetros → `processBlock`; os testes do Deluxe Amp exercitam os dois canais, entradas atenuadas, estabilidade em diferentes taxas, cauda do reverb e variação de pitch. As regressões também cobrem volume Clean em zero, continuidade do vibrato ao atravessar profundidade zero, restauração da ordem dos pedais e o decaimento máximo após os 60 segundos de cauda declarados pelo Guitar FX. Os testes automatizados não substituem a avaliação auditiva em diferentes DAWs e interfaces. Para uma verificação manual organizada do Guitar FX, use o [guia de troubleshooting](TROUBLESHOOTING.md).
 
 ## Licenças
 
