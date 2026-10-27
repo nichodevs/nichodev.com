@@ -256,6 +256,17 @@ public:
         rate = std::isfinite(sampleRate) && sampleRate > 0.0 ? sampleRate : 44100.0;
         dcBlockCoefficient = 1.0f
             - std::exp(-6.28318530717958647692f * 20.0f / static_cast<float>(rate));
+        const auto atRate = [this](float coefficient) {
+            return static_cast<float>(-std::expm1(std::log1p(-static_cast<double>(coefficient)) * 44100.0 / rate));
+        };
+        gateAttack = atRate(.04f); gateRelease = atRate(.002f); gateSmoothing = atRate(.004f);
+        compressorAttack = atRate(.03f); compressorRelease = atRate(.003f); compressorSmoothing = atRate(.01f);
+        eqCoefficient = atRate(.025f); ampEnvelopeCoefficient = atRate(.009f);
+        // Tabulate the moving pole off-thread instead of evaluating an exponential per sample.
+        for (std::size_t i = 0; i < phaserCoefficients.size(); ++i)
+            phaserCoefficients[i] = atRate(phaserFilterCoefficient(
+                6.28318530717958647692f * static_cast<float>(i) / 256.0f));
+        phaserCoefficients.back() = phaserCoefficients.front();
         try
         {
             for (int pedal = 0; pedal < pedalCount; ++pedal)
@@ -347,23 +358,23 @@ public:
             {
                 case 0:
                 {
-                    state.env += (std::abs(in) > state.env ? .04f : .002f)
+                    state.env += (std::abs(in) > state.env ? gateAttack : gateRelease)
                         * (std::abs(in) - state.env);
                     const float target = state.env < (.012f + .11f * amount) ? .08f : 1.0f;
-                    state.smooth += .004f * (target - state.smooth);
+                    state.smooth += gateSmoothing * (target - state.smooth);
                     wet = in * state.smooth;
                     break;
                 }
                 case 1:
                 {
-                    state.env += (std::abs(in) > state.env ? .03f : .003f)
+                    state.env += (std::abs(in) > state.env ? compressorAttack : compressorRelease)
                         * (std::abs(in) - state.env);
                     const float threshold = .30f - .22f * amount;
                     const float target = state.env > threshold
                         ? std::pow(threshold / std::max(state.env, .0001f),
                                    1.0f - 1.0f / (1.0f + 6.0f * amount))
                         : 1.0f;
-                    state.smooth += .01f * (target - state.smooth);
+                    state.smooth += compressorSmoothing * (target - state.smooth);
                     wet = in * state.smooth;
                     break;
                 }
@@ -375,7 +386,7 @@ public:
                     break;
                 }
                 case 4:
-                    state.filter += .025f * (in - state.filter);
+                    state.filter += eqCoefficient * (in - state.filter);
                     wet = in + (amount - .5f) * (in - state.filter) * 1.6f;
                     break;
                 case 5:
@@ -388,13 +399,19 @@ public:
                                             state.phase, state.filter, dcBlockCoefficient);
                     break;
                 case 7:
+                {
                     state.phase += 6.28318530717958647692f * (.15f + 1.4f * amount)
                         / static_cast<float>(rate);
                     if (state.phase > 6.28318530717958647692f)
                         state.phase -= 6.28318530717958647692f;
-                    state.filter += phaserFilterCoefficient(state.phase) * (in - state.filter);
+                    if (!std::isfinite(state.phase)) state.phase = 0.0f;
+                    const auto position = std::clamp(state.phase / 6.28318530717958647692f, 0.0f, 1.0f) * 256.0f;
+                    const auto phaseIndex = std::min(static_cast<std::size_t>(position), phaserCoefficients.size() - 2);
+                    const auto coefficient = phaserCoefficients[phaseIndex] + (phaserCoefficients[phaseIndex + 1] - phaserCoefficients[phaseIndex]) * (position - static_cast<float>(phaseIndex));
+                    state.filter += coefficient * (in - state.filter);
                     wet = .4f * in + .6f * (in - 2.0f * state.filter);
                     break;
+                }
                 case 8: wet = std::tanh(in * (1.0f + 24.0f * amount) * 1.8f); break;
                 case 9:
                 {
@@ -419,7 +436,7 @@ public:
         float output = std::tanh(input * (1.0f + gain * 1.5f) * (1.0f + gain * 7.0f));
         if (!std::isfinite(output)) output = 0.0f;
         ampFilter[channelIndex] += toneCoefficient * (output - ampFilter[channelIndex]);
-        ampEnv[channelIndex] += .009f * (output - ampEnv[channelIndex]);
+        ampEnv[channelIndex] += ampEnvelopeCoefficient * (output - ampEnv[channelIndex]);
         output = ampFilter[channelIndex] + (output - ampEnv[channelIndex]) * .22f;
         output *= master;
         return std::isfinite(output) ? output : 0.0f;
@@ -447,6 +464,10 @@ private:
     std::array<float, 2> ampEnv {};
     double rate = 44100.0;
     float dcBlockCoefficient = 0.0f;
+    float gateAttack = .04f, gateRelease = .002f, gateSmoothing = .004f;
+    float compressorAttack = .03f, compressorRelease = .003f, compressorSmoothing = .01f;
+    float eqCoefficient = .025f, ampEnvelopeCoefficient = .009f;
+    std::array<float, 257> phaserCoefficients {};
 };
 
 template <std::size_t Size>

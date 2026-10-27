@@ -249,14 +249,19 @@ public:
         const auto inputGain = 1.0f - inputTwo * 0.4988128f;
         const auto source = input * inputGain;
 
-        const auto normalVolume = std::clamp(finiteOr(controls.normalVolume), 0.0f, 10.0f);
-        const auto normalDrive = 1.2f + normalVolume * 0.38f;
-        // Keep the default 5.5 output level while allowing zero volume to mute.
-        const auto clean = tubeStage(source, normalDrive, 0.045f) * (normalVolume / 5.5f);
-
-        const auto dirtyGain = std::clamp(finiteOr(controls.vibratoDrive), 0.0f, 10.0f);
-        auto dirty = tubeStage(source, 1.6f + dirtyGain * 0.83f, 0.075f);
-        dirty = tubeStage(dirty, 1.15f + dirtyGain * 0.43f, 0.035f);
+        float clean = 0.0f, dirty = 0.0f;
+        if (channelMix < 1.0f)
+        {
+            const auto normalVolume = std::clamp(finiteOr(controls.normalVolume), 0.0f, 10.0f);
+            const auto normalDrive = 1.2f + normalVolume * 0.38f;
+            clean = tubeStage(source, normalDrive, 0.045f) * (normalVolume / 5.5f);
+        }
+        if (channelMix > 0.0f)
+        {
+            const auto dirtyGain = std::clamp(finiteOr(controls.vibratoDrive), 0.0f, 10.0f);
+            dirty = tubeStage(source, 1.6f + dirtyGain * 0.83f, 0.075f);
+            dirty = tubeStage(dirty, 1.15f + dirtyGain * 0.43f, 0.035f);
+        }
         auto signal = clean + (dirty - clean) * channelMix;
 
         const auto vibratoDepth = std::clamp(finiteOr(controls.vibratoDepth) / 10.0f, 0.0f, 1.0f);

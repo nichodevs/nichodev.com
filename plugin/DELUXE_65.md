@@ -11,6 +11,8 @@ O seletor oferece dois canais:
 - **Normal / Clean**: volume com saturação suave e resposta mais limpa.
 - **Vibrato / Dirty**: maior ganho, duas etapas de saturação e acesso ao reverb de mola e ao vibrato de afinação.
 
+Nas posições Clean e Dirty, apenas o caminho de saturação audível é calculado; durante os 20 ms de transição suavizada, ambos são calculados. Isso preserva a mistura sem repetir o trabalho do canal inaudível.
+
 Cada canal tem duas entradas selecionáveis. **Input I** usa o nível normal; **Input II** aplica aproximadamente -6 dB na entrada. Os quatro botões de canal/entrada são formados pelas duas seleções, como no painel do amplificador de referência.
 
 ## Controles

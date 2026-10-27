@@ -331,6 +331,45 @@ int main()
     expect(std::abs(finalOutput) < 1.0e-5f,
            "rectifier DC blocker returns to silence after an input stops");
 
+
+    {
+        const auto measure = [](double sampleRate, int pedal) {
+            guitarfx::dsp::GuitarFxEngine engine;
+            engine.prepare(sampleRate);
+            std::array<float, 15> amounts{}, enabled{};
+            std::array<int, 15> order{};
+            std::iota(order.begin(), order.end(), 0);
+            amounts[static_cast<std::size_t>(pedal)] = 1.0f;
+            enabled[static_cast<std::size_t>(pedal)] = 1.0f;
+            const auto tone = 1.0f - std::exp(-6.28318530718f * 6000.0f / static_cast<float>(sampleRate));
+            double energy = 0.0;
+            int count = 0;
+            for (int sample = 0; sample < static_cast<int>(sampleRate * .3); ++sample)
+            {
+                const auto time = sample / sampleRate;
+                const auto amplitude = pedal == 4 ? .05f : time < .1 ? .8f : .035f;
+                const auto input = amplitude * std::sin(6.28318530718 * 250.0 * time);
+                const auto output = engine.processSample(static_cast<float>(input), 0, amounts, enabled, order, 1.0f, 0.0f, tone);
+                const bool window = pedal == 4 ? time > .2 : time >= .105 && time < .12;
+                if (window) { energy += output * output; ++count; }
+            }
+            return std::sqrt(energy / count);
+        };
+        for (const int pedal : {0, 1, 4, 7})
+        {
+            const auto reference = measure(44100.0, pedal);
+            for (const double sampleRate : {48000.0, 96000.0, 192000.0})
+            {
+                const auto actual = measure(sampleRate, pedal);
+                const auto ratio = actual / reference;
+                if (std::abs(ratio - 1.0) >= .04)
+                    std::cerr << "sample-rate response pedal=" << pedal << " rate=" << sampleRate << " ratio=" << ratio << '\n';
+                expect(std::abs(ratio - 1.0) < .04,
+                       "gate, compressor, EQ and phaser retain their time/frequency response across sample rates");
+            }
+        }
+    }
+
     if (failures != 0)
         return 1;
 

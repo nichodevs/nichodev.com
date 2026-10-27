@@ -14,7 +14,9 @@ As execuções compartilham o grupo `hostinger-production`: somente um envio pod
 
 ## Validações e envio
 
-Antes do SFTP, o workflow executa `npm run check`, confere os secrets de conexão e envia uma lista explícita de arquivos para a pasta pública do domínio. Depois, faz requisições HTTP às páginas e assets publicados. Ele não executa `npm run test:e2e`; esses testes rodam no workflow **Validar site**.
+O job de publicação depende de **Validar site**, chamado como workflow reutilizável no mesmo commit da execução. Ele instala as dependências do lockfile e executa `npm run check` e `npm run test:e2e`. Qualquer falha impede o job SFTP, inclusive em execuções manuais e agendadas. Os PRs usam esse mesmo workflow de validação; a publicação faz sua própria validação antes do envio, sem uma segunda execução independente por push.
+
+Após a validação, o job SFTP confere os secrets de conexão e envia uma lista explícita de arquivos para a pasta pública do domínio. Depois, faz requisições HTTP às páginas e assets publicados.
 
 Antes do primeiro arquivo, o cliente tenta criar as pastas e depois verifica cada destino com falhas fatais habilitadas. Isso permite reutilizar diretórios existentes sem esconder falhas de acesso ou de upload.
 

@@ -18,7 +18,7 @@ function getMenuAudioContext() {
 
 function startMenuSoundOnPointerDown(button, playSound) {
   button.addEventListener("pointerdown", (event) => {
-    if (!event.isPrimary || event.button !== 0) return;
+    if (!event.isPrimary || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
 
     try {
       const audio = getMenuAudioContext();
@@ -172,6 +172,7 @@ function navigateWithSound(button, playSound, soundDuration, soundName) {
   startMenuSoundOnPointerDown(button, playSound);
 
   button.addEventListener("click", (event) => {
+    if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     const destination = button.href;
     let audio;

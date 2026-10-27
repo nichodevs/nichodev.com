@@ -18,11 +18,13 @@ const PEDALS = [
   {id:"rv6", name:"RV-6", type:"reverb", desc:"Reverb", color:"white", control:"Level"},
   {id:"shimmer", name:"SHIMMER", type:"shimmer", desc:"Shimmer Reverb", color:"purple", control:"Shimmer"}
 ];
-const values = Object.fromEntries(PEDALS.map(p => [p.id, ({ns2:35,cs3:18,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0,shimmer:0})[p.id]]));
-const enabled = Object.fromEntries(PEDALS.map(p => [p.id, ["ge7"].includes(p.id)]));
+const DEFAULT_VALUES = {ns2:35,cs3:18,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0,shimmer:0};
+const DEFAULT_ENABLED = ["ge7"];
+const values = {...DEFAULT_VALUES};
+const enabled = Object.fromEntries(PEDALS.map(p => [p.id, DEFAULT_ENABLED.includes(p.id)]));
 let order = PEDALS.map(p => p.id);
 let ctx = null, inputNode = null, inputStream = null, mediaNode = null, fileUrl = null;
-let analyser = null, master = null, recordDestination = null, activeStages = [];
+let analyser = null, master = null, recordDestination = null, activeStages = [], chainSource = null;
 let recorder = null, recordChunks = [], recordUrl = null, recordStarted = 0, recordTicker = 0;
 let rawRecordingSource = null, rawRecordingDestination = null;
 let recordedMediaNode = null, recordedPlaybackGain = null, recordedPlaybackStages = [];
@@ -75,11 +77,19 @@ function curveFor(type,amount){
   }
   return curve;
 }
+function setAudioParam(param,value){param.setTargetAtTime(value,ctx.currentTime,.02);}
+function stagesMatch(stages){
+  return stages.length===order.length+1&&order.every((id,index)=>stages[index].pedalId===id&&stages[index].on===enabled[id]);
+}
+function updatePedalParameters(id){
+  for(const stage of [...activeStages,...recordedPlaybackStages])if(stage.pedalId===id)stage.update();
+}
 function makeStage(pedalId){
   const def=PEDALS.find(p=>p.id===pedalId), type=def.type, amount=values[pedalId]/100;
   const input=ctx.createGain(), output=ctx.createGain(), nodes=[input,output], oscillators=[];
   const connect=(a,b)=>a.connect(b);
-  if(!enabled[pedalId]){connect(input,output);return{input,output,nodes,oscillators};}
+  if(!enabled[pedalId]){connect(input,output);return{input,output,nodes,oscillators,pedalId,on:false,update(){}};}
+  let update = () => {}, lastAmount = amount;
   if(type==="gate"){
     const rectifier=ctx.createWaveShaper(),envelope=ctx.createBiquadFilter(),gate=ctx.createWaveShaper(),smooth=ctx.createBiquadFilter(),limit=ctx.createWaveShaper();
     const absolute=new Float32Array(2049),opening=new Float32Array(16385),threshold=Math.pow(10,(-60+amount*36)/20);
@@ -96,19 +106,26 @@ function makeStage(pedalId){
     envelope.Q.value=smooth.Q.value=-6.1;output.gain.value=0;
     // Clamp the smoothed control so filter overshoot cannot boost or invert the signal.
     limit.curve=new Float32Array([0,0,1]);
+    update = next => {
+      const threshold=Math.pow(10,(-60+next*36)/20),curve=new Float32Array(opening.length);
+      for(let i=0;i<curve.length;i++){const level=i*2/(curve.length-1)-1,t=Math.max(0,Math.min(1,(level-threshold*.5)/threshold));curve[i]=t*t*(3-2*t);}
+      gate.curve=curve;
+    };
     nodes.push(rectifier,envelope,gate,smooth,limit);
     connect(input,output);connect(input,rectifier);connect(rectifier,envelope);connect(envelope,gate);connect(gate,smooth);connect(smooth,limit);connect(limit,output.gain);
   }else if(type==="compressor"){
     const comp=ctx.createDynamicsCompressor(); nodes.push(comp);
     comp.threshold.value=-16-amount*22;comp.knee.value=8;comp.ratio.value=1+amount*6;comp.attack.value=.008;comp.release.value=.08+amount*.12;
+    update=next=>{setAudioParam(comp.threshold,-16-next*22);setAudioParam(comp.ratio,1+next*6);setAudioParam(comp.release,.08+next*.12);};
     connect(input,comp);connect(comp,output);
   }else if(type==="overdrive"||type==="distortion"||type==="fuzz"||type==="octfuzz"){
-    const shaper=ctx.createWaveShaper();shaper.curve=curveFor(type,amount);shaper.oversample="4x";nodes.push(shaper);connect(input,shaper);connect(shaper,output);
+    const shaper=ctx.createWaveShaper();shaper.curve=curveFor(type,amount);shaper.oversample="4x";update=next=>{shaper.curve=curveFor(type,next);};nodes.push(shaper);connect(input,shaper);connect(shaper,output);
   }else if(type==="eq"){
     const low=ctx.createBiquadFilter(),mid=ctx.createBiquadFilter(),high=ctx.createBiquadFilter();
     low.type="lowshelf";low.frequency.value=160;low.gain.value=(amount-.5)*12;
     mid.type="peaking";mid.frequency.value=950;mid.Q.value=1;mid.gain.value=(amount-.5)*10;
     high.type="highshelf";high.frequency.value=3200;high.gain.value=(amount-.5)*14;
+    update=next=>{setAudioParam(low.gain,(next-.5)*12);setAudioParam(mid.gain,(next-.5)*10);setAudioParam(high.gain,(next-.5)*14);};
     nodes.push(low,mid,high);connect(input,low);connect(low,mid);connect(mid,high);connect(high,output);
   }else if(type==="chorus"||type==="flanger"){
     const dry=ctx.createGain(),wet=ctx.createGain(),delay=ctx.createDelay(.08),lfo=ctx.createOscillator(),depth=ctx.createGain();
@@ -116,66 +133,89 @@ function makeStage(pedalId){
     lfo.frequency.value=type==="chorus"?.7+.8*amount:.15+1.1*amount;
     depth.gain.value=type==="chorus"?.008*amount:.0035*amount;
     wet.gain.value=.25+.45*amount; lfo.connect(depth);depth.connect(delay.delayTime);lfo.start();
+    update=next=>{setAudioParam(lfo.frequency,type==="chorus"?.7+.8*next:.15+1.1*next);setAudioParam(depth.gain,(type==="chorus"?.008:.0035)*next);setAudioParam(wet.gain,.25+.45*next);};
     nodes.push(dry,wet,delay,depth);oscillators.push(lfo);connect(input,dry);connect(dry,output);connect(input,delay);connect(delay,wet);connect(wet,output);
   }else if(type==="phaser"){
     const dry=ctx.createGain(),wet=ctx.createGain(),filters=[0,1,2,3].map(()=>ctx.createBiquadFilter()),lfo=ctx.createOscillator(),depth=ctx.createGain();
     filters.forEach((f,i)=>{f.type="allpass";f.frequency.value=350+i*240;f.Q.value=.8;});
     lfo.frequency.value=.15+amount*1.4;depth.gain.value=amount*900;lfo.connect(depth);filters.forEach(f=>depth.connect(f.frequency));lfo.start();wet.gain.value=.6;
+    update=next=>{setAudioParam(lfo.frequency,.15+next*1.4);setAudioParam(depth.gain,next*900);};
     nodes.push(dry,wet,...filters,depth);oscillators.push(lfo);connect(input,dry);connect(dry,output);connect(input,filters[0]);filters.forEach((f,i)=>connect(f,filters[i+1]||wet));connect(wet,output);
   }else if(type==="vibrato"){
     const delay=ctx.createDelay(.04),lfo=ctx.createOscillator(),depth=ctx.createGain();
     delay.delayTime.value=.012;lfo.frequency.value=.8+amount*5;depth.gain.value=.0006+amount*.006;
     lfo.connect(depth);depth.connect(delay.delayTime);lfo.start();
+    update=next=>{setAudioParam(lfo.frequency,.8+next*5);setAudioParam(depth.gain,.0006+next*.006);};
     nodes.push(delay,depth);oscillators.push(lfo);connect(input,delay);connect(delay,output);
   }else if(type==="tremolo"){
     const gain=ctx.createGain(),lfo=ctx.createOscillator(),depth=ctx.createGain();
     lfo.type="square";lfo.frequency.value=2+amount*8;depth.gain.value=.48*amount;gain.gain.value=1-depth.gain.value;lfo.connect(depth);depth.connect(gain.gain);lfo.start();
+    update=next=>{setAudioParam(lfo.frequency,2+next*8);setAudioParam(depth.gain,.48*next);setAudioParam(gain.gain,1-.48*next);};
     nodes.push(gain,depth);oscillators.push(lfo);connect(input,gain);connect(gain,output);
   }else if(type==="delay"){
     const dry=ctx.createGain(),wet=ctx.createGain(),delay=ctx.createDelay(1.2),feedback=ctx.createGain();
     delay.delayTime.value=.09+amount*.32;feedback.gain.value=Math.min(.42,amount*.48);wet.gain.value=.08+amount*.3;
+    update=next=>{setAudioParam(delay.delayTime,.09+next*.32);setAudioParam(feedback.gain,Math.min(.42,next*.48));setAudioParam(wet.gain,.08+next*.3);};
     nodes.push(dry,wet,delay,feedback);connect(input,dry);connect(dry,output);connect(input,delay);connect(delay,wet);connect(wet,output);connect(delay,feedback);connect(feedback,delay);
   }else if(type==="reverb"){
-    const dry=ctx.createGain(),wet=ctx.createGain(),convolver=ctx.createConvolver(),buffer=ctx.createBuffer(2,Math.floor(ctx.sampleRate*(.65+amount*1.35)),ctx.sampleRate);
+    const dry=ctx.createGain(),wet=ctx.createGain(),convolver=ctx.createConvolver(),buffer=ctx.createBuffer(2,Math.floor(ctx.sampleRate*2),ctx.sampleRate);
     for(let ch=0;ch<2;ch++){const data=buffer.getChannelData(ch);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,3.6);}
-    convolver.buffer=buffer;wet.gain.value=.04+amount*.34;nodes.push(dry,wet,convolver);connect(input,dry);connect(dry,output);connect(input,convolver);connect(convolver,wet);connect(wet,output);
+    convolver.buffer=buffer;wet.gain.value=.04+amount*.34;update=next=>setAudioParam(wet.gain,.04+next*.34);nodes.push(dry,wet,convolver);connect(input,dry);connect(dry,output);connect(input,convolver);connect(convolver,wet);connect(wet,output);
   }else if(type==="shimmer"){
     const dry=ctx.createGain(),wet=ctx.createGain(),shifter=ctx.createWaveShaper(),highpass=ctx.createBiquadFilter(),convolver=ctx.createConvolver();
     const curve=new Float32Array(2048);
     for(let i=0;i<curve.length;i++){const x=i*2/(curve.length-1)-1;curve[i]=2*Math.abs(x)-1;}
     shifter.curve=curve;shifter.oversample="4x";highpass.type="highpass";highpass.frequency.value=120;
-    const buffer=ctx.createBuffer(2,Math.floor(ctx.sampleRate*(2.2+amount*2.2)),ctx.sampleRate);
+    const buffer=ctx.createBuffer(2,Math.floor(ctx.sampleRate*4.4),ctx.sampleRate);
     for(let ch=0;ch<2;ch++){const data=buffer.getChannelData(ch);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2.1);}
-    convolver.buffer=buffer;dry.gain.value=.82;wet.gain.value=.16+amount*.68;
+    convolver.buffer=buffer;dry.gain.value=.82;wet.gain.value=.16+amount*.68;update=next=>setAudioParam(wet.gain,.16+next*.68);
     nodes.push(dry,wet,shifter,highpass,convolver);connect(input,dry);connect(dry,output);connect(input,shifter);connect(shifter,highpass);connect(highpass,convolver);connect(convolver,wet);connect(wet,output);
   }else{connect(input,output);}
-  return{input,output,nodes,oscillators};
+  return{input,output,nodes,oscillators,pedalId,on:true,update(){const next=values[pedalId]/100;if(next!==lastAmount){update(next);lastAmount=next;}}};
+}
+function disposeStage(stage){
+  stage.oscillators.forEach(o=>{try{o.stop()}catch(e){}});
+  stage.nodes.forEach(n=>{try{n.disconnect()}catch(e){}});
+}
+function refreshStages(previous){
+  const next=order.map(id=>{
+    const stage=previous.find(stage=>stage.pedalId===id&&stage.on===enabled[id])||makeStage(id);
+    stage.update();return stage;
+  });
+  const amp=previous.find(stage=>stage.pedalId==="amp")||makeAmpCabStage();amp.update();next.push(amp);
+  previous.forEach(stage=>{stage.output.disconnect();if(!next.includes(stage))disposeStage(stage);});
+  return next;
 }
 function disconnectStages(){
-  activeStages.forEach(stage=>{stage.oscillators.forEach(o=>{try{o.stop()}catch(e){}});stage.nodes.forEach(n=>{try{n.disconnect()}catch(e){}});});
-  activeStages=[];
+  activeStages.forEach(disposeStage);
+  activeStages=[];chainSource=null;
 }
 function makeAmpCabStage(){
   const input=ctx.createGain(),output=ctx.createGain(),pre=ctx.createGain(),shaper=ctx.createWaveShaper();
   const tone=ctx.createBiquadFilter(),highpass=ctx.createBiquadFilter(),body=ctx.createBiquadFilter(),mudCut=ctx.createBiquadFilter(),presence=ctx.createBiquadFilter(),lowpass=ctx.createBiquadFilter();
-  const gain=Number($("ampGain").value)/100,toneValue=Number($("ampTone").value)/100;
-  // Keep gain at zero transparent; introduce soft clipping gradually as the
-  // knob rises, with a smaller preamp boost to avoid runaway level.
-  pre.gain.value=1+gain*1.5;
-  const curve=new Float32Array(2048),drive=1+gain*7;
-  for(let i=0;i<curve.length;i++){
-    const x=i*2/(curve.length-1)-1;
-    curve[i]=gain===0?x:Math.tanh(x*drive);
-  }
-  shaper.curve=curve;shaper.oversample="2x";
-  tone.type="lowpass";tone.frequency.value=1200+toneValue*10500;tone.Q.value=.35;
+  let lastGain=NaN,lastTone=NaN;
+  const update=()=>{
+    const gain=Number($("ampGain").value)/100,toneValue=Number($("ampTone").value)/100;
+    if(gain!==lastGain){
+      setAudioParam(pre.gain,1+gain*1.5);
+      const curve=new Float32Array(2048),drive=1+gain*7;
+      for(let i=0;i<curve.length;i++){const x=i*2/(curve.length-1)-1;curve[i]=gain===0?x:Math.tanh(x*drive);}
+      shaper.curve=curve;lastGain=gain;
+    }
+    if(toneValue!==lastTone){
+      setAudioParam(tone.frequency,1200+toneValue*10500);setAudioParam(lowpass.frequency,4200+toneValue*1500);lastTone=toneValue;
+    }
+  };
+  shaper.oversample="2x";
+  tone.type="lowpass";tone.Q.value=.35;
   highpass.type="highpass";highpass.frequency.value=65;highpass.Q.value=.7;
-  lowpass.type="lowpass";lowpass.frequency.value=4200+toneValue*1500;lowpass.Q.value=.65;
+  lowpass.type="lowpass";lowpass.Q.value=.65;
   body.type="peaking";body.frequency.value=145;body.Q.value=.8;body.gain.value=1.2;
   mudCut.type="peaking";mudCut.frequency.value=360;mudCut.Q.value=.9;mudCut.gain.value=-1.8;
   presence.type="peaking";presence.frequency.value=2100;presence.Q.value=.75;presence.gain.value=1.4;
+  update();
   input.connect(pre);pre.connect(shaper);shaper.connect(tone);tone.connect(highpass);highpass.connect(body);body.connect(mudCut);mudCut.connect(presence);presence.connect(lowpass);lowpass.connect(output);
-  return{input,output,nodes:[input,pre,shaper,tone,highpass,body,mudCut,presence,lowpass,output],oscillators:[]};
+  return{input,output,nodes:[input,pre,shaper,tone,highpass,body,mudCut,presence,lowpass,output],oscillators:[],pedalId:"amp",update};
 }
 function ensureRecordedPlayback(){
   if(!ctx)return;
@@ -187,27 +227,20 @@ function ensureRecordedPlayback(){
   if(!recordedMediaNode)recordedMediaNode=ctx.createMediaElementSource($("recordedAudio"));
 }
 function clearRecordedPlaybackStages(){
-  recordedPlaybackStages.forEach(stage=>{
-    stage.oscillators.forEach(o=>{try{o.stop()}catch(e){}});
-    stage.nodes.forEach(n=>{try{n.disconnect()}catch(e){}});
-  });
+  recordedPlaybackStages.forEach(disposeStage);
   recordedPlaybackStages=[];
 }
 function rebuildRecordedPlaybackChain(){
   if(!ctx||!recordedMediaNode||!recordedPlaybackGain)return;
-  clearRecordedPlaybackStages();
+  if(recordingHasDry&&recordingEffectsEnabled&&stagesMatch(recordedPlaybackStages)){recordedPlaybackStages.forEach(stage=>stage.update());return;}
   try{recordedMediaNode.disconnect()}catch(e){}
   if(!recordingHasDry||!recordingEffectsEnabled){
-    recordedMediaNode.connect(recordedPlaybackGain);
-    return;
+    clearRecordedPlaybackStages();recordedMediaNode.connect(recordedPlaybackGain);return;
   }
+  recordedPlaybackStages=refreshStages(recordedPlaybackStages);
   let previous=recordedMediaNode;
-  for(const id of order){
-    const stage=makeStage(id);recordedPlaybackStages.push(stage);
-    previous.connect(stage.input);previous=stage.output;
-  }
-  const ampCab=makeAmpCabStage();recordedPlaybackStages.push(ampCab);
-  previous.connect(ampCab.input);ampCab.output.connect(recordedPlaybackGain);
+  for(const stage of recordedPlaybackStages){previous.connect(stage.input);previous=stage.output;}
+  previous.connect(recordedPlaybackGain);
 }
 function updateRecordingEffectsButton(){
   const button=$("recordingEffectsBtn");
@@ -224,16 +257,19 @@ function rebuildChain(){
   if(!ctx)return;
   rebuildRecordedPlaybackChain();
   if(!inputNode)return;
-  disconnectStages();
+  if(chainSource===inputNode&&!(inputNode===mediaNode&&!fileEffectsEnabled)&&stagesMatch(activeStages)){activeStages.forEach(stage=>stage.update());return;}
+  if(chainSource!==inputNode)disconnectStages();
   try{inputNode.disconnect()}catch(e){}
   inputNode.connect(analyser);
   if(rawRecordingSource===inputNode&&rawRecordingDestination)inputNode.connect(rawRecordingDestination);
+  chainSource=inputNode;
   if(inputNode===mediaNode&&!fileEffectsEnabled){
-    inputNode.connect(master);updatePower();return;
+    disconnectStages();chainSource=inputNode;inputNode.connect(master);updatePower();return;
   }
+  activeStages=refreshStages(activeStages);
   let previous=inputNode;
-  for(const id of order){const stage=makeStage(id);activeStages.push(stage);previous.connect(stage.input);previous=stage.output;}
-  const ampCab=makeAmpCabStage();activeStages.push(ampCab);previous.connect(ampCab.input);ampCab.output.connect(master);
+  for(const stage of activeStages){previous.connect(stage.input);previous=stage.output;}
+  previous.connect(master);
   updatePower();
 }
 function setAudioSource(node){
@@ -358,7 +394,7 @@ $("pedalList").addEventListener("click",e=>{
 });
 $("pedalList").addEventListener("input",e=>{
   const knob=e.target.closest("[data-knob]");if(!knob)return;
-  values[knob.dataset.knob]=Number(knob.value);knob.previousElementSibling.querySelector("output").textContent=knob.value+"%";currentAB=null;rebuildChain();
+  values[knob.dataset.knob]=Number(knob.value);knob.previousElementSibling.querySelector("output").textContent=knob.value+"%";currentAB=null;updatePedalParameters(knob.dataset.knob);
 });
 function applyPreset(key){
   const p=PRESETS[key];if(!p)return;
@@ -367,9 +403,8 @@ function applyPreset(key){
   syncAmpControls();renderPedals();rebuildChain();announce("pedalStatus","Preset "+key.toUpperCase()+" carregado.");
 }
 function resetEffects(){
-  const defaults={ns2:35,cs3:18,bd2:0,ds1:0,ge7:50,ch1:0,bf3:0,ph3:0,fuzz:0,octfuzz:0,vibrato:0,tr2:0,dd8:0,rv6:0,shimmer:0};
-  Object.assign(values,defaults);
-  PEDALS.forEach(p=>enabled[p.id]=["ns2","cs3","ge7"].includes(p.id));
+  Object.assign(values,DEFAULT_VALUES);
+  PEDALS.forEach(p=>enabled[p.id]=DEFAULT_ENABLED.includes(p.id));
   order=PEDALS.map(p=>p.id);
   $("masterVolume").value=55;$("ampGain").value=12;$("ampTone").value=58;
   snapshots={A:null,B:null};currentAB=null;$("toggleAB").disabled=true;
@@ -398,6 +433,7 @@ function syncAmpControls(){
   ["masterVolume","ampGain","ampTone"].forEach(id=>$(id+"Value").textContent=$(id).value+"%");
   if(master)master.gain.setTargetAtTime(Number($("masterVolume").value)/100,ctx.currentTime,.015);
   if(recordedPlaybackGain)recordedPlaybackGain.gain.setTargetAtTime(Number($("masterVolume").value)/100,ctx.currentTime,.015);
+  for(const stage of [...activeStages,...recordedPlaybackStages])if(stage.pedalId==="amp")stage.update();
   currentAB=null;
 }
 function startRecording(withoutEffects=false){
@@ -442,8 +478,8 @@ $("audioFile").addEventListener("change",e=>loadAudioFile(e.target.files?.[0]));
 $("playFile").addEventListener("click",playFile);$("stopFile").addEventListener("click",stopFile);
 $("audioSource").addEventListener("ended",()=>announce("inputStatus","Áudio processado concluído."));
 $("masterVolume").addEventListener("input",syncAmpControls);
-$("ampGain").addEventListener("input",()=>{syncAmpControls();rebuildChain();});
-$("ampTone").addEventListener("input",()=>{syncAmpControls();rebuildChain();});
+$("ampGain").addEventListener("input",syncAmpControls);
+$("ampTone").addEventListener("input",syncAmpControls);
 $("resetAmp").addEventListener("click",resetEffects);
 document.querySelectorAll("[data-preset]").forEach(b=>b.addEventListener("click",()=>applyPreset(b.dataset.preset)));
 $("captureA").addEventListener("click",()=>captureAB("A"));$("captureB").addEventListener("click",()=>captureAB("B"));$("toggleAB").addEventListener("click",toggleAB);

@@ -75,3 +75,66 @@ test("NS-2 gates quiet audio without compressing loud or cancelling stereo", asy
   expect(result.minGain).toBeGreaterThanOrEqual(-.001);
   expect(result.maxGain).toBeLessThanOrEqual(1.001);
 });
+
+test("ajustar parâmetros e mudar a cadeia preserva a cauda do DD-8", async ({ page }) => {
+  await page.goto("/guitarra.html");
+  const result = await page.evaluate(async () => {
+    ctx = new OfflineAudioContext(1, 48000, 48000);
+    master = ctx.createGain(); master.connect(ctx.destination);
+    analyser = ctx.createAnalyser();
+    for (const pedal of PEDALS) enabled[pedal.id] = pedal.id === "dd8";
+    values.dd8 = 60;
+    const source = ctx.createBufferSource();
+    source.buffer = ctx.createBuffer(1, 48000, 48000);
+    source.buffer.getChannelData(0)[0] = .5;
+    inputNode = source;
+    rebuildChain();
+    const delayStage = activeStages.find(stage => stage.pedalId === "dd8");
+    const ampStage = activeStages.at(-1);
+    const paused = ctx.suspend(.1);
+    source.start();
+    const rendering = ctx.startRendering();
+    await paused;
+    $("ampTone").value = 70;
+    $("ampTone").dispatchEvent(new Event("input", { bubbles: true }));
+    values.dd8 = 61; updatePedalParameters("dd8");
+    const afterParameter = activeStages.find(stage => stage.pedalId === "dd8") === delayStage && activeStages.at(-1) === ampStage;
+    enabled.ge7 = true;
+    [order[0], order[1]] = [order[1], order[0]];
+    rebuildChain();
+    const afterTopology = activeStages.find(stage => stage.pedalId === "dd8") === delayStage;
+    await ctx.resume();
+    const buffer = await rendering, data = buffer.getChannelData(0);
+    let echo = 0;
+    for (let i = Math.floor(.26 * 48000); i < Math.floor(.34 * 48000); i++) echo = Math.max(echo, Math.abs(data[i]));
+    return { afterParameter, afterTopology, echo, finite: data.every(Number.isFinite) };
+  });
+  expect(result.afterParameter).toBeTruthy();
+  expect(result.afterTopology).toBeTruthy();
+  expect(result.finite).toBeTruthy();
+  expect(result.echo).toBeGreaterThan(.001);
+});
+
+test("todos os controles atualizam seus nós e RESET retorna ao estado inicial", async ({ page }) => {
+  await page.goto("/guitarra.html");
+  const snapshot = () => page.evaluate(() => ({
+    values: { ...values }, enabled: { ...enabled }, order: [...order],
+    master: $("masterVolume").value, gain: $("ampGain").value, tone: $("ampTone").value
+  }));
+  const initial = await snapshot();
+  await page.locator("#randomizePedals").click();
+  await page.locator("#resetAmp").click();
+  expect(await snapshot()).toEqual(initial);
+  const unchanged = await page.evaluate(() => {
+    ctx = new OfflineAudioContext(1, 4800, 48000);
+    return PEDALS.every(pedal => {
+      enabled[pedal.id] = true; values[pedal.id] = 50;
+      const stage = makeStage(pedal.id), nodes = [...stage.nodes], oscillators = [...stage.oscillators];
+      values[pedal.id] = 70; stage.update();
+      const same = nodes.every((node, i) => node === stage.nodes[i]) && oscillators.every((node, i) => node === stage.oscillators[i]);
+      disposeStage(stage);
+      return same;
+    });
+  });
+  expect(unchanged).toBeTruthy();
+});
