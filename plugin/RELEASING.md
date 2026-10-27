@@ -1,22 +1,32 @@
 # Publicar o pacote de VST3
 
-O workflow [Compilar plugin de áudio](../.github/workflows/plugin.yml) compila o Guitar FX e o Deluxe 65 Amp, executa os testes e envia um pacote Windows e outro Linux como artefatos do GitHub Actions. Os artefatos expiram após 14 dias; o workflow não publica o GitHub Release.
+O workflow [Compilar plugin de áudio](../.github/workflows/plugin.yml) compila o Guitar FX e o Deluxe 65 Amp, executa os testes e envia um pacote Windows e outro Linux como artefatos do GitHub Actions. Em pushes para `main`, após os dois sistemas passarem, ele publica um GitHub Release para a versão do pacote com os dois ZIPs. PRs apenas compilam e testam. As proteções de publicação são exercitadas com arquivos fictícios no Linux: versão/notas inválidas, rascunho, release incompleto, tag órfã, bundle ausente e preservação de versões publicadas.
 
-## Versões
+## Versões e notas
 
-- `project(... VERSION ...)` em [`plugin/CMakeLists.txt`](CMakeLists.txt) identifica a versão do pacote distribuído.
+- `project(... VERSION ...)` em [`plugin/CMakeLists.txt`](CMakeLists.txt) identifica a versão do pacote e a tag `vX.Y.Z`.
 - Cada chamada `juce_add_plugin(... VERSION ...)` identifica a versão individual do plugin. O Guitar FX e o Deluxe 65 Amp podem evoluir em ritmos diferentes.
-- O botão **DOWNLOAD VST** aponta para `/releases/latest`; por isso, cada release deve incluir os dois bundles para preservar ambos os downloads.
+- As notas ficam em `plugin/releases/vX.Y.Z.md`. O CI exige uma versão `X.Y.Z` válida e notas não vazias antes da compilação.
+- O botão **DOWNLOAD VST** aponta para `/releases/latest`; cada release inclui os dois bundles para preservar ambos os downloads.
 
-## Processo
+## Processo automático
 
-1. Confirme que a mudança altera o DSP, os controles ou o bundle e justifica uma versão nova. Alterações apenas documentais ou de CI não precisam de release com binários idênticos.
-2. Atualize a versão do pacote em `project(... VERSION ...)` e as versões individuais dos plugins afetados em `juce_add_plugin(... VERSION ...)`.
-3. Prepare as notas no formato abaixo. Descreva somente mudanças presentes no código e validadas; não anuncie correção de áudio que os testes não cobrem.
-4. Integre a mudança em `main` e aguarde uma execução bem-sucedida do workflow nos dois sistemas operacionais. Registre o SHA do commit validado.
-5. Baixe os artefatos `NichodevVST3-windows-latest` e `NichodevVST3-ubuntu-latest` da execução desse mesmo commit. Confira que cada pacote contém os bundles completos `Nichodev Guitar FX.vst3` e `Nichodev Deluxe 65 Amp.vst3`, com as versões individuais declaradas no CMake. ZIPs de releases antigos que só incluíam o Guitar FX não servem como pacote da suite.
-6. Crie o GitHub Release com o título `Nichodev VST3 Suite vX.Y.Z` e a tag `vX.Y.Z` apontada para o commit validado. Anexe `NichodevVST3-windows-latest.zip` e `NichodevVST3-ubuntu-latest.zip` e use as notas revisadas.
-7. Abra o release publicado e confirme que os dois arquivos podem ser baixados. A página inicial aponta para `/releases/latest`, então não é preciso publicar os bundles na Hostinger.
+1. Confirme que a mudança altera o DSP, os controles ou o bundle e justifica uma versão nova. Alterações apenas documentais ou de CI não precisam de binários com versões novas.
+2. Aumente a versão do pacote em `project(... VERSION ...)` e as versões individuais dos plugins afetados em `juce_add_plugin(... VERSION ...)`.
+3. Crie `plugin/releases/vX.Y.Z.md` no formato abaixo. Descreva somente mudanças presentes no código e validadas; não anuncie correção de áudio que os testes não cobrem.
+4. Abra o PR e confira os builds e testes nos dois sistemas operacionais.
+5. Integre a mudança em `main`. Após os dois builds e testes passarem novamente, o job **Publicar release VST3** baixa os artefatos dessa mesma execução, confere os dois bundles e a integridade dos ZIPs e cria `Nichodev VST3 Suite vX.Y.Z`, com a tag no commit compilado.
+6. Abra o release e confirme os downloads `NichodevVST3-windows-latest.zip` e `NichodevVST3-ubuntu-latest.zip`. O link da página inicial acompanha `/releases/latest`; não é necessário enviar os bundles para a Hostinger.
+
+O token tem escrita em conteúdo apenas no job de publicação da `main`. As publicações são serializadas. Se a versão já tiver release publicado com os dois ZIPs, o job termina sem substituir arquivos. Uma tag sem release, um rascunho ou um release sem os dois arquivos interrompe o job para conferência manual.
+
+## Se a publicação falhar
+
+Confira primeiro o log do job **Publicar release VST3**. Para uma falha temporária de rede ou permissão, corrija a causa e reexecute o job que falhou.
+
+Se houver um rascunho ou tag parcial, confira seu commit antes de completar a publicação. Não substitua arquivos de uma versão já publicada: corrija a versão e as notas em um novo PR quando os binários precisarem mudar.
+
+Os artefatos temporários são retidos por 14 dias. Para concluir manualmente um release, use os dois pacotes de uma execução bem-sucedida da `main` no mesmo commit, preservando os bundles completos `Nichodev Guitar FX.vst3` e `Nichodev Deluxe 65 Amp.vst3`. ZIPs antigos contendo apenas o Guitar FX não servem como pacote da suite.
 
 ## Modelo das notas
 
@@ -26,5 +36,3 @@ Esta versão [corrige/adiciona/melhora] [resumo curto da mudança]:
 - [Outra mudança relevante, se houver]
 - Inclui builds VST3 para Windows e Linux.
 ```
-
-O pacote pode ser recuperado dos artefatos temporários por até 14 dias. Depois desse prazo, execute novamente o workflow com um commit validado para gerar os arquivos.

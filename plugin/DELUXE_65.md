@@ -28,7 +28,7 @@ Todos os controles e seletores são parâmetros do host, salvos no projeto da DA
 
 ## Download e instalação
 
-Use um pacote `NichodevVST3-*` de Windows ou Linux de um [release que anuncie a suite](https://github.com/nichodevs/nichodev.com/releases), contendo `Nichodev Deluxe 65 Amp.vst3` e `Nichodev Guitar FX.vst3`. O release v0.1.6 contém apenas o Guitar FX. Enquanto a suite não tiver release permanente, os dois bundles estão nos artefatos de uma execução bem-sucedida da `main` no [workflow dos plugins](https://github.com/nichodevs/nichodev.com/actions/workflows/plugin.yml); os artefatos expiram após 14 dias. Extraia o arquivo e copie o bundle completo do Deluxe 65 Amp para uma pasta VST3 reconhecida pela DAW; não copie somente a pasta `Contents`. Depois, faça uma nova varredura de plugins.
+Use um pacote `NichodevVST3-*` de Windows ou Linux de um [release que anuncie a suite](https://github.com/nichodevs/nichodev.com/releases), contendo `Nichodev Deluxe 65 Amp.vst3` e `Nichodev Guitar FX.vst3`. O release v0.1.6 contém apenas o Guitar FX. Para testar builds ainda não publicados, obtenha os dois bundles nos artefatos de uma execução bem-sucedida da `main` no [workflow dos plugins](https://github.com/nichodevs/nichodev.com/actions/workflows/plugin.yml); os artefatos expiram após 14 dias. Extraia o arquivo e copie o bundle completo do Deluxe 65 Amp para uma pasta VST3 reconhecida pela DAW; não copie somente a pasta `Contents`. Depois, faça uma nova varredura de plugins.
 
 ## Limites do modelo
 
