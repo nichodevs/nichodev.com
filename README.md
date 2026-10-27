@@ -36,7 +36,7 @@ npm run test:e2e
 npm start
 ```
 
-`npm ci` instala as versões registradas no `package-lock.json`. `npm run check` valida referências e arquivos do site. Os testes E2E abrem as páginas no Chromium e verificam navegação, largura em telas móveis, foco de teclado e a onda. Também cobrem a importação de backups do MIXMASTER, a preservação dos envelopes de volume nas edições e o gate NS-2 em áudio renderizado com `OfflineAudioContext`. `npm start` inicia o servidor Express na porta 3000 (ou na porta definida por `PORT`); o endpoint `/health` verifica o servidor.
+`npm ci` instala as versões registradas no `package-lock.json`. `npm run check` valida referências e arquivos do site. Os testes E2E abrem as páginas no Chromium e verificam navegação, largura em telas móveis, foco de teclado e a onda. Backups importados do MIXMASTER aceitam linhas do tempo de até 24 horas; a exportação WAV mantém o limite de dez minutos. Os testes também cobrem a importação de backups do MIXMASTER, a preservação dos envelopes de volume nas edições e o gate NS-2 em áudio renderizado com `OfflineAudioContext`. `npm start` inicia o servidor Express na porta 3000 (ou na porta definida por `PORT`); o endpoint `/health` verifica o servidor.
 
 ## VST3
 

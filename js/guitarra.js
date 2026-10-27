@@ -81,7 +81,7 @@ function makeStage(pedalId){
   const connect=(a,b)=>a.connect(b);
   if(!enabled[pedalId]){connect(input,output);return{input,output,nodes,oscillators};}
   if(type==="gate"){
-    const rectifier=ctx.createWaveShaper(),envelope=ctx.createBiquadFilter(),gate=ctx.createWaveShaper(),smooth=ctx.createBiquadFilter();
+    const rectifier=ctx.createWaveShaper(),envelope=ctx.createBiquadFilter(),gate=ctx.createWaveShaper(),smooth=ctx.createBiquadFilter(),limit=ctx.createWaveShaper();
     const absolute=new Float32Array(2049),opening=new Float32Array(16385),threshold=Math.pow(10,(-60+amount*36)/20);
     for(let i=0;i<absolute.length;i++)absolute[i]=Math.abs(i*2/(absolute.length-1)-1);
     for(let i=0;i<opening.length;i++){
@@ -94,8 +94,10 @@ function makeStage(pedalId){
     envelope.type=smooth.type="lowpass";envelope.frequency.value=60;smooth.frequency.value=30;
     // Lowpass Q uses dB; keep the envelope filters non-resonant.
     envelope.Q.value=smooth.Q.value=-6.1;output.gain.value=0;
-    nodes.push(rectifier,envelope,gate,smooth);
-    connect(input,output);connect(input,rectifier);connect(rectifier,envelope);connect(envelope,gate);connect(gate,smooth);connect(smooth,output.gain);
+    // Clamp the smoothed control so filter overshoot cannot boost or invert the signal.
+    limit.curve=new Float32Array([0,0,1]);
+    nodes.push(rectifier,envelope,gate,smooth,limit);
+    connect(input,output);connect(input,rectifier);connect(rectifier,envelope);connect(envelope,gate);connect(gate,smooth);connect(smooth,limit);connect(limit,output.gain);
   }else if(type==="compressor"){
     const comp=ctx.createDynamicsCompressor(); nodes.push(comp);
     comp.threshold.value=-16-amount*22;comp.knee.value=8;comp.ratio.value=1+amount*6;comp.attack.value=.008;comp.release.value=.08+amount*.12;

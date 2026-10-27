@@ -659,14 +659,15 @@
     const invalid = message => { throw new Error(message); };
     if (backup?.app !== "nichodev-mixmaster" || backup?.formatVersion !== 1 || !Array.isArray(backup?.project?.tracks) || !backup.project.tracks.length || !Array.isArray(backup.assets)) invalid("O arquivo não é um backup MIXMASTER compatível.");
     const project = backup.project, trackIds = new Set(), clipIds = new Set(), referencedIds = new Set();
-    if (!inRange(project.playhead ?? 0, 0) || !inRange(project.bpm ?? 120, 40, 240) || !inRange(project.master ?? .8, 0, 1)) invalid("O backup contém controles de projeto inválidos.");
+    const maxTimeline = 24 * 60 * 60; // Bound imported timelines before creating ruler marks in the DOM.
+    if (!inRange(project.playhead ?? 0, 0, maxTimeline) || !inRange(project.bpm ?? 120, 40, 240) || !inRange(project.master ?? .8, 0, 1)) invalid("O backup contém controles de projeto inválidos.");
     for (const track of project.tracks) {
       if (!track || !validId(track.id) || trackIds.has(track.id) || typeof track.name !== "string" || !["audio", "midi"].includes(track.type) || !Array.isArray(track.clips)) invalid("O backup contém uma faixa inválida ou repetida.");
       trackIds.add(track.id);
       for (const [key, min, max] of [["volume", 0, 1], ["pan", -1, 1], ["tone", 0, 1], ["delay", 0, 1], ["reverb", 0, 1]]) if (!inRange(track[key], min, max)) invalid("O backup contém controles de faixa inválidos.");
       if ((track.muted !== undefined && typeof track.muted !== "boolean") || (track.solo !== undefined && typeof track.solo !== "boolean")) invalid("O backup contém controles de faixa inválidos.");
       for (const clip of track.clips) {
-        if (!clip || !validId(clip.id) || clipIds.has(clip.id) || !["audio", "midi"].includes(clip.type) || !inRange(clip.start, 0) || (clip.name !== undefined && typeof clip.name !== "string") || (clip.gain !== undefined && !inRange(clip.gain, 0, 1.5))) invalid("O backup contém um clipe inválido ou repetido.");
+        if (!clip || !validId(clip.id) || clipIds.has(clip.id) || !["audio", "midi"].includes(clip.type) || !inRange(clip.start, 0, maxTimeline) || (clip.name !== undefined && typeof clip.name !== "string") || (clip.gain !== undefined && !inRange(clip.gain, 0, 1.5))) invalid("O backup contém um clipe inválido ou repetido.");
         clipIds.add(clip.id);
         if (clip.envelope !== undefined) {
           if (!Array.isArray(clip.envelope)) invalid("O backup contém um envelope inválido.");
@@ -678,13 +679,13 @@
         }
         if (clip.waveformPeaks !== undefined && (!Array.isArray(clip.waveformPeaks) || clip.waveformPeaks.some(pair => !Array.isArray(pair) || pair.length !== 2 || !Number.isFinite(pair[0]) || !Number.isFinite(pair[1]) || pair[0] > pair[1]))) invalid("O backup contém uma forma de onda inválida.");
         if (clip.type === "midi") {
-          if (!inRange(clip.duration, Number.MIN_VALUE) || !Array.isArray(clip.notes ?? [])) invalid("O backup contém uma região MIDI inválida.");
+          if (!inRange(clip.duration, Number.MIN_VALUE, maxTimeline) || !Array.isArray(clip.notes ?? [])) invalid("O backup contém uma região MIDI inválida.");
           for (const note of clip.notes || []) if (!note || !Number.isInteger(note.step) || note.step < 0 || note.step > 15 || !Number.isInteger(note.pitch) || note.pitch < 0 || note.pitch >= PITCHES.length || (note.velocity !== undefined && !inRange(note.velocity, 0, 1))) invalid("O backup contém uma nota MIDI inválida.");
         } else {
           if (!validId(clip.audioId) || !inRange(clip.sourceStart, 0) || !inRange(clip.sourceEnd, 0) || clip.sourceEnd <= clip.sourceStart) invalid("O backup contém limites de áudio inválidos.");
           referencedIds.add(clip.audioId);
         }
-        if (!Number.isFinite(clipEnd(clip))) invalid("O backup contém uma posição de clipe inválida.");
+        if (!inRange(clipEnd(clip), 0, maxTimeline)) invalid("O backup excede o limite de 24 horas da linha do tempo.");
       }
     }
     if (project.selected !== undefined && (!Array.isArray(project.selected) || new Set(project.selected).size !== project.selected.length || project.selected.some(clipId => !clipIds.has(clipId)))) invalid("O backup contém uma seleção inválida.");

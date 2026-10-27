@@ -72,6 +72,8 @@ test("backup inválido preserva o projeto e não grava áudios parciais", async 
     value => { delete value.project.tracks[0].clips; },
     value => { value.project.tracks.push({ ...value.project.tracks[0], clips: [] }); },
     value => { value.project.tracks[0].volume = null; },
+    value => { value.project.playhead = Number.MAX_VALUE; },
+    value => { value.project.tracks[0].clips[0].start = Number.MAX_VALUE; },
     value => { value.project.tracks[0].clips.push({ ...value.project.tracks[0].clips[0] }); },
     value => { value.project.tracks[0].clips[0].sourceStart = -1; },
     value => { value.project.tracks[0].clips[0].sourceEnd = 2; },
