@@ -172,52 +172,11 @@ body *{font-family:inherit!important}
 
 .site-footer .social-links {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 6px;
+  font-size: clamp(6px, 2vw, 9px);
 }
 
 
-/* Cartão de contato profissional abaixo da onda do rodapé. */
-.professional-contact {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  width: min(100%, 440px);
-  padding: 14px 16px;
-  border: 2px solid var(--fg);
-  background: var(--bg);
-  text-align: center;
-}
-
-.site-footer .professional-contact-label,
-.site-footer .professional-contact-status {
-  margin: 0;
-  font-size: clamp(7px, 1.8vw, 9px);
-  line-height: 1.7;
-}
-
-.site-footer .professional-contact-email {
-  max-width: 100%;
-  padding: 4px 0;
-  border: 0;
-  font-size: clamp(8px, 2.5vw, 11px);
-  line-height: 1.7;
-  overflow-wrap: anywhere;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-}
-
-.site-footer .professional-contact-email:hover {
-  color: var(--bg);
-  background: var(--fg);
-}
-
-.professional-contact .professional-contact-copy {
-  padding: 8px 10px;
-  border-width: 2px;
-  font-size: 7px;
-}
-
-.site-footer .professional-contact-status {
-  min-height: 1.7em;
-}
