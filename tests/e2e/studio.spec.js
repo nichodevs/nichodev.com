@@ -87,3 +87,16 @@ test("onda continua animando após os eventos de ida e retorno do histórico", a
   });
   await expect.poll(() => page.evaluate(() => window.waveFrameCount)).toBeGreaterThan(before + 2);
 });
+
+
+test("servidor entrega o site pela raiz e mantém arquivos de desenvolvimento fora dela", async ({ request }) => {
+  for (const path of ["/", "/voz.html", "/guitarra.html", "/mixmaster.html", "/onda/", "/robots.txt"]) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(200);
+  }
+  for (const path of ["/server.js", "/package.json", "/plugin/CMakeLists.txt"]) {
+    const response = await request.get(path);
+    expect(response.status(), path).toBe(404);
+  }
+  expect((await (await request.get("/health")).json()).status).toBe("ok");
+});

@@ -1,5 +1,6 @@
 
 const express = require("express");
+const path = require("node:path");
 
 const app = express();
 app.get('/api/status', (req, res) => {
@@ -11,8 +12,8 @@ app.get('/api/status', (req, res) => {
 });
 const PORT = process.env.PORT || 3000;
 
-// Serve os arquivos HTML, CSS, JS e demais arquivos estáticos
-app.use(express.static(__dirname));
+// Serve apenas os arquivos públicos do site.
+app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok", app: "Nichodevs" });

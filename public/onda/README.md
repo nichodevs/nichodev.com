@@ -1,6 +1,6 @@
 # Onda de gratidão
 
-Página surpresa acessada pela onda animada no rodapé do [estúdio](../README.md). A animação em canvas acompanha o ponteiro e se adapta ao tamanho da tela.
+Página surpresa acessada pela onda animada no rodapé do [estúdio](../../README.md). A animação em canvas acompanha o ponteiro e se adapta ao tamanho da tela.
 
 [Abrir a página publicada](https://nichodev.com/onda/)
 
@@ -18,6 +18,6 @@ Página surpresa acessada pela onda animada no rodapé do [estúdio](../README.m
 - [onda.css](onda.css): apresentação responsiva em estilo arcade retrô.
 - [onda.js](onda.js): desenho, redimensionamento e interação com a onda.
 
-Para executar localmente, siga os [comandos do site](../README.md#executar-o-site) e abra [http://localhost:3000/onda/](http://localhost:3000/onda/). Os testes de teclado e retorno pelo histórico estão em [tests/e2e/studio.spec.js](../tests/e2e/studio.spec.js).
+Para executar localmente, siga os [comandos do site](../../README.md#executar-o-site) e abra [http://localhost:3000/onda/](http://localhost:3000/onda/). Os testes de teclado e retorno pelo histórico estão em [tests/e2e/studio.spec.js](../../tests/e2e/studio.spec.js).
 
-A publicação segue o [workflow do site](../.github/workflows/deploy.yml). Seu filtro `onda/**` inclui este README: integrá-lo à `main` também aciona validação e deploy. Consulte [DEPLOYMENT.md](../DEPLOYMENT.md).
+A publicação segue o [workflow do site](../../.github/workflows/deploy.yml). Seu filtro `public/**` exclui Markdown: editar este README mantém a validação do PR, sem acionar deploy por push. Consulte [DEPLOYMENT.md](../../DEPLOYMENT.md).

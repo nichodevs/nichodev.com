@@ -4,15 +4,16 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
 const root = path.resolve(__dirname, "..");
+const publicRoot = path.join(root, "public");
 const pages = ["index.html", "voz.html", "guitarra.html", "mixmaster.html", "onda/index.html"];
 const errors = [];
 const requiredDeployFiles = new Set(pages);
-const read = file => fs.readFileSync(path.join(root, file), "utf8");
+const read = file => fs.readFileSync(path.join(publicRoot, file), "utf8");
 const localPath = value => decodeURIComponent(value.split(/[?#]/, 1)[0]);
 const resolveLocal = (fromFile, value) => {
   const clean = localPath(value).replace(/^\/+/, "").replace(/\\/g, "/");
   const relative = path.posix.normalize(path.posix.join(path.posix.dirname(fromFile), clean));
-  return { relative, absolute: path.resolve(root, ...relative.split("/")) };
+  return { relative, absolute: path.resolve(publicRoot, ...relative.split("/")) };
 };
 const attrs = tag => Object.fromEntries(
   [...tag.matchAll(/([\w-]+)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)]
@@ -67,7 +68,7 @@ for (const page of pages) {
   for (const src of scripts) {
     const resolved = resolveLocal(page, src);
     const file = resolved.relative;
-    const syntax = spawnSync(process.execPath, ["--check", path.join(root, ...file.split("/"))], { encoding: "utf8" });
+    const syntax = spawnSync(process.execPath, ["--check", path.join(publicRoot, ...file.split("/"))], { encoding: "utf8" });
     if (syntax.status !== 0) {
       errors.push(`${page}: erro de sintaxe em ${file}: ${(syntax.stderr || syntax.stdout).trim()}`);
       continue;
@@ -88,11 +89,11 @@ function collectCss(directory) {
     const absolute = path.join(directory, entry.name);
     if (entry.isDirectory()) collectCss(absolute);
     else if (entry.isFile() && entry.name.endsWith(".css")) {
-      cssFiles.push(path.relative(root, absolute).split(path.sep).join("/"));
+      cssFiles.push(path.relative(publicRoot, absolute).split(path.sep).join("/"));
     }
   }
 }
-collectCss(root);
+collectCss(publicRoot);
 
 for (const file of cssFiles) {
   const css = read(file);
@@ -113,7 +114,7 @@ for (const file of cssFiles) {
   }
 }
 
-const workflow = read(".github/workflows/deploy.yml");
+const workflow = fs.readFileSync(path.join(root, ".github/workflows/deploy.yml"), "utf8");
 const deployedFiles = new Map();
 for (const [, source, destination] of workflow.matchAll(/^\s*put\s+(\S+)\s+-o\s+(\S+)\s*$/gm)) {
   deployedFiles.set(source, destination);
@@ -122,13 +123,13 @@ for (const [, source, destination] of workflow.matchAll(/^\s*put\s+(\S+)\s+-o\s+
   }
 }
 for (const file of requiredDeployFiles) {
-  if (deployedFiles.get(file) !== file) {
+  if (deployedFiles.get("public/" + file) !== file) {
     errors.push(`${file}: usado pelo site, mas não publicado em deploy.yml com o mesmo caminho`);
   }
 }
 
 for (const file of ["modular-fx.html", "modular-fx.css", "js/modular-fx.js", "js/compact-mode.js"]) {
-  if (fs.existsSync(path.join(root, file))) errors.push(`Arquivo obsoleto ainda presente: ${file}`);
+  if (fs.existsSync(path.join(publicRoot, file))) errors.push(`Arquivo obsoleto ainda presente: ${file}`);
 }
 
 if (errors.length) {
