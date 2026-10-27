@@ -80,10 +80,25 @@ function makeStage(pedalId){
   const input=ctx.createGain(), output=ctx.createGain(), nodes=[input,output], oscillators=[];
   const connect=(a,b)=>a.connect(b);
   if(!enabled[pedalId]){connect(input,output);return{input,output,nodes,oscillators};}
-  if(type==="gate"||type==="compressor"){
+  if(type==="gate"){
+    const rectifier=ctx.createWaveShaper(),envelope=ctx.createBiquadFilter(),gate=ctx.createWaveShaper(),smooth=ctx.createBiquadFilter();
+    const absolute=new Float32Array(2049),opening=new Float32Array(16385),threshold=Math.pow(10,(-60+amount*36)/20);
+    for(let i=0;i<absolute.length;i++)absolute[i]=Math.abs(i*2/(absolute.length-1)-1);
+    for(let i=0;i<opening.length;i++){
+      const level=i*2/(opening.length-1)-1,t=Math.max(0,Math.min(1,(level-threshold*.5)/threshold));
+      opening[i]=t*t*(3-2*t);
+    }
+    rectifier.curve=absolute;gate.curve=opening;
+    // Average rectified channels before the gate so inverted stereo cannot cancel.
+    envelope.channelCount=1;envelope.channelCountMode="explicit";
+    envelope.type=smooth.type="lowpass";envelope.frequency.value=60;smooth.frequency.value=30;
+    // Lowpass Q uses dB; keep the envelope filters non-resonant.
+    envelope.Q.value=smooth.Q.value=-6.1;output.gain.value=0;
+    nodes.push(rectifier,envelope,gate,smooth);
+    connect(input,output);connect(input,rectifier);connect(rectifier,envelope);connect(envelope,gate);connect(gate,smooth);connect(smooth,output.gain);
+  }else if(type==="compressor"){
     const comp=ctx.createDynamicsCompressor(); nodes.push(comp);
-    if(type==="gate"){comp.threshold.value=-38+amount*14;comp.knee.value=0;comp.ratio.value=12;comp.attack.value=.004;comp.release.value=.09;}
-    else{comp.threshold.value=-16-amount*22;comp.knee.value=8;comp.ratio.value=1+amount*6;comp.attack.value=.008;comp.release.value=.08+amount*.12;}
+    comp.threshold.value=-16-amount*22;comp.knee.value=8;comp.ratio.value=1+amount*6;comp.attack.value=.008;comp.release.value=.08+amount*.12;
     connect(input,comp);connect(comp,output);
   }else if(type==="overdrive"||type==="distortion"||type==="fuzz"||type==="octfuzz"){
     const shaper=ctx.createWaveShaper();shaper.curve=curveFor(type,amount);shaper.oversample="4x";nodes.push(shaper);connect(input,shaper);connect(shaper,output);
