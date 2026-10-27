@@ -8,7 +8,7 @@ class Deluxe65LookAndFeel final : public juce::LookAndFeel_V4
 public:
     Deluxe65LookAndFeel();
     juce::Font getTextButtonFont(juce::TextButton&, int buttonHeight) override;
-    juce::Font getToggleButtonFont(juce::ToggleButton&, int buttonHeight) override;
+    juce::Font getToggleButtonFont(juce::ToggleButton&, int buttonHeight);
     juce::Font getLabelFont(juce::Label&) override;
     juce::Font getComboBoxFont(juce::ComboBox&) override;
     void drawButtonBackground(juce::Graphics&, juce::Button&, const juce::Colour&,
