@@ -8,7 +8,7 @@ O site é publicado na Hostinger pelo workflow [Publicar site na Hostinger](.git
 - **Manual:** `workflow_dispatch` publica o branch escolhido na execução do GitHub Actions; selecione `main` para publicar a versão integrada.
 - **Agendado:** uma publicação diária às 09:00 UTC (06:00 em Brasília).
 
-Alterações somente em documentação, no plugin, nos testes ou em outros arquivos de configuração não acionam o deploy por push. O workflow de validação do site é separado e pode rodar sem publicar.
+Arquivos fora desses filtros, como o README da raiz, `plugin/**` e `tests/**`, não acionam o deploy por push. Documentação dentro de um caminho incluído, como `onda/README.md`, aciona o workflow. O workflow de validação do site é separado e pode rodar sem publicar.
 
 As execuções compartilham o grupo `hostinger-production`: somente um envio pode escrever em `public_html` por vez. Uma execução já iniciada termina antes da próxima, evitando interrupção no meio do upload e sobrescrita por envios simultâneos.
 
