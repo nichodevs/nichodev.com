@@ -98,9 +98,9 @@ O [GitHub Actions](../.github/workflows/plugin.yml) compila os dois plugins e ex
 
 ## Releases e versões
 
-As versões da suite e de cada plugin são declaradas em [CMakeLists.txt](CMakeLists.txt). Em um push para `main` que altere `plugin/**` ou o workflow, os dois builds e testes precisam passar para a publicação automática. PRs apenas compilam e testam.
+As versões da suite e de cada plugin são declaradas em [CMakeLists.txt](CMakeLists.txt). Em um push para `main` que altere `plugin/**` ou o workflow, com Markdown excluído dos gatilhos, os dois builds e testes precisam passar para a publicação automática. PRs apenas compilam e testam.
 
-Um release já publicado com os dois ZIPs é preservado. Alterações apenas documentais mantêm as versões dos binários, embora o filtro `plugin/**` ainda execute os builds. O [guia de release](RELEASING.md) descreve versionamento, notas e recuperação de falhas.
+Um release já publicado com os dois ZIPs é preservado. Alterações apenas documentais mantêm as versões dos binários e não acionam os builds. Mudanças no código, assets, CMake ou no workflow continuam executando a validação nativa. O [guia de release](RELEASING.md) descreve versionamento, notas e recuperação de falhas.
 
 ## Licenças
 

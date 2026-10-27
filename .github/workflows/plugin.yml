@@ -6,12 +6,14 @@ on:
       - main
     paths:
       - "plugin/**"
+      - "!plugin/**/*.md"
       - ".github/workflows/plugin.yml"
   push:
     branches:
       - main
     paths:
       - "plugin/**"
+      - "!plugin/**/*.md"
       - ".github/workflows/plugin.yml"
 
 permissions:

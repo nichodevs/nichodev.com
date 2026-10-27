@@ -6,10 +6,10 @@ Estúdio de áudio para navegador e dois plugins VST3 para DAWs, com visual retr
 
 | Ferramenta | Uso | Código |
 | --- | --- | --- |
-| [Voice Studio](https://nichodev.com/voz.html) | Gravação, importação e processamento de voz | [voz.html](voz.html), [js/voz.js](js/voz.js) |
-| [Guitar FX LAB](https://nichodev.com/guitarra.html) | Pedaleira, afinador e gravação de guitarra | [guitarra.html](guitarra.html), [js/guitarra.js](js/guitarra.js) |
-| [MIXMASTER](https://nichodev.com/mixmaster.html) | Edição de áudio, regiões MIDI, envelopes e mixagem | [mixmaster.html](mixmaster.html), [js/mixmaster.js](js/mixmaster.js) |
-| [Onda de gratidão](https://nichodev.com/onda/) | Animação interativa com mouse, toque e teclado | [onda/README.md](onda/README.md) |
+| [Voice Studio](https://nichodev.com/voz.html) | Gravação, importação e processamento de voz | [voz.html](public/voz.html), [public/js/voz.js](public/js/voz.js) |
+| [Guitar FX LAB](https://nichodev.com/guitarra.html) | Pedaleira, afinador e gravação de guitarra | [guitarra.html](public/guitarra.html), [public/js/guitarra.js](public/js/guitarra.js) |
+| [MIXMASTER](https://nichodev.com/mixmaster.html) | Edição de áudio, regiões MIDI, envelopes e mixagem | [mixmaster.html](public/mixmaster.html), [public/js/mixmaster.js](public/js/mixmaster.js) |
+| [Onda de gratidão](https://nichodev.com/onda/) | Animação interativa com mouse, toque e teclado | [public/onda/README.md](public/onda/README.md) |
 
 A [suite VST3](plugin/README.md) contém **Nichodev Guitar FX**, com 15 pedais, e **Nichodev Deluxe 65 Amp**, com canais Clean/Dirty, reverb de mola e vibrato de afinação. Baixe os pacotes Windows ou Linux nos **Assets** do [release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest).
 
@@ -54,20 +54,21 @@ No Linux, use `npx playwright install --with-deps chromium` para instalar també
 
 ## Organização
 
-- HTML e CSS na raiz: páginas do estúdio e apresentação.
-- `js/`: áudio, edição e navegação do site.
-- `assets/cursors/`: cursores retrô.
-- [onda/](onda/README.md): página da onda de gratidão.
+- `public/`: arquivos do site, servidos pelas mesmas URLs públicas.
+- `public/js/`: áudio, edição e navegação do site.
+- `public/assets/cursors/`: cursores retrô.
+- [public/onda/](public/onda/README.md): página da onda de gratidão.
 - [plugin/](plugin/README.md): JUCE/CMake, dois VST3, testes e notas de release.
 - `scripts/` e `tests/e2e/`: validação do site e testes Playwright.
 - `.github/workflows/`: validação, builds, releases e deploy.
+- `build/`: saída local do CMake, ignorada pelo Git.
 
 ## Publicação
 
 **Site:** o workflow [Publicar site na Hostinger](.github/workflows/deploy.yml) valida o mesmo commit com `npm run check` e Playwright antes do SFTP. Uma falha impede o envio. As publicações são serializadas e terminam com conferência HTTP.
 
-Ele roda manualmente, diariamente às 09:00 UTC (06:00 em Brasília) e em pushes para `main` que atinjam seus filtros de arquivos. Esses filtros incluem `onda/**`: alterar `onda/README.md` também aciona o deploy. O README da raiz e os arquivos de `plugin/` ficam fora desses filtros. Consulte [DEPLOYMENT.md](DEPLOYMENT.md) ao adicionar ou renomear páginas e assets.
+Ele roda manualmente, diariamente às 09:00 UTC (06:00 em Brasília) e em pushes para `main` que atinjam seus filtros de arquivos. Os filtros incluem `public/**` e o workflow de deploy, com arquivos Markdown excluídos: editar um README não publica o site por push. A validação dos PRs continua ativa. Consulte [DEPLOYMENT.md](DEPLOYMENT.md) ao adicionar ou renomear páginas e assets.
 
-**VST3:** o workflow [Compilar plugin de áudio](.github/workflows/plugin.yml) compila e testa Windows/Linux em PRs e pushes para `main` que alterem `plugin/**` ou o próprio workflow, incluindo documentação nessa pasta. Na `main`, os dois builds aprovados permitem publicar a versão declarada no CMake; um release já publicado é preservado. Mudanças apenas documentais mantêm as versões dos binários.
+**VST3:** o workflow [Compilar plugin de áudio](.github/workflows/plugin.yml) compila e testa Windows/Linux em PRs e pushes para `main` que alterem `plugin/**` ou o próprio workflow; arquivos Markdown são excluídos dos gatilhos. Na `main`, os dois builds aprovados permitem publicar a versão declarada no CMake; um release já publicado é preservado. Mudanças apenas documentais mantêm as versões dos binários.
 
 Os ZIPs dos releases são os downloads permanentes. Os artefatos das Actions expiram após 14 dias. Veja o [processo de release](plugin/RELEASING.md), o [guia do Deluxe 65](plugin/DELUXE_65.md) e o [diagnóstico em DAWs](plugin/TROUBLESHOOTING.md).
