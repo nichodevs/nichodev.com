@@ -11,7 +11,7 @@ Site estático com ferramentas de áudio para navegador e plugins VST3 para uso 
 - **Nichodev Guitar FX VST3**: cadeia nativa de 15 pedais para Windows e Linux.
 - **Nichodev Deluxe 65 Amp VST3**: amplificador 8-bit inspirado em combos valvulados de 22 W, com canais Normal/Clean e Vibrato/Dirty, reverb de mola e vibrato de afinação.
 
-O botão **DOWNLOAD VST** na página inicial abre a [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest). Cada ZIP de sistema inclui os bundles completos do Guitar FX e do Deluxe 65 Amp; instale apenas os plugins que quiser usar. Para instalação e compilação, consulte [plugin/README.md](plugin/README.md) e o [guia do Deluxe 65 Amp](plugin/DELUXE_65.md); para diagnóstico no Reaper e em outras DAWs, veja o [guia de troubleshooting](plugin/TROUBLESHOOTING.md).
+O botão **DOWNLOAD VST** na página inicial abre a [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest). Os ZIPs da suite incluem os bundles completos do Guitar FX e do Deluxe 65 Amp, mas releases anteriores podem conter só o Guitar FX: o v0.1.6, por exemplo, não inclui o amplificador. Para o Deluxe, escolha um release que anuncie a suite ou os artefatos de uma execução bem-sucedida da `main` no [workflow dos plugins](https://github.com/nichodevs/nichodev.com/actions/workflows/plugin.yml). Esses artefatos são temporários e expiram após 14 dias. Para instalação e compilação, consulte [plugin/README.md](plugin/README.md) e o [guia do Deluxe 65 Amp](plugin/DELUXE_65.md); para diagnóstico no Reaper e em outras DAWs, veja o [guia de troubleshooting](plugin/TROUBLESHOOTING.md).
 
 ## Estrutura
 
@@ -36,7 +36,7 @@ npm run test:e2e
 npm start
 ```
 
-`npm ci` instala as versões registradas no `package-lock.json`. `npm run check` valida referências e arquivos do site. Os testes E2E abrem as páginas no Chromium e verificam os atalhos da inicial, a largura em telas móveis, o foco de teclado e a interação da onda. `npm start` inicia o servidor Express na porta 3000 (ou na porta definida por `PORT`); o endpoint `/health` verifica o servidor.
+`npm ci` instala as versões registradas no `package-lock.json`. `npm run check` valida referências e arquivos do site. Os testes E2E abrem as páginas no Chromium e verificam navegação, largura em telas móveis, foco de teclado e a onda. Também cobrem a importação de backups do MIXMASTER, a preservação dos envelopes de volume nas edições e o gate NS-2 em áudio renderizado com `OfflineAudioContext`. `npm start` inicia o servidor Express na porta 3000 (ou na porta definida por `PORT`); o endpoint `/health` verifica o servidor.
 
 ## VST3
 

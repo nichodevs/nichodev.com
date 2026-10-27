@@ -4,7 +4,7 @@ Este guia ajuda a confirmar a instalação do Nichodev Guitar FX e do Nichodev D
 
 ## Instalar ou atualizar
 
-1. Baixe o ZIP de Windows ou Linux na [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest). Use os arquivos em **Assets** para uma instalação permanente; artefatos baixados de uma execução do GitHub Actions expiram após 14 dias.
+1. Baixe o ZIP de Windows ou Linux na [página de releases](https://github.com/nichodevs/nichodev.com/releases) e confira quais plugins a versão anuncia. O v0.1.6 inclui apenas o Guitar FX; para instalar também o Deluxe, use um release da suite ou os artefatos de uma execução bem-sucedida da `main` no [workflow dos plugins](https://github.com/nichodevs/nichodev.com/actions/workflows/plugin.yml). Arquivos em **Assets** do release são permanentes; artefatos do GitHub Actions expiram após 14 dias.
 2. Feche a DAW, extraia o ZIP e copie os bundles completos que quiser instalar (`Nichodev Guitar FX.vst3` e/ou `Nichodev Deluxe 65 Amp.vst3`) para uma pasta VST3 reconhecida. Preserve a estrutura interna de cada bundle; não copie apenas `Contents`.
 3. No Windows, a pasta compartilhada comum é `C:\Program Files\Common Files\VST3`, que pode exigir permissão de administrador. No Linux, a pasta de usuário comum é `~/.vst3`. Também é possível usar outra pasta gravável, desde que esteja configurada na busca de plugins da DAW.
 4. Evite cópias antigas em outras pastas VST3 que a DAW também verifica. Reabra a DAW e faça uma nova varredura dos plugins. Se o VST3 não aparecer, confira as pastas configuradas e solicite uma varredura completa.
@@ -21,7 +21,7 @@ Este guia ajuda a confirmar a instalação do Nichodev Guitar FX e do Nichodev D
 ## Deluxe 65 Amp
 
 1. Confirme que a entrada de áudio chega à track e que o canal selecionado é **Normal / Clean** ou **Vibrato / Dirty**. No segundo canal, teste **Input I** antes de usar **Input II (-6 dB)**.
-2. Ajuste **Normal Volume** ou **Vibrato Drive**, depois suba **Master**. Com Master em zero, a saída fica muda.
+2. Ajuste **Normal Volume** ou **Vibrato Drive**, depois suba **Master**. No canal Clean, Normal Volume em zero silencia o canal. Master em zero silencia ambos os canais.
 3. O reverb de mola e o vibrato de afinação estão associados ao canal **Vibrato / Dirty**. Para testar vibrato, ligue **PITCH VIBRATO** e ajuste **Vibrato Depth** acima de zero; para o reverb, aumente **Spring Reverb**.
 4. Compare o plugin ativo com o bypass da DAW. Se o medidor antes do plugin se move, mas a saída some somente com o Deluxe 65 ativo, registre canal, entrada e controles usados.
 
@@ -37,7 +37,7 @@ Este guia ajuda a confirmar a instalação do Nichodev Guitar FX e do Nichodev D
 Ao relatar uma falha, inclua:
 
 - sistema operacional e versão da DAW;
-- versão do release instalada e caminho da pasta VST3 que a DAW está verificando;
+- versão do release ou SHA da build instalada, versão individual do plugin informada pela DAW e caminho da pasta VST3 que ela está verificando;
 - driver de áudio, taxa de amostragem e tamanho do buffer;
 - preset selecionado, estado do NS-2, DD-8 e RV-6, e níveis de entrada/saída;
 - se há sinal no medidor antes do plugin e se o problema muda ao colocar o plugin em bypass;

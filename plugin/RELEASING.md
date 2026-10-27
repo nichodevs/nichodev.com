@@ -14,7 +14,7 @@ O workflow [Compilar plugin de áudio](../.github/workflows/plugin.yml) compila 
 2. Atualize a versão do pacote em `project(... VERSION ...)` e as versões individuais dos plugins afetados em `juce_add_plugin(... VERSION ...)`.
 3. Prepare as notas no formato abaixo. Descreva somente mudanças presentes no código e validadas; não anuncie correção de áudio que os testes não cobrem.
 4. Integre a mudança em `main` e aguarde uma execução bem-sucedida do workflow nos dois sistemas operacionais. Registre o SHA do commit validado.
-5. Baixe os artefatos `NichodevVST3-windows-latest` e `NichodevVST3-ubuntu-latest` da execução desse mesmo commit. Confira que cada pacote contém os bundles completos `Nichodev Guitar FX.vst3` e `Nichodev Deluxe 65 Amp.vst3`.
+5. Baixe os artefatos `NichodevVST3-windows-latest` e `NichodevVST3-ubuntu-latest` da execução desse mesmo commit. Confira que cada pacote contém os bundles completos `Nichodev Guitar FX.vst3` e `Nichodev Deluxe 65 Amp.vst3`, com as versões individuais declaradas no CMake. ZIPs de releases antigos que só incluíam o Guitar FX não servem como pacote da suite.
 6. Crie o GitHub Release com o título `Nichodev VST3 Suite vX.Y.Z` e a tag `vX.Y.Z` apontada para o commit validado. Anexe `NichodevVST3-windows-latest.zip` e `NichodevVST3-ubuntu-latest.zip` e use as notas revisadas.
 7. Abra o release publicado e confirme que os dois arquivos podem ser baixados. A página inicial aponta para `/releases/latest`, então não é preciso publicar os bundles na Hostinger.
 

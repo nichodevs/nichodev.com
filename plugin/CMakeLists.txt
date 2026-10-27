@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(NichodevVST3Suite VERSION 0.2.0 LANGUAGES C CXX)
+project(NichodevVST3Suite VERSION 0.2.1 LANGUAGES C CXX)
 
 set(JUCE_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JUCE_BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
@@ -23,7 +23,7 @@ else()
 endif()
 
 juce_add_plugin(NichodevGuitarFX
-  VERSION 0.1.6
+  VERSION 0.1.7
   COMPANY_NAME "Nichodev"
   BUNDLE_ID com.nichodev.guitarfx
   PLUGIN_MANUFACTURER_CODE NCHD
@@ -40,7 +40,7 @@ juce_add_plugin(NichodevGuitarFX
 )
 
 juce_add_plugin(NichodevDeluxe65
-  VERSION 0.1.0
+  VERSION 0.1.1
   COMPANY_NAME "Nichodev"
   BUNDLE_ID com.nichodev.deluxe65
   PLUGIN_MANUFACTURER_CODE NCHD

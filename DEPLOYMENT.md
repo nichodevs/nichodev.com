@@ -10,6 +10,8 @@ O site é publicado na Hostinger pelo workflow [Publicar site na Hostinger](.git
 
 Alterações somente em documentação, no plugin, nos testes ou em arquivos de configuração não acionam o deploy por push. O workflow de validação do site é separado e pode rodar sem publicar.
 
+As execuções compartilham o grupo `hostinger-production`: somente um envio pode escrever em `public_html` por vez. Uma execução já iniciada termina antes da próxima, evitando interrupção no meio do upload e sobrescrita por envios simultâneos.
+
 ## Validações e envio
 
 Antes do SFTP, o workflow executa `npm run check`, confere os secrets de conexão e envia uma lista explícita de arquivos para a pasta pública do domínio. Depois, faz requisições HTTP às páginas e assets publicados. Ele não executa `npm run test:e2e`; esses testes rodam no workflow **Validar site**.

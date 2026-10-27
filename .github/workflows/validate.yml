@@ -34,5 +34,5 @@ jobs:
       - name: Instalar Chromium para os testes
         run: npx playwright install --with-deps chromium
 
-      - name: Testar navegação, responsividade e teclado
+      - name: Testar interface, edição e processamento de áudio
         run: npm run test:e2e
