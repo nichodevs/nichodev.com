@@ -39,6 +39,7 @@ No Guitar FX LAB, ajustar parâmetros reutiliza os nós existentes e preserva os
 ## Verificar alterações
 
 ```sh
+npm test
 npm run check
 npx playwright install chromium
 npm run test:e2e
@@ -46,6 +47,7 @@ npm run test:e2e
 
 No Linux, use `npx playwright install --with-deps chromium` para instalar também as bibliotecas de sistema. O Playwright inicia o servidor local automaticamente quando necessário.
 
+- `npm test`: verifica a descoberta de módulos e rejeita dependências ausentes ou sem upload SFTP.
 - `npm run check`: sintaxe JavaScript, IDs, referências locais e cobertura dos arquivos enviados por SFTP.
 - `npm run test:e2e`: navegação, responsividade, teclado, retorno pelo histórico e regressões de áudio no Chromium.
 - Os testes do MIXMASTER cobrem falha de armazenamento, recuperação, precisão após reabrir, envelopes, MIDI/BPM, transporte, exclusão e limpeza com histórico e outra aba.
@@ -56,6 +58,7 @@ No Linux, use `npx playwright install --with-deps chromium` para instalar també
 
 - `public/`: arquivos do site, servidos pelas mesmas URLs públicas.
 - `public/js/`: áudio, edição e navegação do site.
+- `public/js/mixmaster/`: armazenamento, formato dos backups e regras de duração/notas compartilhadas do MIXMASTER.
 - `public/assets/cursors/`: cursores retrô.
 - [public/onda/](public/onda/README.md): página da onda de gratidão.
 - [plugin/](plugin/README.md): JUCE/CMake, dois VST3, testes e notas de release.

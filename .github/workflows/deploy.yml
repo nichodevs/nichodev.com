@@ -71,12 +71,13 @@ jobs:
             mkdir -p assets
             mkdir -p assets/cursors
             mkdir -p js
+            mkdir -p js/mixmaster
             mkdir -p onda
             set cmd:fail-exit yes
             cd assets/cursors
             cd ../..
-            cd js
-            cd ..
+            cd js/mixmaster
+            cd ../..
             cd onda
             cd ..
             put public/style.css -o style.css
@@ -100,6 +101,9 @@ jobs:
             put public/js/voz.js -o js/voz.js
             put public/js/guitarra.js -o js/guitarra.js
             put public/js/back-sound.js -o js/back-sound.js
+            put public/js/mixmaster/project-model.js -o js/mixmaster/project-model.js
+            put public/js/mixmaster/project-store.js -o js/mixmaster/project-store.js
+            put public/js/mixmaster/project-backup.js -o js/mixmaster/project-backup.js
             put public/js/mixmaster.js -o js/mixmaster.js
             put public/robots.txt -o robots.txt
             put public/index.html -o index.html
@@ -139,6 +143,9 @@ jobs:
             /js/guitarra.js
             /js/back-sound.js
             /js/mixmaster.js
+            /js/mixmaster/project-model.js
+            /js/mixmaster/project-store.js
+            /js/mixmaster/project-backup.js
             /assets/cursors/cursor-alt.png
             /assets/cursors/cursor-crosshair.png
             /assets/cursors/cursor-move.png

@@ -418,3 +418,10 @@ test("mudar BPM mantém a região MIDI inteira na prévia e no arquivo", async (
   expect(latePeak).toBeGreaterThan(.01);
   await page.locator("#stopButton").click();
 });
+
+
+test("falha ao carregar um módulo informa como recuperar a abertura", async ({ page }) => {
+  await page.route("**/js/mixmaster/project-backup.js*", route => route.abort());
+  await page.goto("/mixmaster.html");
+  await expect(page.locator("#projectStatus")).toContainText("Não foi possível abrir o MIXMASTER. Recarregue a página.");
+});
