@@ -1,58 +1,109 @@
-# Nichodev Guitar FX (VST3)
+# Nichodev VST3 Suite
 
-Plugin nativo de efeitos para guitarra, feito com JUCE 9.0.4 e destinado a DAWs compatíveis com VST3. Aceita áudio mono ou estéreo, salva o estado no projeto da DAW e expõe os parâmetros ao sistema de automação do host. Não recebe nem gera MIDI.
+Dois plugins nativos de guitarra para DAWs VST3, feitos com JUCE 9.0.4 e interface em 8 bits:
 
-O pacote também compila o amplificador independente [Nichodev Deluxe 65 Amp](DELUXE_65.md), com interface 8-bit, dois canais, reverb de mola e vibrato de afinação.
+| Plugin | Função |
+| --- | --- |
+| **Nichodev Guitar FX** | Cadeia reordenável de 15 pedais e controles de amplificador |
+| **Nichodev Deluxe 65 Amp** | Amplificador independente com canais Normal/Clean e Vibrato/Dirty |
 
-## Recursos
-
-A cadeia tem 15 efeitos: NS-2 (gate), CS-3 (compressor), BD-2 (overdrive), DS-1 (distortion), GE-7 TILT, CH-1 (chorus), BF-3 (flanger), PH-3 (phaser), FZ-5 (fuzz), OCTAFUZZ, VB-2 (vibrato), TR-2 (tremolo), DD-8 (delay), RV-6 (reverb) e SHIMMER. UP/DN movem cada pedal na cadeia; a ordem é salva junto com o estado do plugin.
-
-Também inclui controles MASTER, AMP GAIN e AMP TONE, cinco presets (Clean Pixel, 8-Bit Blues, Arcade Crunch, Boss Battle e Space Delay), RANDOM e RESET. Os controles contínuos e os estados liga/desliga dos pedais são suavizados em 20 ms para reduzir estalos ao ajustar parâmetros, automatizar controles ou trocar de preset. Os coeficientes de gate, compressor e filtros são preparados conforme a taxa de amostragem, mantendo as constantes físicas de tempo e frequência; a modulação do PH-3 usa uma tabela preparada fora do callback. Os buffers de atraso são alocados apenas para os efeitos temporais e dimensionados pelo maior atraso de cada efeito; em bypass, avançam com entrada silenciosa para descartar áudio antigo sem alocação, bloqueio ou limpeza em lote no callback de áudio.
-
-## Som e limitações
-
-Os efeitos são aproximações nativas, não emulações oficiais nem uma correspondência idêntica ao processamento Web Audio do Guitar FX LAB. O GE-7 TILT oferece um controle de inclinação tonal; não é um equalizador gráfico de sete bandas. Afinador, seleção de microfone/dispositivo, gravação e importação de arquivos são recursos do site, não deste plugin. O Guitar FX declara até 60 segundos de cauda para acomodar reverb seguido de pedais de ganho alto; hosts que usam esse metadado podem acrescentar esse tempo à renderização.
+Ambos aceitam áudio mono ou estéreo, salvam o estado no projeto da DAW e expõem parâmetros para automação do host. Não recebem nem geram MIDI. O Deluxe pode ser usado sozinho ou depois do Guitar FX; os controles completos estão no [guia do amplificador](DELUXE_65.md).
 
 ## Download e instalação
 
-Baixe o ZIP para seu sistema na [página de releases](https://github.com/nichodevs/nichodev.com/releases), na seção **Assets**. Confira os plugins anunciados na versão: o release v0.1.6 contém apenas o Guitar FX. Os pacotes `NichodevVST3-*` da suite contêm os bundles completos `Nichodev Guitar FX.vst3` e `Nichodev Deluxe 65 Amp.vst3`; para testar builds ainda não publicados, obtenha-os nos artefatos de uma execução bem-sucedida da `main` no [workflow dos plugins](https://github.com/nichodevs/nichodev.com/actions/workflows/plugin.yml). Copie os plugins que quiser usar para uma pasta VST3 reconhecida pela DAW. Não copie apenas a pasta `Contents` de dentro de um bundle. No Windows, a pasta compartilhada comum é `C:\Program Files\Common Files\VST3` e pode exigir permissão de administrador. No Linux, use `~/.vst3` ou a pasta VST3 do sistema. Se usar outra pasta, adicione-a à lista de busca da DAW. Após instalar, solicite uma nova varredura de plugins. Para evitar carregar uma versão antiga, remova cópias duplicadas das pastas que a DAW verifica.
+1. Abra o [release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest) e baixe o ZIP para seu sistema em **Assets**:
 
-Se o plugin não aparecer, não produzir áudio ou gerar estalos, siga o [guia de instalação e diagnóstico](TROUBLESHOOTING.md).
+   | Sistema | Arquivo |
+   | --- | --- |
+   | Windows | `NichodevVST3-windows-latest.zip` |
+   | Linux | `NichodevVST3-ubuntu-latest.zip` |
 
-Os artefatos baixados diretamente de uma execução do GitHub Actions são temporários e expiram após 14 dias. Após os builds e testes de Windows e Linux passarem em um push para `main`, o workflow publica o GitHub Release da versão do conjunto com os dois ZIPs e suas notas. Versões publicadas são preservadas; PRs não publicam releases. Veja o [processo de release](RELEASING.md).
+2. Extraia o ZIP. Os pacotes da suite contêm os bundles completos `Nichodev Guitar FX.vst3` e `Nichodev Deluxe 65 Amp.vst3`.
+3. Copie os bundles desejados para uma pasta VST3 reconhecida pela DAW:
+
+   | Sistema | Pasta comum |
+   | --- | --- |
+   | Windows | `C:\Program Files\Common Files\VST3` |
+   | Linux | `~/.vst3` |
+
+   A pasta compartilhada do Windows pode exigir permissão de administrador. Preserve toda a estrutura de cada bundle, incluindo `Contents`; se escolher outra pasta, adicione-a à busca da DAW.
+4. Remova cópias duplicadas das pastas verificadas pela DAW e faça uma nova varredura de plugins.
+
+Releases antigos podem ter somente o Guitar FX. Para builds ainda não publicados, use os artefatos de uma execução bem-sucedida da `main` no [workflow dos plugins](https://github.com/nichodevs/nichodev.com/actions/workflows/plugin.yml); esses artefatos expiram após 14 dias. Os ZIPs anexados aos releases permanecem disponíveis.
+
+Se o plugin não aparecer, ficar sem som ou gerar estalos, siga o [guia de instalação e diagnóstico](TROUBLESHOOTING.md).
+
+## Guitar FX
+
+A cadeia oferece NS-2 (gate), CS-3 (compressor), BD-2 (overdrive), DS-1 (distortion), GE-7 TILT, CH-1 (chorus), BF-3 (flanger), PH-3 (phaser), FZ-5 (fuzz), OCTAFUZZ, VB-2 (vibrato), TR-2 (tremolo), DD-8 (delay), RV-6 (reverb) e SHIMMER. **UP/DN** reordenam os pedais; a ordem é salva no estado do plugin.
+
+O painel inclui **MASTER**, **AMP GAIN**, **AMP TONE**, **RANDOM**, **RESET** e cinco presets: Clean Pixel, 8-Bit Blues, Arcade Crunch, Boss Battle e Space Delay.
+
+Os parâmetros contínuos e os estados dos pedais são suavizados em 20 ms. Os coeficientes de gate, compressor e filtros são preparados conforme a taxa de amostragem; o PH-3 usa uma tabela de coeficientes preparada fora do processamento de cada amostra.
+
+Os buffers são alocados apenas para os efeitos temporais, conforme o maior atraso de cada um. Em bypass, avançam com entrada silenciosa para descartar áudio antigo sem alocação, bloqueio ou limpeza em lote no callback de áudio.
+
+## Deluxe 65 Amp
+
+O canal **Normal/Clean** oferece volume e saturação suave; **Vibrato/Dirty** tem maior ganho, reverb de mola e vibrato de afinação. Cada canal possui entradas I e II, com atenuação aproximada de 6 dB na segunda entrada.
+
+A troca de canais usa uma transição suavizada de 20 ms. Nas posições extremas, somente a saturação do canal audível é calculada; durante a transição, ambos os caminhos são processados. Consulte [DELUXE_65.md](DELUXE_65.md) para os controles, o modelo DSP e seus limites.
+
+## Som e limites
+
+Os efeitos são aproximações DSP independentes e não oficiais. O Guitar FX LAB do navegador usa Web Audio e pode soar diferente do VST3. O GE-7 TILT oferece inclinação tonal, sem as sete bandas de um equalizador gráfico.
+
+Afinador, seleção de dispositivo, gravação e importação de arquivos pertencem às ferramentas do [site](../README.md). O Guitar FX declara até 60 segundos de cauda para acomodar reverb seguido de alto ganho; hosts que usam esse metadado podem acrescentar esse tempo à renderização.
+
+Os testes automatizados verificam regressões, mas a avaliação auditiva em DAWs e interfaces continua necessária.
 
 ## Compilar
 
-Requisitos: CMake 3.22 ou superior, compilador C++17 e as dependências de áudio/interface do JUCE para o sistema operacional. Na primeira configuração, o CMake baixa JUCE 9.0.4 do GitHub, portanto precisa de acesso à internet. O workflow [plugin.yml](../.github/workflows/plugin.yml) mostra as dependências Linux usadas no CI.
+Execute os comandos a partir da raiz do repositório. Requisitos: CMake 3.22 ou superior, compilador C++17 e dependências de áudio/interface do JUCE para seu sistema. A primeira configuração baixa JUCE 9.0.4 e precisa de internet. O [workflow do plugin](../.github/workflows/plugin.yml) lista as dependências Linux usadas no CI.
 
-O caminho mais curto é deixar o CMake obter o JUCE automaticamente. Para compilar os dois VST3:
+Para compilar os dois VST3:
 
 ```sh
 cmake -S plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release
 cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3 NichodevDeluxe65_VST3
 ```
 
-Se já tiver o JUCE no computador ou quiser usar uma cópia local, informe a pasta raiz com `JUCE_LOCAL_PATH`:
+Para usar uma instalação local do JUCE, informe sua pasta raiz na configuração:
 
 ```powershell
 cmake -S plugin -B build/plugin -DJUCE_LOCAL_PATH="C:/caminho/para/JUCE" -DCMAKE_BUILD_TYPE=Release
-cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3 NichodevDeluxe65_VST3
 ```
 
-Os bundles ficam em `build/plugin/NichodevGuitarFX_artefacts/Release/VST3/` e `build/plugin/NichodevDeluxe65_artefacts/Release/VST3/` (ou nas pastas de configuração correspondentes). Os detalhes de timbre e controles do amplificador estão no [guia Deluxe 65](DELUXE_65.md).
+Os bundles ficam em:
+
+- `build/plugin/NichodevGuitarFX_artefacts/Release/VST3/`
+- `build/plugin/NichodevDeluxe65_artefacts/Release/VST3/`
+
+A pasta de configuração pode variar conforme o gerador e a configuração escolhidos. O build não instala os plugins automaticamente na DAW.
 
 ## Testes automatizados
-
-Os testes DSP cobrem a reordenação de pedais, os valores dos cinco presets, a cadeia completa do Space Delay e os ecos do DD-8/RV-6, drenagem de buffers em bypass, isolamento entre canais, controles inválidos, limites dos buffers, mistura gradual entre sinal seco e processado e bloqueio de DC. O teste do processador cria a classe JUCE real, aplica `space`, confere os parâmetros e verifica a resposta atrasada através de `processBlock`. Para executá-los:
 
 ```sh
 cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests
 ctest --test-dir build/plugin --build-config Release --output-on-failure
 ```
 
-O GitHub Actions compila os dois plugins e executa os testes DSP e de integração em Windows e Linux. O teste do Guitar FX cobre `applyPreset` → parâmetros → `processBlock`; os testes do Deluxe Amp exercitam os dois canais, entradas atenuadas, estabilidade em diferentes taxas, cauda do reverb e variação de pitch. As regressões também cobrem volume Clean em zero, continuidade do vibrato ao atravessar profundidade zero, restauração da ordem dos pedais e o decaimento máximo após os 60 segundos de cauda declarados pelo Guitar FX. As regressões também comparam a resposta de gate, compressor, EQ e PH-3 em 44,1, 48, 96 e 192 kHz. Os testes automatizados não substituem a avaliação auditiva em diferentes DAWs e interfaces. Para uma verificação manual organizada do Guitar FX, use o [guia de troubleshooting](TROUBLESHOOTING.md).
+As três suítes cobrem:
+
+- **Guitar FX DSP:** presets, reordenação, cadeia Space Delay, ecos do DD-8/RV-6, bypass, isolamento dos canais, entradas inválidas, buffers, mistura gradual e bloqueio de DC. Comparam gate, compressor, EQ e PH-3 em 44,1, 48, 96 e 192 kHz e verificam o decaimento após a cauda declarada.
+- **Processador Guitar FX:** aplicação de preset, parâmetros do host e resposta atrasada pelo `processBlock` real do JUCE, além da restauração de estado e ordem.
+- **Deluxe DSP:** canais e sua transição, entradas atenuadas, estabilidade entre taxas, Clean em volume zero, continuidade do vibrato ao cruzar profundidade zero, variação de afinação e cauda do reverb.
+
+O [GitHub Actions](../.github/workflows/plugin.yml) compila os dois plugins e executa essas suítes em Windows e Linux. No Linux, também testa as proteções do workflow de release com `python3 plugin/tests/release_workflow_tests.py`.
+
+## Releases e versões
+
+As versões da suite e de cada plugin são declaradas em [CMakeLists.txt](CMakeLists.txt). Em um push para `main` que altere `plugin/**` ou o workflow, os dois builds e testes precisam passar para a publicação automática. PRs apenas compilam e testam.
+
+Um release já publicado com os dois ZIPs é preservado. Alterações apenas documentais mantêm as versões dos binários, embora o filtro `plugin/**` ainda execute os builds. O [guia de release](RELEASING.md) descreve versionamento, notas e recuperação de falhas.
 
 ## Licenças
 
-A distribuição do plugin deve seguir os termos aplicáveis da [licença JUCE 9](https://juce.com/legal/juce-9-licence/). A fonte tipográfica incluída está em `Assets/Pixel.ttf`; seu texto de licença está em `Assets/OFL.txt`.
+A distribuição deve seguir os termos aplicáveis da [licença JUCE 9](https://juce.com/legal/juce-9-licence/). A fonte incluída está em `Assets/Pixel.ttf`, com licença em [Assets/OFL.txt](Assets/OFL.txt).
+
+[Voltar ao README do repositório](../README.md)

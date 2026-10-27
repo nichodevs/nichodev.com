@@ -1,48 +1,73 @@
 # nichodev.com
 
-Site estático com ferramentas de áudio para navegador e plugins VST3 para uso em DAWs.
+Estúdio de áudio para navegador e dois plugins VST3 para DAWs, com visual retrô em 8 bits. Acesse [nichodev.com](https://nichodev.com).
 
 ## Ferramentas
 
-- [Voice Studio](voz.html): processamento de voz e áudio no navegador.
-- [Guitar FX LAB](guitarra.html): cadeia de efeitos para guitarra.
-- [MIXMASTER](mixmaster.html): editor de áudio.
-- [Onda sonora](onda/): página interativa acessada pelo ícone animado no rodapé.
-- **Nichodev Guitar FX VST3**: cadeia nativa de 15 pedais para Windows e Linux.
-- **Nichodev Deluxe 65 Amp VST3**: amplificador 8-bit inspirado em combos valvulados de 22 W, com canais Normal/Clean e Vibrato/Dirty, reverb de mola e vibrato de afinação.
+| Ferramenta | Uso | Código |
+| --- | --- | --- |
+| [Voice Studio](https://nichodev.com/voz.html) | Gravação, importação e processamento de voz | [voz.html](voz.html), [js/voz.js](js/voz.js) |
+| [Guitar FX LAB](https://nichodev.com/guitarra.html) | Pedaleira, afinador e gravação de guitarra | [guitarra.html](guitarra.html), [js/guitarra.js](js/guitarra.js) |
+| [MIXMASTER](https://nichodev.com/mixmaster.html) | Edição de áudio, regiões MIDI, envelopes e mixagem | [mixmaster.html](mixmaster.html), [js/mixmaster.js](js/mixmaster.js) |
+| [Onda de gratidão](https://nichodev.com/onda/) | Animação interativa com mouse, toque e teclado | [onda/README.md](onda/README.md) |
 
-O botão **DOWNLOAD VST** na página inicial abre a [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest). Os ZIPs da suite incluem os bundles completos do Guitar FX e do Deluxe 65 Amp, mas releases anteriores podem conter só o Guitar FX: o v0.1.6, por exemplo, não inclui o amplificador. Para o Deluxe, escolha um release que anuncie a suite ou os artefatos de uma execução bem-sucedida da `main` no [workflow dos plugins](https://github.com/nichodevs/nichodev.com/actions/workflows/plugin.yml). Esses artefatos são temporários e expiram após 14 dias. Para instalação e compilação, consulte [plugin/README.md](plugin/README.md) e o [guia do Deluxe 65 Amp](plugin/DELUXE_65.md); para diagnóstico no Reaper e em outras DAWs, veja o [guia de troubleshooting](plugin/TROUBLESHOOTING.md).
+A [suite VST3](plugin/README.md) contém **Nichodev Guitar FX**, com 15 pedais, e **Nichodev Deluxe 65 Amp**, com canais Clean/Dirty, reverb de mola e vibrato de afinação. Baixe os pacotes Windows ou Linux nos **Assets** do [release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest).
 
-## Estrutura
+## Executar o site
 
-- Páginas HTML e estilos principais na raiz.
-- `js/`: lógica das ferramentas de áudio e navegação.
-- `assets/cursors/`: cursores retrô.
-- `onda/`: página, estilos e animação do easter egg.
-- `plugin/`: projeto JUCE/CMake dos dois VST3, assets, testes DSP e testes do processador.
-- `scripts/validate-site.js`: valida referências, sintaxe e cobertura dos arquivos do site.
-- `tests/e2e/`: testes de navegação, responsividade e teclado com Playwright.
-- `.github/workflows/`: validação do site, compilação/testes do plugin e publicação do site.
-
-## Desenvolvimento do site
-
-Requer Node.js 24 ou superior e npm.
+Requer Node.js 24 ou superior e npm. Na raiz do repositório:
 
 ```sh
 npm ci
-npm run check
-npx playwright install chromium
-npm run test:e2e
 npm start
 ```
 
-`npm ci` instala as versões registradas no `package-lock.json`. `npm run check` valida referências e arquivos do site. Os testes E2E abrem as páginas no Chromium e verificam navegação, largura em telas móveis, foco de teclado e a onda. Backups importados do MIXMASTER aceitam linhas do tempo de até 24 horas; a exportação WAV mantém o limite de dez minutos de conteúdo, com a cauda dos efeitos acrescentada ao final. Falhas de armazenamento mantêm o áudio temporário recuperável por download ou backup; esses clipes não são anunciados nem incluídos como áudio salvo automaticamente. A limpeza preserva o projeto e os históricos de desfazer/refazer; no disco, espera haver uma única aba de edição e suporte a Web Locks. Os testes também cobrem recuperação de áudio sem armazenamento, união e reabertura com precisão em ponto flutuante, envelopes de volume, MIDI, fim da reprodução e limpeza de áudios preservando o histórico. No Guitar FX LAB, os ajustes atualizam os nós existentes, preservando buffers e modulações; RV-6 e SHIMMER ajustam o nível de caudas fixas de 2 e 4,4 segundos. O gate NS-2 e a preservação dos ecos são verificados com `OfflineAudioContext`. `npm start` inicia o servidor Express na porta 3000 (ou na porta definida por `PORT`); o endpoint `/health` verifica o servidor.
+Abra [http://localhost:3000](http://localhost:3000). A variável `PORT` permite escolher outra porta. O servidor Express também oferece `/health` e `/api/status`; a publicação na Hostinger usa os arquivos estáticos.
 
-## VST3
+A gravação requer permissão de microfone e uma página em HTTPS ou `localhost`.
 
-A implementação nativa e suas instruções estão em [plugin/README.md](plugin/README.md). O GitHub Actions compila o Guitar FX e o Deluxe 65 Amp para Windows e Linux e executa os testes DSP e de integração quando há alterações no plugin. As regressões incluem resposta temporal/frequencial entre taxas de amostragem e continuidade durante a troca de canais.
+## Projetos e áudio no MIXMASTER
+
+- O projeto fica no `localStorage` e os áudios no IndexedDB deste navegador e desta origem.
+- **BACKUP** baixa um arquivo `.nichodev.json` com o projeto e seus áudios, para recuperação ou transferência entre navegadores.
+- Se o armazenamento falhar, o áudio fica temporário na aba. Use o download de recuperação do clipe selecionado ou **BACKUP** antes de sair; o aviso de salvamento distingue essa situação.
+- As uniões preservam o áudio interno em WAV float32. **EXPORTAR WAV** renderiza a mixagem em PCM16 estéreo, com até dez minutos de conteúdo e a cauda dos efeitos ao final.
+- Backups importados aceitam linhas do tempo de até 24 horas. A limpeza de áudio preserva o projeto e os históricos de desfazer/refazer; a remoção em disco exige suporte a Web Locks e uma única aba de edição.
+
+No Guitar FX LAB, ajustar parâmetros reutiliza os nós existentes e preserva os ecos. RV-6 e SHIMMER controlam o nível de caudas fixas de 2 e 4,4 segundos.
+
+## Verificar alterações
+
+```sh
+npm run check
+npx playwright install chromium
+npm run test:e2e
+```
+
+No Linux, use `npx playwright install --with-deps chromium` para instalar também as bibliotecas de sistema. O Playwright inicia o servidor local automaticamente quando necessário.
+
+- `npm run check`: sintaxe JavaScript, IDs, referências locais e cobertura dos arquivos enviados por SFTP.
+- `npm run test:e2e`: navegação, responsividade, teclado, retorno pelo histórico e regressões de áudio no Chromium.
+- Os testes do MIXMASTER cobrem falha de armazenamento, recuperação, precisão após reabrir, envelopes, MIDI/BPM, transporte, exclusão e limpeza com histórico e outra aba.
+- O Guitar FX LAB verifica o gate NS-2 e a preservação dos efeitos com `OfflineAudioContext`.
+- Os testes dos VST3 e os comandos CMake estão em [plugin/README.md](plugin/README.md).
+
+## Organização
+
+- HTML e CSS na raiz: páginas do estúdio e apresentação.
+- `js/`: áudio, edição e navegação do site.
+- `assets/cursors/`: cursores retrô.
+- [onda/](onda/README.md): página da onda de gratidão.
+- [plugin/](plugin/README.md): JUCE/CMake, dois VST3, testes e notas de release.
+- `scripts/` e `tests/e2e/`: validação do site e testes Playwright.
+- `.github/workflows/`: validação, builds, releases e deploy.
 
 ## Publicação
 
-- **Releases do VST3:** os ZIPs anexados a um GitHub Release são os downloads permanentes; o botão do site aponta para o release mais recente. Após os dois builds e testes passarem em um push para `main`, o workflow publica automaticamente um release para a versão do pacote, com os dois ZIPs e notas correspondentes. Versões já publicadas são preservadas. Os artefatos das Actions continuam temporários, retidos por 14 dias. Consulte o [processo de release do plugin](plugin/RELEASING.md).
-- **Site:** o workflow `Publicar site na Hostinger` publica por SFTP em pushes para `main` que alterem páginas HTML/CSS da raiz, `assets/`, `js/`, `onda/`, `robots.txt` ou o próprio workflow de deploy; também pode ser iniciado manualmente e roda diariamente às 09:00 UTC (06:00 em Brasília). Ele depende do workflow reutilizável de validação no mesmo commit, com `npm run check` e os testes E2E; uma falha impede o SFTP. Após o envio, faz uma verificação HTTP. Veja os [detalhes do deploy](DEPLOYMENT.md), inclusive os arquivos que precisam ser atualizados quando uma página ou asset novo for adicionado. As builds do plugin são distribuídas nos releases do GitHub.
+**Site:** o workflow [Publicar site na Hostinger](.github/workflows/deploy.yml) valida o mesmo commit com `npm run check` e Playwright antes do SFTP. Uma falha impede o envio. As publicações são serializadas e terminam com conferência HTTP.
+
+Ele roda manualmente, diariamente às 09:00 UTC (06:00 em Brasília) e em pushes para `main` que atinjam seus filtros de arquivos. Esses filtros incluem `onda/**`: alterar `onda/README.md` também aciona o deploy. O README da raiz e os arquivos de `plugin/` ficam fora desses filtros. Consulte [DEPLOYMENT.md](DEPLOYMENT.md) ao adicionar ou renomear páginas e assets.
+
+**VST3:** o workflow [Compilar plugin de áudio](.github/workflows/plugin.yml) compila e testa Windows/Linux em PRs e pushes para `main` que alterem `plugin/**` ou o próprio workflow, incluindo documentação nessa pasta. Na `main`, os dois builds aprovados permitem publicar a versão declarada no CMake; um release já publicado é preservado. Mudanças apenas documentais mantêm as versões dos binários.
+
+Os ZIPs dos releases são os downloads permanentes. Os artefatos das Actions expiram após 14 dias. Veja o [processo de release](plugin/RELEASING.md), o [guia do Deluxe 65](plugin/DELUXE_65.md) e o [diagnóstico em DAWs](plugin/TROUBLESHOOTING.md).

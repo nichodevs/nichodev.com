@@ -1,9 +1,23 @@
-# Easter egg da onda sonora
+# Onda de gratidão
 
-Página surpresa aberta ao clicar na onda animada no rodapé da página inicial.
+Página surpresa acessada pela onda animada no rodapé do [estúdio](../README.md). A animação em canvas acompanha o ponteiro e se adapta ao tamanho da tela.
 
-- `index.html`: página e mensagem de agradecimento.
-- `onda.css`: apresentação responsiva em estilo arcade retrô.
-- `onda.js`: onda interativa com mouse, toque e teclado.
+[Abrir a página publicada](https://nichodev.com/onda/)
 
-Endereço publicado: `https://nichodev.com/onda/`.
+## Como interagir
+
+- **Mouse:** mova o ponteiro sobre a onda.
+- **Toque:** arraste o dedo sobre a área interativa.
+- **Teclado:** use Tab para focar a área e as setas esquerda/direita para mover a interação. Segure Shift para aumentar o passo.
+- A preferência do sistema por **redução de movimento** mantém a fase da onda estática, com interação ainda disponível.
+- **VOLTAR AO ESTÚDIO** retorna à página inicial.
+
+## Arquivos
+
+- [index.html](index.html): mensagem de agradecimento e área acessível por teclado.
+- [onda.css](onda.css): apresentação responsiva em estilo arcade retrô.
+- [onda.js](onda.js): desenho, redimensionamento e interação com a onda.
+
+Para executar localmente, siga os [comandos do site](../README.md#executar-o-site) e abra [http://localhost:3000/onda/](http://localhost:3000/onda/). Os testes de teclado e retorno pelo histórico estão em [tests/e2e/studio.spec.js](../tests/e2e/studio.spec.js).
+
+A publicação segue o [workflow do site](../.github/workflows/deploy.yml). Seu filtro `onda/**` inclui este README: integrá-lo à `main` também aciona validação e deploy. Consulte [DEPLOYMENT.md](../DEPLOYMENT.md).
