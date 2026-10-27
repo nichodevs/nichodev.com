@@ -1,6 +1,6 @@
 # nichodev.com
 
-Site estático com ferramentas de áudio para navegador e um plugin VST3 para uso em DAWs.
+Site estático com ferramentas de áudio para navegador e plugins VST3 para uso em DAWs.
 
 ## Ferramentas
 
@@ -8,9 +8,10 @@ Site estático com ferramentas de áudio para navegador e um plugin VST3 para us
 - [Guitar FX LAB](guitarra.html): cadeia de efeitos para guitarra.
 - [MIXMASTER](mixmaster.html): editor de áudio.
 - [Onda sonora](onda/): página interativa acessada pelo ícone animado no rodapé.
-- **Nichodev Guitar FX VST3**: versão nativa da pedaleira para Windows e Linux.
+- **Nichodev Guitar FX VST3**: cadeia nativa de 15 pedais para Windows e Linux.
+- **Nichodev Deluxe 65 Amp VST3**: amplificador 8-bit inspirado em combos valvulados de 22 W, com canais Normal/Clean e Vibrato/Dirty, reverb de mola e vibrato de afinação.
 
-O botão **DOWNLOAD VST** na página inicial abre a [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest). Os arquivos de instalação estão em **Assets**. Para instalação e compilação, consulte [plugin/README.md](plugin/README.md); para diagnóstico no Reaper e em outras DAWs, veja o [guia de troubleshooting](plugin/TROUBLESHOOTING.md).
+O botão **DOWNLOAD VST** na página inicial abre a [página do release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest). Cada ZIP de sistema inclui os bundles completos do Guitar FX e do Deluxe 65 Amp; instale apenas os plugins que quiser usar. Para instalação e compilação, consulte [plugin/README.md](plugin/README.md) e o [guia do Deluxe 65 Amp](plugin/DELUXE_65.md); para diagnóstico no Reaper e em outras DAWs, veja o [guia de troubleshooting](plugin/TROUBLESHOOTING.md).
 
 ## Estrutura
 
@@ -18,7 +19,7 @@ O botão **DOWNLOAD VST** na página inicial abre a [página do release mais rec
 - `js/`: lógica das ferramentas de áudio e navegação.
 - `assets/cursors/`: cursores retrô.
 - `onda/`: página, estilos e animação do easter egg.
-- `plugin/`: projeto JUCE/CMake do VST3, assets, testes DSP e testes do processador.
+- `plugin/`: projeto JUCE/CMake dos dois VST3, assets, testes DSP e testes do processador.
 - `scripts/validate-site.js`: valida referências, sintaxe e cobertura dos arquivos do site.
 - `tests/e2e/`: testes de navegação, responsividade e teclado com Playwright.
 - `.github/workflows/`: validação do site, compilação/testes do plugin e publicação do site.
@@ -39,7 +40,7 @@ npm start
 
 ## VST3
 
-A implementação nativa e suas instruções estão em [plugin/README.md](plugin/README.md). O GitHub Actions compila o VST3 para Windows e Linux e executa os testes DSP e de integração do processador quando há alterações no plugin.
+A implementação nativa e suas instruções estão em [plugin/README.md](plugin/README.md). O GitHub Actions compila o Guitar FX e o Deluxe 65 Amp para Windows e Linux e executa os testes DSP e de integração quando há alterações no plugin.
 
 ## Publicação
 

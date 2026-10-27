@@ -55,18 +55,24 @@ jobs:
       - name: Configurar CMake e baixar JUCE
         run: cmake -S plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release
 
-      - name: Compilar bundle VST3
-        run: cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3
+      - name: Compilar os bundles VST3
+        run: cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3 NichodevDeluxe65_VST3
       
       - name: Compilar e executar testes DSP e do processador
         run: |
-          cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests
+          cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests
           ctest --test-dir build/plugin --build-config Release --output-on-failure
 
-      - name: Publicar artefato VST3
+      - name: Montar pacote de distribuição
+        run: |
+          cmake -E make_directory build/plugin/release-package
+          cmake -E copy_directory "build/plugin/NichodevGuitarFX_artefacts/Release/VST3/Nichodev Guitar FX.vst3" "build/plugin/release-package/Nichodev Guitar FX.vst3"
+          cmake -E copy_directory "build/plugin/NichodevDeluxe65_artefacts/Release/VST3/Nichodev Deluxe 65 Amp.vst3" "build/plugin/release-package/Nichodev Deluxe 65 Amp.vst3"
+
+      - name: Publicar os bundles para Windows e Linux
         uses: actions/upload-artifact@v7
         with:
-          name: NichodevGuitarFX-${{ matrix.os }}
-          path: build/plugin/NichodevGuitarFX_artefacts/Release/VST3/
+          name: NichodevVST3-${{ matrix.os }}
+          path: build/plugin/release-package/
           if-no-files-found: error
           retention-days: 14
