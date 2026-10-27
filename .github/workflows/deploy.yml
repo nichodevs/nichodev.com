@@ -69,10 +69,10 @@ jobs:
             set net:max-retries 2
             set cmd:fail-exit yes
             cd domains/nichodev.com/public_html
-            # Ensure nested upload destinations exist on fresh or partially prepared hosting.
-            mkdir -p assets/cursors
-            mkdir -p js
-            mkdir -p onda
+            # Reuse existing SFTP directories; create only missing destinations.
+            cd assets/cursors && cd ../.. || mkdir -p assets/cursors
+            cd js && cd .. || mkdir js
+            cd onda && cd .. || mkdir onda
             put style.css -o style.css
             put index.css -o index.css
             put voz.css -o voz.css
