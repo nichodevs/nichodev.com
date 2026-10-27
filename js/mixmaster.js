@@ -12,7 +12,7 @@
   const PITCHES = ["C5", "B4", "A4", "G4", "F4", "E4", "D4", "C4"];
   const FREQUENCIES = [523.25, 493.88, 440, 392, 349.23, 329.63, 293.66, 261.63];
   const state = { tracks: [], selected: [], selectedTrackId: null, playhead: 0, zoom: 16, bpm: 120, tab: "edit", master: .8, playing: false };
-  let db, audioContext, masterNode, meterFrame, playStartedAt = 0, playOffset = 0, activeSources = [];
+  let db, audioContext, masterNode, meterFrame, playFrame = 0, playStartedAt = 0, playOffset = 0, activeSources = [];
   let recorder, recorderStream, recordingSource, recordingAnalyser, recordingSilencer, recordingFrame = 0, recordingStartedAt = 0, lastWaveformSampleAt = 0, liveWaveformPeaks = [], recordChunks = [], undoStack = [], redoStack = [], saveTimer;
   let projectReady = Promise.resolve(), recordingSetup = false, recordingFinalizing = false;
   let recordingClip = null, recordingTrack = null, lastClipWaveformUpdate = 0;
@@ -505,8 +505,8 @@
   async function addTrack() { await projectReady; checkpoint(); const track = freshTrack(`FAIXA ${state.tracks.length + 1}`); state.tracks.push(track); state.selectedTrackId = track.id; if (audioContext && track.type !== "midi") createTrackRoute(track); saveProject(); render(); setStatus("Nova faixa de áudio criada"); }
   async function addMidiTrack() { await projectReady; checkpoint(); const track = freshTrack(`MIDI ${state.tracks.filter(item => item.type === "midi").length + 1}`, "midi"); track.clips.push({ id: id(), type: "midi", name: "REGIÃO MIDI", start: state.playhead, duration: 60 / state.bpm * 4, notes: [] }); state.tracks.push(track); state.selectedTrackId = track.id; state.selected = [track.clips[0].id]; saveProject(); render(); setStatus("Faixa MIDI criada · clique na grade para desenhar notas"); }
   async function importFiles(files, targetTrack) {
-    await projectReady;
     const valid = [...files].filter(file => file.type.startsWith("audio/"));
+    await projectReady;
     if (!valid.length) { setStatus("Escolha um arquivo de áudio compatível."); return; }
     setStatus(`Importando ${valid.length} arquivo(s)…`);
     audioOperations++;
@@ -708,8 +708,8 @@
         }
       }
       els.play.classList.add("playing"); setStatus("Reproduzindo mix");
-      const tick = () => { if (!state.playing) return; state.playhead = playOffset + audioContext.currentTime - playStartedAt; positionPlayhead(); if (state.playhead >= projectDuration() + effectTailDuration()) stopPlayback(true); else requestAnimationFrame(tick); };
-      requestAnimationFrame(tick);
+      const tick = () => { if (!state.playing) return; state.playhead = playOffset + audioContext.currentTime - playStartedAt; positionPlayhead(); if (state.playhead >= projectDuration() + effectTailDuration()) stopPlayback(true); else playFrame = requestAnimationFrame(tick); };
+      playFrame = requestAnimationFrame(tick);
     } catch (error) { setStatus(error.message); }
   }
   function blobToBase64(blob) {
@@ -878,6 +878,8 @@
     setStatus("Projeto resetado · comece com uma faixa vazia");
   }
   function stopPlayback(reset = false) {
+    if (playFrame) cancelAnimationFrame(playFrame);
+    playFrame = 0;
     if (state.playing) { state.playing = false; stopSources(); els.play.classList.remove("playing"); saveProject(); }
     if (reset) { state.playhead = 0; positionPlayhead(); }
   }
@@ -1003,7 +1005,13 @@
   els.projectFile.addEventListener("change", event => importProjectBackup(event.target.files?.[0]));
   $("resetProjectButton").addEventListener("click", resetProject);
   $("zoomControl").addEventListener("input", event => { state.zoom = Number(event.target.value); render(); });
-  $("bpmInput").addEventListener("change", event => { state.bpm = Math.max(40, Math.min(240, Number(event.target.value) || 120)); event.target.value = state.bpm; saveProject(); render(); });
+  $("bpmInput").addEventListener("change", event => {
+    const bpm = Math.max(40, Math.min(240, Number(event.target.value) || 120)), previous = state.bpm, wasPlaying = state.playing;
+    checkpoint(); if (wasPlaying) stopPlayback(false);
+    for (const track of state.tracks) for (const clip of track.clips) if (clip.type === "midi") clip.duration *= previous / bpm;
+    state.bpm = bpm; event.target.value = bpm; saveProject(); render();
+    if (wasPlaying) play();
+  });
   $("masterVolume").addEventListener("input", event => { state.master = Number(event.target.value) / 100; $("masterValue").textContent = `${event.target.value}%`; if (audioContext) masterNode.gain.setTargetAtTime(state.master, audioContext.currentTime, .02); saveProject(); });
   $("clipGain").addEventListener("input", event => { const item = selectedClip(); if (!item) return; item.clip.gain = Number(event.target.value) / 100; $("clipGainValue").textContent = `${event.target.value}%`; saveProject(); });
   for (const [control, property, scale] of [["toneControl", "tone", .01], ["delayControl", "delay", .01], ["reverbControl", "reverb", .01]]) $(control).addEventListener("input", event => { const track = activeTrack(); if (!track) return; track[property] = Number(event.target.value) * scale; $(control.replace("Control", "Value")).textContent = `${event.target.value}%`; updateRoute(track); saveProject(); });

@@ -115,7 +115,7 @@ test("falha de armazenamento mantém a estrutura anterior do projeto", async ({ 
       return put.apply(this, args);
     };
   });
-  const value = backup([audioClip("clip-a", 0, 0, 1), audioClip("clip-b", 3, 0, 1, { audioId: "asset-b" })]);
+  const value = backup([audioClip("clip-a", 0, 0, 1), audioClip("clip-b", 1, 0, 1, { audioId: "asset-b" })]);
   value.assets.push({ ...value.assets[0], id: "asset-b" });
   await upload(page, value);
   await expect(page.locator("#projectStatus")).toContainText("Não foi possível importar o backup");
@@ -367,14 +367,14 @@ test("excluir faixa interrompe suas fontes e desconecta o áudio", async ({ page
 });
 
 test("limpeza preserva undo e outra aba e libera áudio sem referências", async ({ page }) => {
-  const value = backup([audioClip("clip-a", 0, 0, 1), audioClip("clip-b", 1, 0, 1, { audioId: "asset-b" })]);
+  const value = backup([audioClip("clip-a", 0, 0, 1), audioClip("clip-b", 3, 0, 1, { audioId: "asset-b" })]);
   value.assets.push({ ...value.assets[0], id: "asset-b" });
   await restore(page, value);
   await savedProject(page);
   const other = await page.context().newPage();
   await other.goto("/mixmaster.html");
   await expect(other.locator(".audio-clip")).toHaveCount(2);
-  await page.locator('[data-clip-id="clip-a"]').click();
+  await page.locator('[data-clip-id="clip-a"]').click({ position: { x: 8, y: 35 } });
   await page.locator("#deleteButton").click();
   await savedProject(page);
   expect(await storedAudioCount(page)).toBe(2);
@@ -399,4 +399,22 @@ test("Excluir funciona com múltiplos clipes e desfazer restaura ambos", async (
   await expect(page.locator(".audio-clip")).toHaveCount(0);
   await page.locator("#undoButton").click();
   await expect(page.locator(".audio-clip")).toHaveCount(2);
+});
+
+test("mudar BPM mantém a região MIDI inteira na prévia e no arquivo", async ({ page }) => {
+  const value = backup([{ id: "midi-a", type: "midi", name: "COMPASSO", start: 0, duration: 2,
+    notes: Array.from({ length: 16 }, (_, step) => ({ step, pitch: 0, velocity: .8 })) }]);
+  value.project.tracks[0].type = "midi";
+  await restore(page, value);
+  await page.locator("#playButton").click();
+  await page.locator("#bpmInput").fill("60");
+  await page.locator("#bpmInput").press("Tab");
+  await expect(page.locator("#playButton")).toHaveClass(/playing/);
+  expect((await savedProject(page)).tracks[0].clips[0].duration).toBe(4);
+  const file = await downloadBytes(page, "#exportButton"), rate = file.readUInt32LE(24), channels = file.readUInt16LE(22);
+  expect(file.readUInt32LE(40) / file.readUInt32LE(28)).toBeCloseTo(4, 3);
+  let latePeak = 0;
+  for (let i = Math.floor(3.8 * rate); i < Math.floor(3.9 * rate); i++) latePeak = Math.max(latePeak, Math.abs(file.readInt16LE(44 + i * channels * 2)) / 32768);
+  expect(latePeak).toBeGreaterThan(.01);
+  await page.locator("#stopButton").click();
 });
