@@ -13,7 +13,6 @@
   let width = 0;
   let height = 0;
   let pixelRatio = 1;
-  let frame = 0;
   let time = 0;
   let lastTime = 0;
 
@@ -77,7 +76,7 @@
     pointer.x += (pointer.targetX - pointer.x) * 0.12;
     pointer.strength += (pointer.targetStrength - pointer.strength) * 0.08;
     draw();
-    frame = window.requestAnimationFrame(animate);
+    window.requestAnimationFrame(animate);
   }
 
   stage.addEventListener("pointermove", event => setPointer(event.clientX, event.clientY));
@@ -104,6 +103,5 @@
   else window.addEventListener("resize", resize);
   reducedMotion.addEventListener?.("change", () => { lastTime = 0; });
   resize();
-  frame = window.requestAnimationFrame(animate);
-  window.addEventListener("pagehide", () => window.cancelAnimationFrame(frame), { once: true });
+  window.requestAnimationFrame(animate);
 })();

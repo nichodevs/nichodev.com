@@ -16,12 +16,19 @@
   let recorder, recorderStream, recordingSource, recordingAnalyser, recordingSilencer, recordingFrame = 0, recordingStartedAt = 0, lastWaveformSampleAt = 0, liveWaveformPeaks = [], recordChunks = [], undoStack = [], redoStack = [], saveTimer;
   let projectReady = Promise.resolve(), recordingSetup = false, recordingFinalizing = false;
   let recordingClip = null, recordingTrack = null, lastClipWaveformUpdate = 0;
-  const buffers = new Map(), blobs = new Map(), routeNodes = new Map();
+  const buffers = new Map(), blobs = new Map(), routeNodes = new Map(), temporaryAudio = new Set();
+  let audioOperations = 0, recoveryUrl = null, recoveryId = null;
   const id = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  // Keep on-disk audio while another editor tab may still need it for undo.
+  const storageLockName = "nichodev-mixmaster-tab-" + id();
+  let storageLockReady = false;
+  navigator.locks?.request(storageLockName, () => {
+    storageLockReady = true;
+    return new Promise(() => {});
+  }).catch(error => console.error("Proteção entre abas indisponível:", error));
   const esc = value => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const durationOf = clip => clip.type === "midi" ? clip.duration : Math.max(0, clip.sourceEnd - clip.sourceStart);
   const clipEnd = clip => clip.start + durationOf(clip);
-  const currentTracks = () => state.tracks;
   const selectedClip = () => state.selected.length === 1 ? findClip(state.selected[0]) : null;
   const activeTrack = () => selectedClip()?.track || state.tracks.find(track => track.id === state.selectedTrackId) || null;
   function findClip(clipId) {
@@ -82,10 +89,25 @@
     delay.connect(feedback); feedback.connect(delay);
     filter.connect(reverb); reverb.connect(reverbWet); reverbWet.connect(masterNode);
     volume.connect(pan); pan.connect(filter);
-    const nodes = { volume, pan, filter, delay, feedback, delayWet, reverbWet, reverb };
+    const nodes = { volume, pan, filter, dry, delay, feedback, delayWet, reverbWet, reverb };
     routeNodes.set(track.id, nodes);
     updateRoute(track);
     return nodes;
+  }
+  function disposeTrackRoute(trackId) {
+    for (const node of Object.values(routeNodes.get(trackId) || {})) node.disconnect();
+    routeNodes.delete(trackId);
+  }
+  function stopSources(matches = () => true) {
+    activeSources = activeSources.filter(item => {
+      if (!matches(item)) return true;
+      try { item.source.stop(); } catch {}
+      item.source.disconnect(); item.gain.disconnect();
+      return false;
+    });
+  }
+  function pruneTrackRoutes() {
+    for (const trackId of routeNodes.keys()) if (!state.tracks.some(track => track.id === trackId)) disposeTrackRoute(trackId);
   }
   function updateRoute(track) {
     const nodes = routeNodes.get(track.id) || (audioContext ? createTrackRoute(track) : null);
@@ -113,6 +135,7 @@
     updateUndoButtons();
   }
   function restoreSnapshot(value) {
+    stopPlayback(false);
     const parsed = JSON.parse(value);
     state.tracks = parsed.tracks || [];
     state.selected = parsed.selected || [];
@@ -122,6 +145,7 @@
     state.master = parsed.master ?? .8;
     $("bpmInput").value = state.bpm;
     $("masterVolume").value = Math.round(state.master * 100);
+    pruneTrackRoutes();
     for (const track of state.tracks) if (audioContext) { if (!routeNodes.has(track.id)) createTrackRoute(track); else updateRoute(track); }
     saveProject(); render();
   }
@@ -129,14 +153,21 @@
   function persistProjectNow() {
     clearTimeout(saveTimer); saveTimer = null;
     try {
-      localStorage.setItem(PROJECT_KEY, JSON.stringify({ tracks: state.tracks, selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master }));
-      return true;
+      // Keep volatile takes recoverable in this tab without autosaving missing audio references.
+      const tracks = state.tracks.map(track => ({ ...track, clips: track.clips.filter(clip => clip.type === "midi" || (clip.audioId && !temporaryAudio.has(clip.audioId))) }));
+      localStorage.setItem(PROJECT_KEY, JSON.stringify({ tracks, selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master }));
+      return !state.tracks.some(track => track.clips.some(clip => temporaryAudio.has(clip.audioId)));
     } catch { return false; }
   }
   function saveProject() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
-      els.status.textContent = persistProjectNow() ? "Projeto salvo neste navegador" : "Não foi possível salvar o projeto neste navegador";
+      const saved = persistProjectNow();
+      if (recorder?.state === "recording" || recordingFinalizing) return;
+      els.status.textContent = state.tracks.some(track => track.clips.some(clip => temporaryAudio.has(clip.audioId)))
+        ? "Há áudio temporário: baixe o clipe selecionado ou crie um BACKUP antes de sair"
+        : saved ? "Projeto salvo neste navegador" : "Não foi possível salvar o projeto neste navegador";
+      collectUnusedAudio().catch(error => console.error("Não foi possível liberar áudios sem uso:", error));
     }, 180);
   }
   function openDB() {
@@ -148,10 +179,64 @@
       request.onerror = () => reject(request.error);
     });
   }
-  function storeBlob(key, blob) {
-    blobs.set(key, blob);
-    if (!db) return Promise.resolve();
-    return new Promise((resolve, reject) => { const tx = db.transaction("audio", "readwrite"); tx.objectStore("audio").put(blob, key); tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); });
+  async function storeBlob(key, blob) {
+    blobs.set(key, blob); temporaryAudio.add(key);
+    try {
+      if (!db) await openDB();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction("audio", "readwrite");
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error || new Error("Gravação local cancelada."));
+        tx.objectStore("audio").put(blob, key);
+      });
+      temporaryAudio.delete(key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  function updateRecoveryLink() {
+    const item = selectedClip(), key = item?.clip.audioId;
+    const blob = temporaryAudio.has(key) ? blobs.get(key) : null;
+    const link = $("recoverAudio");
+    if (key !== recoveryId || !blob) {
+      if (recoveryUrl) URL.revokeObjectURL(recoveryUrl);
+      recoveryUrl = blob ? URL.createObjectURL(blob) : null;
+      recoveryId = blob ? key : null;
+    }
+    link.hidden = !blob;
+    if (blob) {
+      link.href = recoveryUrl;
+      link.download = (item.clip.name || "audio-recuperado") + (blob.type.includes("wav") ? ".wav" : blob.type.includes("ogg") ? ".ogg" : ".webm");
+    } else link.removeAttribute("href");
+  }
+  async function collectUnusedAudio() {
+    if (audioOperations || recordingSetup || recordingFinalizing || recorder?.state === "recording") return;
+    // shortcut: without Web Locks, keep disk assets; add tab coordination before enabling cleanup on older browsers.
+    const locks = storageLockReady ? await navigator.locks.query() : { held: [] };
+    const canCleanDisk = storageLockReady && locks.held.filter(lock => lock.name.startsWith("nichodev-mixmaster-tab-")).length === 1;
+    const keys = db && canCleanDisk ? await new Promise((resolve, reject) => {
+      const request = db.transaction("audio").objectStore("audio").getAllKeys();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    }) : [];
+    if (audioOperations || recordingSetup || recordingFinalizing || recorder?.state === "recording") return;
+    const keep = new Set();
+    const retain = tracks => { for (const track of tracks || []) for (const clip of track.clips || []) if (clip.audioId) keep.add(clip.audioId); };
+    retain(state.tracks);
+    for (const entry of [...undoStack, ...redoStack]) retain(JSON.parse(entry).tracks);
+    // A failed metadata write must not orphan the last autosaved project's audio.
+    try { retain(JSON.parse(localStorage.getItem(PROJECT_KEY) || "null")?.tracks); } catch { return; }
+    const unused = keys.filter(key => !keep.has(key));
+    if (unused.length) await new Promise((resolve, reject) => {
+      const tx = db.transaction("audio", "readwrite");
+      tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+      for (const key of unused) tx.objectStore("audio").delete(key);
+    });
+    for (const key of new Set([...buffers.keys(), ...blobs.keys()])) if (!keep.has(key)) {
+      buffers.delete(key); blobs.delete(key); temporaryAudio.delete(key);
+    }
   }
   function loadBlob(key) {
     if (blobs.has(key)) return Promise.resolve(blobs.get(key));
@@ -163,7 +248,6 @@
   }
   async function loadProject() {
     try {
-      await openDB();
       const saved = JSON.parse(localStorage.getItem(PROJECT_KEY) || "null");
       if (saved?.tracks?.length) {
         state.tracks = saved.tracks;
@@ -173,14 +257,16 @@
         state.master = saved.master ?? .8;
         $("bpmInput").value = state.bpm;
         $("masterVolume").value = Math.round(state.master * 100);
-        let restored = 0;
+        await openDB();
+        let restored = 0, missing = 0;
         for (const track of state.tracks) for (const clip of track.clips) if (clip.type !== "midi") {
           const blob = await loadBlob(clip.audioId);
-          if (blob) { buffers.set(clip.audioId, await decodeBlob(blob)); restored++; }
+          if (blob) { buffers.set(clip.audioId, await decodeBlob(blob)); restored++; } else missing++;
         }
-        els.status.textContent = `Projeto restaurado · ${restored} clipe(s) de áudio`;
+        els.status.textContent = `Projeto restaurado · ${restored} clipe(s) de áudio` + (missing ? ` · ${missing} áudio(s) indisponível(is)` : "");
       } else {
         state.tracks = [freshTrack("FAIXA 1")];
+        await openDB();
         els.status.textContent = "Projeto novo · importe um áudio, grave ou crie faixas";
       }
     } catch (error) {
@@ -189,8 +275,14 @@
     }
     render();
   }
+  function projectDuration() {
+    return Math.max(0, ...state.tracks.flatMap(track => track.clips.map(clipEnd)));
+  }
+  function effectTailDuration() {
+    return state.tracks.some(track => track.delay > 0 || track.reverb > 0) ? 2 : 0;
+  }
   function totalDuration() {
-    return Math.max(12, ...state.tracks.flatMap(track => track.clips.map(clipEnd)), state.playhead + 3);
+    return Math.max(12, projectDuration(), state.playhead + 3);
   }
   function render() {
     document.documentElement.style.setProperty("--mix-scale", `${state.zoom}px`);
@@ -216,7 +308,7 @@
     controls.addEventListener("dblclick", event => { if (event.target.closest(".track-name")) { const name = prompt("Nome da faixa:", track.name); if (name?.trim()) { checkpoint(); track.name = name.trim().slice(0, 40); saveProject(); render(); } } });
     controls.querySelectorAll("[data-action]").forEach(button => button.addEventListener("click", () => {
       const action = button.dataset.action;
-      if (action === "remove-track") { if (state.tracks.length < 2) { setStatus("O projeto precisa manter ao menos uma faixa."); return; } checkpoint(); state.tracks = state.tracks.filter(item => item.id !== track.id); state.selected = state.selected.filter(clipId => !track.clips.some(clip => clip.id === clipId)); if (state.selectedTrackId === track.id) state.selectedTrackId = state.tracks[0]?.id || null; routeNodes.delete(track.id); }
+      if (action === "remove-track") { if (state.tracks.length < 2) { setStatus("O projeto precisa manter ao menos uma faixa."); return; } if (recordingTrack?.id === track.id && (recorder?.state === "recording" || recordingFinalizing)) { setStatus("Pare a gravação antes de excluir a faixa."); return; } checkpoint(); stopSources(item => item.trackId === track.id); state.tracks = state.tracks.filter(item => item.id !== track.id); state.selected = state.selected.filter(clipId => !track.clips.some(clip => clip.id === clipId)); if (state.selectedTrackId === track.id) state.selectedTrackId = state.tracks[0]?.id || null; disposeTrackRoute(track.id); }
       if (action === "mute" || action === "solo") { checkpoint(); track[action === "mute" ? "muted" : "solo"] = !track[action === "mute" ? "muted" : "solo"]; state.tracks.forEach(updateRoute); }
       saveProject(); render();
     }));
@@ -314,7 +406,9 @@
     els.selection.textContent = one ? `${one.track.name} / ${one.clip.name || "CLIPE"}` : state.selected.length ? `${state.selected.length} CLIPES SELECIONADOS` : "NENHUM CLIPE SELECIONADO";
     const canTrimAtPlayhead = Boolean(one && one.clip.type !== "midi" && state.playhead > one.clip.start + .025 && state.playhead < clipEnd(one.clip) - .025);
     $("splitButton").disabled = !canTrimAtPlayhead; $("trimStartButton").disabled = !canTrimAtPlayhead; $("trimEndButton").disabled = !canTrimAtPlayhead;
-    for (const buttonId of ["duplicateButton", "deleteButton"]) $(buttonId).disabled = !one;
+    $("duplicateButton").disabled = !one;
+    $("deleteButton").disabled = !state.selected.length;
+    updateRecoveryLink();
     $("joinButton").disabled = state.selected.length < 2;
     $("clipGain").disabled = !one || one.clip.type === "midi";
     if (one && one.clip.type !== "midi") { $("clipGain").value = Math.round((one.clip.gain ?? 1) * 100); $("clipGainValue").textContent = `${Math.round((one.clip.gain ?? 1) * 100)}%`; }
@@ -415,7 +509,8 @@
     const valid = [...files].filter(file => file.type.startsWith("audio/"));
     if (!valid.length) { setStatus("Escolha um arquivo de áudio compatível."); return; }
     setStatus(`Importando ${valid.length} arquivo(s)…`);
-    for (const file of valid) {
+    audioOperations++;
+    try { for (const file of valid) {
       try {
         const blob = file.slice(0, file.size, file.type); const audioBuffer = await decodeBlob(blob); const key = id(); await storeBlob(key, blob); buffers.set(key, audioBuffer);
         let track = targetTrack || state.tracks.find(item => item.id === state.selectedTrackId && item.type === "audio") || state.tracks.find(item => item.type === "audio") || null;
@@ -424,7 +519,7 @@
         const clip = { id: id(), type: "audio", audioId: key, name: file.name.slice(0, 60), start, sourceStart: 0, sourceEnd: audioBuffer.duration, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }] };
         track.clips.push(clip); state.selected = [clip.id]; setStatus(`Importado: ${file.name}`);
       } catch (error) { setStatus(`Não foi possível abrir ${file.name}: ${error.message}`); }
-    }
+    } } finally { audioOperations--; }
     saveProject(); render();
   }
   function startLiveWaveform(stream) {
@@ -506,7 +601,7 @@
         try {
           if (!blob.size) throw new Error("O navegador não entregou dados de áudio desta gravação.");
           const key = id();
-          await storeBlob(key, blob);
+          const permanent = await storeBlob(key, blob);
           let buffer = null;
           try { buffer = await decodeBlob(blob); } catch (decodeError) { console.error("Não foi possível decodificar a gravação:", decodeError); }
           if (buffer) buffers.set(key, buffer);
@@ -525,8 +620,9 @@
           const saved = persistProjectNow();
           render();
           recordingClip = recordingTrack = null; liveWaveformPeaks = [];
-          setStatus(!saved
-            ? "Gravação aparece na faixa, mas o navegador não conseguiu salvar o projeto localmente"
+          setStatus(!permanent
+            ? "Áudio temporário: baixe a gravação selecionada ou crie um BACKUP antes de sair"
+            : !saved ? "Gravação aparece na faixa, mas o navegador não conseguiu salvar o projeto localmente"
             : buffer ? "Gravação salva na faixa e pronta para reprodução" : "Forma de onda salva; o navegador não conseguiu decodificar o áudio para reprodução");
         } catch (error) {
           const track = targetTrack || freshTrack("VOZ 1");
@@ -576,14 +672,14 @@
   }
   function envelopeAt(points, x) { if (!points?.length) return .8; const right = points.findIndex(point => point.x >= x); if (right < 0) return points.at(-1).y; if (right === 0) return points[0].y; const a = points[right - 1], b = points[right]; const t = (x - a.x) / (b.x - a.x); return a.y + (b.y - a.y) * t; }
   function scheduleEnvelope(param, clip, start, duration, from = 0, to = 1) { const points = trimEnvelope(clip.envelope, from, to); param.setValueAtTime(0, start); param.linearRampToValueAtTime((clip.gain ?? 1) * points[0].y, start + .005); for (const point of points.slice(1)) param.linearRampToValueAtTime((clip.gain ?? 1) * point.y, start + Math.max(.01, point.x * duration)); }
-  function scheduleMidi(track, clip, when, offset = 0, destination) {
-    const ctx = audioContext, output = destination || routeNodes.get(track.id)?.volume;
+  function scheduleMidi(ctx, track, clip, when, offset = 0, destination) {
+    const output = destination || routeNodes.get(track.id)?.volume;
     if (!output) return;
     const stepDuration = 60 / state.bpm / 4;
     for (const note of clip.notes || []) {
       const at = clip.start + note.step * stepDuration;
       if (at < offset) continue;
-      const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.type = "square"; osc.frequency.value = FREQUENCIES[note.pitch] || 440; gain.gain.setValueAtTime(0, when + at - offset); gain.gain.linearRampToValueAtTime((note.velocity || .7) * .25, when + at - offset + .012); gain.gain.setValueAtTime((note.velocity || .7) * .25, when + at - offset + stepDuration * .75); gain.gain.linearRampToValueAtTime(0, when + at - offset + stepDuration * .95); osc.connect(gain); gain.connect(output); osc.start(when + at - offset); osc.stop(when + at - offset + stepDuration); activeSources.push(osc);
+      const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.type = "square"; osc.frequency.value = FREQUENCIES[note.pitch] || 440; gain.gain.setValueAtTime(0, when + at - offset); gain.gain.linearRampToValueAtTime((note.velocity ?? .7) * .25, when + at - offset + .012); gain.gain.setValueAtTime((note.velocity ?? .7) * .25, when + at - offset + stepDuration * .75); gain.gain.linearRampToValueAtTime(0, when + at - offset + stepDuration * .95); osc.connect(gain); gain.connect(output); osc.start(when + at - offset); osc.stop(when + at - offset + stepDuration); if (ctx === audioContext) activeSources.push({ source: osc, gain, trackId: track.id, clipId: clip.id });
     }
   }
   async function play() {
@@ -598,7 +694,7 @@
         if (track.muted || (soloExists && !track.solo)) continue;
         for (const clip of track.clips) {
           if (clipEnd(clip) <= playOffset) continue;
-          if (clip.type === "midi") { scheduleMidi(track, clip, ctx.currentTime, playOffset); continue; }
+          if (clip.type === "midi") { scheduleMidi(ctx, track, clip, ctx.currentTime, playOffset); continue; }
           const buffer = buffers.get(clip.audioId), route = routeNodes.get(track.id); if (!buffer || !route) continue;
           const source = ctx.createBufferSource(), clipGain = ctx.createGain(); source.buffer = buffer;
           const timelineOffset = Math.max(0, playOffset - clip.start), audioOffset = clip.sourceStart + timelineOffset, duration = Math.min(clip.sourceEnd, buffer.duration) - audioOffset, at = ctx.currentTime + Math.max(0, clip.start - playOffset);
@@ -607,12 +703,12 @@
           if (audibleDuration > 0) {
             const clipDuration = durationOf(clip);
             scheduleEnvelope(clipGain.gain, clip, at, audibleDuration, timelineOffset / clipDuration, (timelineOffset + audibleDuration) / clipDuration);
-            source.start(at, audioOffset, audibleDuration); activeSources.push(source);
+            source.start(at, audioOffset, audibleDuration); activeSources.push({ source, gain: clipGain, trackId: track.id, clipId: clip.id });
           }
         }
       }
       els.play.classList.add("playing"); setStatus("Reproduzindo mix");
-      const tick = () => { if (!state.playing) return; state.playhead = playOffset + audioContext.currentTime - playStartedAt; positionPlayhead(); if (state.playhead >= totalDuration()) stopPlayback(true); else requestAnimationFrame(tick); };
+      const tick = () => { if (!state.playing) return; state.playhead = playOffset + audioContext.currentTime - playStartedAt; positionPlayhead(); if (state.playhead >= projectDuration() + effectTailDuration()) stopPlayback(true); else requestAnimationFrame(tick); };
       requestAnimationFrame(tick);
     } catch (error) { setStatus(error.message); }
   }
@@ -708,6 +804,7 @@
     if (recorder?.state === "recording" || recordingFinalizing) { setStatus("Pare a gravação antes de importar um backup."); return; }
     if (file.size > 205 * 1024 * 1024) { setStatus("Este arquivo de backup ultrapassa o limite de 205 MB."); return; }
     if (!confirm("Importar este backup substituirá as faixas atuais do MIXMASTER. Deseja continuar?")) { els.projectFile.value = ""; return; }
+    audioOperations++;
     try {
       const { project, assetMap, referencedIds } = validateProjectBackup(JSON.parse(await file.text()));
       if (!db) await openDB();
@@ -745,10 +842,11 @@
       state.bpm = project.bpm ?? 120;
       state.master = project.master ?? .8;
       $("bpmInput").value = state.bpm; $("masterVolume").value = Math.round(state.master * 100); $("masterValue").textContent = Math.round(state.master * 100) + "%";
+      pruneTrackRoutes();
       for (const track of state.tracks) if (audioContext) { if (!routeNodes.has(track.id)) createTrackRoute(track); else updateRoute(track); }
       saveProject(); render(); setStatus("Backup restaurado · " + state.tracks.length + " faixa(s), " + decoded.size + " áudio(s)");
     } catch (error) { setStatus("Não foi possível importar o backup: " + error.message); }
-    finally { els.projectFile.value = ""; }
+    finally { audioOperations--; els.projectFile.value = ""; }
   }
   async function resetProject() {
     await projectReady;
@@ -769,8 +867,8 @@
       setStatus(`Não foi possível resetar o projeto: ${error.message}`);
       return;
     }
-    for (const nodes of routeNodes.values()) for (const node of Object.values(nodes)) { try { node.disconnect(); } catch {} }
-    routeNodes.clear(); buffers.clear(); blobs.clear();
+    for (const trackId of routeNodes.keys()) disposeTrackRoute(trackId);
+    buffers.clear(); blobs.clear(); temporaryAudio.clear();
     undoStack.length = 0; redoStack.length = 0;
     state.tracks = [freshTrack("FAIXA 1")]; state.selected = []; state.selectedTrackId = state.tracks[0].id;
     state.playhead = 0; state.zoom = 16; state.bpm = 120; state.master = .8;
@@ -780,7 +878,7 @@
     setStatus("Projeto resetado · comece com uma faixa vazia");
   }
   function stopPlayback(reset = false) {
-    if (state.playing) { state.playing = false; for (const source of activeSources) { try { source.stop(); } catch {} } activeSources = []; els.play.classList.remove("playing"); saveProject(); }
+    if (state.playing) { state.playing = false; stopSources(); els.play.classList.remove("playing"); saveProject(); }
     if (reset) { state.playhead = 0; positionPlayhead(); }
   }
   function trimEnvelope(points, from, to) {
@@ -816,7 +914,7 @@
     state.selected = [left.id, right.id]; saveProject(); render(); setStatus("Clipe dividido em dois");
   }
   function duplicateClip() { const item = selectedClip(); if (!item) return; checkpoint(); const copy = JSON.parse(JSON.stringify(item.clip)); copy.id = id(); copy.start = clipEnd(item.clip) + .12; copy.name = `${item.clip.name} (cópia)`; item.track.clips.push(copy); state.selected = [copy.id]; saveProject(); render(); }
-  function deleteSelected() { if (!state.selected.length) return; checkpoint(); for (const track of state.tracks) track.clips = track.clips.filter(clip => !state.selected.includes(clip.id)); state.selected = []; saveProject(); render(); setStatus("Clipe(s) excluído(s)"); }
+  function deleteSelected() { if (!state.selected.length) return; checkpoint(); stopSources(item => state.selected.includes(item.clipId)); for (const track of state.tracks) track.clips = track.clips.filter(clip => !state.selected.includes(clip.id)); state.selected = []; saveProject(); render(); setStatus("Clipe(s) excluído(s)"); }
   function mergeBuffers(items) {
     const ctx = audioCtx(); const start = Math.min(...items.map(item => item.clip.start)), end = Math.max(...items.map(item => clipEnd(item.clip))); const channels = Math.max(...items.map(item => buffers.get(item.clip.audioId)?.numberOfChannels || 1)); const output = ctx.createBuffer(channels, Math.ceil((end - start) * ctx.sampleRate), ctx.sampleRate);
     for (const { clip } of items) {
@@ -827,21 +925,39 @@
     return { buffer: output, start, end };
   }
   async function joinSelected() {
-    const items = state.selected.map(findClip).filter(Boolean); if (items.length < 2 || items.some(item => item.clip.type !== "audio") || items.some(item => item.track.id !== items[0].track.id)) { setStatus("Selecione pelo menos dois clipes de áudio da mesma faixa."); return; }
-    checkpoint(); setStatus("Juntando clipes…"); const merged = mergeBuffers(items); const blob = encodeWav(merged.buffer); const key = id(); await storeBlob(key, blob); buffers.set(key, merged.buffer); const track = items[0].track; const clip = { id: id(), type: "audio", audioId: key, name: "Clipe unido", start: merged.start, sourceStart: 0, sourceEnd: merged.buffer.duration, gain: 1, envelope: [{ x: 0, y: 1 }, { x: 1, y: 1 }] }; track.clips = track.clips.filter(value => !state.selected.includes(value.id)); track.clips.push(clip); state.selected = [clip.id]; saveProject(); render(); setStatus("Clipes unidos em um novo áudio");
+    const items = state.selected.map(findClip).filter(Boolean);
+    if (items.length < 2 || items.some(item => item.clip.type !== "audio") || items.some(item => item.track.id !== items[0].track.id)) { setStatus("Selecione pelo menos dois clipes de áudio da mesma faixa."); return; }
+    audioOperations++;
+    try {
+      const merged = mergeBuffers(items), blob = encodeWav(merged.buffer, true), key = id();
+      await storeBlob(key, blob); buffers.set(key, merged.buffer);
+      checkpoint(); stopSources(item => items.some(({ clip }) => clip.id === item.clipId));
+      const track = items[0].track;
+      const clip = { id: id(), type: "audio", audioId: key, name: "Clipe unido", start: merged.start, sourceStart: 0, sourceEnd: merged.buffer.duration, gain: 1, envelope: [{ x: 0, y: 1 }, { x: 1, y: 1 }] };
+      track.clips = track.clips.filter(value => !items.some(item => item.clip.id === value.id)); track.clips.push(clip); state.selected = [clip.id];
+      saveProject(); render();
+      setStatus(temporaryAudio.has(key) ? "União temporária: baixe o áudio selecionado ou crie um BACKUP" : "Clipes unidos em um novo áudio");
+    } catch (error) { setStatus("Não foi possível unir os clipes: " + error.message); }
+    finally { audioOperations--; }
   }
-  function encodeWav(buffer) {
-    const channels = Math.min(2, buffer.numberOfChannels), samples = buffer.length, bytes = 44 + samples * channels * 2, out = new ArrayBuffer(bytes), view = new DataView(out);
+  function encodeWav(buffer, floatingPoint = false) {
+    const bytesPerSample = floatingPoint ? 4 : 2;
+    const channels = Math.min(2, buffer.numberOfChannels), samples = buffer.length, bytes = 44 + samples * channels * bytesPerSample, out = new ArrayBuffer(bytes), view = new DataView(out);
     const write = (offset, text) => { for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i)); };
-    write(0, "RIFF"); view.setUint32(4, bytes - 8, true); write(8, "WAVE"); write(12, "fmt "); view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, channels, true); view.setUint32(24, buffer.sampleRate, true); view.setUint32(28, buffer.sampleRate * channels * 2, true); view.setUint16(32, channels * 2, true); view.setUint16(34, 16, true); write(36, "data"); view.setUint32(40, samples * channels * 2, true);
+    write(0, "RIFF"); view.setUint32(4, bytes - 8, true); write(8, "WAVE"); write(12, "fmt "); view.setUint32(16, 16, true); view.setUint16(20, floatingPoint ? 3 : 1, true); view.setUint16(22, channels, true); view.setUint32(24, buffer.sampleRate, true); view.setUint32(28, buffer.sampleRate * channels * bytesPerSample, true); view.setUint16(32, channels * bytesPerSample, true); view.setUint16(34, bytesPerSample * 8, true); write(36, "data"); view.setUint32(40, samples * channels * bytesPerSample, true);
     const data = Array.from({ length: channels }, (_, channel) => buffer.getChannelData(channel)); let offset = 44;
-    for (let i = 0; i < samples; i++) for (let channel = 0; channel < channels; channel++) { const sample = Math.max(-1, Math.min(1, data[channel][i])); view.setInt16(offset, sample < 0 ? sample * 32768 : sample * 32767, true); offset += 2; }
+    for (let i = 0; i < samples; i++) for (let channel = 0; channel < channels; channel++) {
+      const value = Number.isFinite(data[channel][i]) ? data[channel][i] : 0;
+      if (floatingPoint) view.setFloat32(offset, value, true);
+      else { const sample = Math.max(-1, Math.min(1, value)); view.setInt16(offset, sample < 0 ? sample * 32768 : sample * 32767, true); }
+      offset += bytesPerSample;
+    }
     return new Blob([out], { type: "audio/wav" });
   }
   async function exportMix() {
-    const duration = totalDuration(); if (duration > 600) { setStatus("A exportação está limitada a 10 minutos por projeto."); return; }
+    const duration = projectDuration(); if (!duration) { setStatus("Adicione clipes antes de exportar."); return; } if (duration > 600) { setStatus("A exportação está limitada a 10 minutos por projeto."); return; }
     const sampleRate = audioContext?.sampleRate || 44100, Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!Offline) { setStatus("A exportação WAV não é suportada neste navegador."); return; }
-    setStatus("Renderizando a mixagem WAV…"); const offline = new Offline(2, Math.ceil((duration + 1) * sampleRate), sampleRate), master = offline.createGain(); master.gain.value = state.master; master.connect(offline.destination);
+    setStatus("Renderizando a mixagem WAV…"); const offline = new Offline(2, Math.ceil((duration + effectTailDuration()) * sampleRate), sampleRate), master = offline.createGain(); master.gain.value = state.master; master.connect(offline.destination);
     const soloExists = state.tracks.some(track => track.solo);
     for (const track of state.tracks) {
       if (track.muted || (soloExists && !track.solo)) continue;
@@ -849,7 +965,7 @@
       if (track.reverb > 0) { const wet = offline.createGain(); const trackReverb = offline.createConvolver(); trackReverb.buffer = impulse(offline, 1.8); wet.gain.value = track.reverb; filter.connect(trackReverb); trackReverb.connect(wet); wet.connect(master); }
       if (track.delay > 0) { const delay = offline.createDelay(1.2), wet = offline.createGain(), feedback = offline.createGain(); delay.delayTime.value = .24; wet.gain.value = track.delay; feedback.gain.value = .18; filter.connect(delay); delay.connect(wet); wet.connect(master); delay.connect(feedback); feedback.connect(delay); }
       for (const clip of track.clips) {
-        if (clip.type === "midi") { for (const note of clip.notes || []) { const at = clip.start + note.step * (60 / state.bpm / 4), osc = offline.createOscillator(), gain = offline.createGain(); osc.type = "square"; osc.frequency.value = FREQUENCIES[note.pitch] || 440; gain.gain.setValueAtTime(.0001, at); gain.gain.linearRampToValueAtTime((note.velocity || .7) * .25, at + .012); gain.gain.setValueAtTime(.0001, at + .11); osc.connect(gain); gain.connect(volume); osc.start(at); osc.stop(at + .13); } continue; }
+        if (clip.type === "midi") { scheduleMidi(offline, track, clip, 0, 0, volume); continue; }
         const sourceBuffer = buffers.get(clip.audioId); if (!sourceBuffer) continue; const source = offline.createBufferSource(), clipGain = offline.createGain(); source.buffer = sourceBuffer; scheduleEnvelope(clipGain.gain, clip, clip.start, durationOf(clip)); source.connect(clipGain); clipGain.connect(volume); source.start(clip.start, clip.sourceStart, durationOf(clip));
       }
     }
@@ -895,6 +1011,12 @@
   $("undoButton").addEventListener("click", () => { if (!undoStack.length) return; redoStack.push(snapshot()); restoreSnapshot(undoStack.pop()); setStatus("Ação desfeita"); updateUndoButtons(); });
   $("redoButton").addEventListener("click", () => { if (!redoStack.length) return; undoStack.push(snapshot()); restoreSnapshot(redoStack.pop()); setStatus("Ação refeita"); updateUndoButtons(); });
   window.addEventListener("keydown", event => { if (event.target.matches("input,textarea,select")) return; if (event.code === "Space") { event.preventDefault(); state.playing ? stopPlayback(false) : play(); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") { event.preventDefault(); $("undoButton").click(); } if (event.key === "Delete" || event.key === "Backspace") deleteSelected(); });
-  window.addEventListener("beforeunload", () => { stopPlayback(); if (recorder?.state === "recording") stopRecording(); if (meterFrame) cancelAnimationFrame(meterFrame); });
+  window.addEventListener("beforeunload", event => {
+    persistProjectNow();
+    if (recorder?.state === "recording" || recordingFinalizing || state.tracks.some(track => track.clips.some(clip => temporaryAudio.has(clip.audioId)))) {
+      event.preventDefault(); event.returnValue = ""; return;
+    }
+    stopPlayback(); if (meterFrame) cancelAnimationFrame(meterFrame);
+  });
   projectReady = loadProject();
 })();

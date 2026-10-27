@@ -8,7 +8,7 @@ O pacote também compila o amplificador independente [Nichodev Deluxe 65 Amp](DE
 
 A cadeia tem 15 efeitos: NS-2 (gate), CS-3 (compressor), BD-2 (overdrive), DS-1 (distortion), GE-7 TILT, CH-1 (chorus), BF-3 (flanger), PH-3 (phaser), FZ-5 (fuzz), OCTAFUZZ, VB-2 (vibrato), TR-2 (tremolo), DD-8 (delay), RV-6 (reverb) e SHIMMER. UP/DN movem cada pedal na cadeia; a ordem é salva junto com o estado do plugin.
 
-Também inclui controles MASTER, AMP GAIN e AMP TONE, cinco presets (Clean Pixel, 8-Bit Blues, Arcade Crunch, Boss Battle e Space Delay), RANDOM e RESET. Os controles contínuos e os estados liga/desliga dos pedais são suavizados em 20 ms para reduzir estalos ao ajustar parâmetros, automatizar controles ou trocar de preset. Os buffers de atraso são alocados apenas para os efeitos temporais e dimensionados pelo maior atraso de cada efeito; em bypass, avançam com entrada silenciosa para descartar áudio antigo sem alocação, bloqueio ou limpeza em lote no callback de áudio.
+Também inclui controles MASTER, AMP GAIN e AMP TONE, cinco presets (Clean Pixel, 8-Bit Blues, Arcade Crunch, Boss Battle e Space Delay), RANDOM e RESET. Os controles contínuos e os estados liga/desliga dos pedais são suavizados em 20 ms para reduzir estalos ao ajustar parâmetros, automatizar controles ou trocar de preset. Os coeficientes de gate, compressor e filtros são preparados conforme a taxa de amostragem, mantendo as constantes físicas de tempo e frequência; a modulação do PH-3 usa uma tabela preparada fora do callback. Os buffers de atraso são alocados apenas para os efeitos temporais e dimensionados pelo maior atraso de cada efeito; em bypass, avançam com entrada silenciosa para descartar áudio antigo sem alocação, bloqueio ou limpeza em lote no callback de áudio.
 
 ## Som e limitações
 
@@ -51,7 +51,7 @@ cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests Ni
 ctest --test-dir build/plugin --build-config Release --output-on-failure
 ```
 
-O GitHub Actions compila os dois plugins e executa os testes DSP e de integração em Windows e Linux. O teste do Guitar FX cobre `applyPreset` → parâmetros → `processBlock`; os testes do Deluxe Amp exercitam os dois canais, entradas atenuadas, estabilidade em diferentes taxas, cauda do reverb e variação de pitch. As regressões também cobrem volume Clean em zero, continuidade do vibrato ao atravessar profundidade zero, restauração da ordem dos pedais e o decaimento máximo após os 60 segundos de cauda declarados pelo Guitar FX. Os testes automatizados não substituem a avaliação auditiva em diferentes DAWs e interfaces. Para uma verificação manual organizada do Guitar FX, use o [guia de troubleshooting](TROUBLESHOOTING.md).
+O GitHub Actions compila os dois plugins e executa os testes DSP e de integração em Windows e Linux. O teste do Guitar FX cobre `applyPreset` → parâmetros → `processBlock`; os testes do Deluxe Amp exercitam os dois canais, entradas atenuadas, estabilidade em diferentes taxas, cauda do reverb e variação de pitch. As regressões também cobrem volume Clean em zero, continuidade do vibrato ao atravessar profundidade zero, restauração da ordem dos pedais e o decaimento máximo após os 60 segundos de cauda declarados pelo Guitar FX. As regressões também comparam a resposta de gate, compressor, EQ e PH-3 em 44,1, 48, 96 e 192 kHz. Os testes automatizados não substituem a avaliação auditiva em diferentes DAWs e interfaces. Para uma verificação manual organizada do Guitar FX, use o [guia de troubleshooting](TROUBLESHOOTING.md).
 
 ## Licenças
 

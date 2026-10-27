@@ -101,6 +101,28 @@ void testChannelVoicings()
            "Normal/Clean and Vibrato/Dirty channels have distinct transfer curves");
 }
 
+void testChannelTransition()
+{
+    deluxe65::dsp::Deluxe65Engine engine;
+    engine.prepare(48000.0);
+    deluxe65::dsp::Controls controls;
+    controls.reverb = 0.0f;
+    float previous = 0.0f, maximumStep = 0.0f;
+    double energy = 0.0;
+    for (int sample = 0; sample < 24000; ++sample)
+    {
+        controls.channel = sample < 8000 ? 0.0f : sample < 8960 ? (sample - 8000) / 960.0f
+            : sample < 16000 ? 1.0f : sample < 16960 ? 1.0f - (sample - 16000) / 960.0f : 0.0f;
+        const auto input = .1f * std::sin(6.28318530718f * 110.0f * sample / 48000.0f);
+        const auto output = engine.processSample(input, 0, controls);
+        maximumStep = std::max(maximumStep, std::abs(output - previous));
+        previous = output;
+        energy += output * output;
+    }
+    expect(energy > .01, "the active channels remain audible through both transition directions");
+    expect(maximumStep < .1f, "skipping the inactive channel keeps the twenty-millisecond crossfade continuous");
+}
+
 void testSecondInputAttenuation()
 {
     constexpr double sampleRate = 48000.0;
@@ -228,6 +250,7 @@ int main()
 {
     testSampleRateStability();
     testChannelVoicings();
+    testChannelTransition();
     testSecondInputAttenuation();
     testTruePitchVibrato();
     testVibratoDepthContinuity();

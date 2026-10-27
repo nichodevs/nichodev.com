@@ -56,3 +56,34 @@ test.describe("páginas do estúdio", () => {
     await expect.poll(() => cursor.evaluate(element => element.style.left)).not.toBe(before);
   });
 });
+
+test("sons dos links preservam Ctrl+clique e a aba atual", async ({ page, context }) => {
+  for (const [path, selector, destination] of [
+    ["/", 'a[href="guitarra.html"]', "/guitarra.html"],
+    ["/guitarra.html", 'a[href="index.html"]', "/index.html"]
+  ]) {
+    await page.goto(path);
+    const original = page.url(), opened = context.waitForEvent("page");
+    await page.locator(selector).first().click({ modifiers: ["Control"] });
+    const tab = await opened;
+    await tab.waitForURL("**" + destination);
+    expect(page.url()).toBe(original);
+    await tab.close();
+  }
+});
+
+test("onda continua animando após os eventos de ida e retorno do histórico", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.waveFrameCount = 0;
+    const frame = window.requestAnimationFrame;
+    window.requestAnimationFrame = callback => frame(time => { window.waveFrameCount++; callback(time); });
+  });
+  await page.goto("/onda/");
+  await expect.poll(() => page.evaluate(() => window.waveFrameCount)).toBeGreaterThan(2);
+  const before = await page.evaluate(() => {
+    window.dispatchEvent(new PageTransitionEvent("pagehide", { persisted: true }));
+    window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+    return window.waveFrameCount;
+  });
+  await expect.poll(() => page.evaluate(() => window.waveFrameCount)).toBeGreaterThan(before + 2);
+});

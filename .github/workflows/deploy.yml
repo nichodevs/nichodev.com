@@ -24,20 +24,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    uses: ./.github/workflows/validate.yml
+
   deploy:
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
       - name: Baixar arquivos do repositorio
         uses: actions/checkout@v7
-
-      - name: Configurar Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: "24"
-
-      - name: Validar site antes da publicação
-        run: npm run check
 
       - name: Conferir secrets do SFTP
         env:
@@ -103,7 +99,6 @@ jobs:
             put assets/cursors/cursor-resize-h.png -o assets/cursors/cursor-resize-h.png
             put assets/cursors/cursor-resize-v.png -o assets/cursors/cursor-resize-v.png
             put assets/cursors/cursor-crosshair.png -o assets/cursors/cursor-crosshair.png
-            put assets/cursors/cursor-help.png -o assets/cursors/cursor-help.png
             put assets/cursors/cursor-alt.png -o assets/cursors/cursor-alt.png
             put js/index.js -o js/index.js
             put js/voz.js -o js/voz.js
@@ -119,6 +114,7 @@ jobs:
             put onda/onda.css -o onda/onda.css
             put onda/onda.js -o onda/onda.js
             rm -f cursor-alt.png cursor-crosshair.png cursor-help.png cursor-move.png cursor-not-allowed.png cursor-pointer.png cursor-resize-h.png cursor-resize-v.png cursor-text.png cursor-wait.png cursor.png
+            rm -f assets/cursors/cursor-help.png
             rm -f voz.js modular-fx.html modular-fx.css js/modular-fx.js js/compact-mode.js
             bye
           "
@@ -149,7 +145,6 @@ jobs:
             /js/mixmaster.js
             /assets/cursors/cursor-alt.png
             /assets/cursors/cursor-crosshair.png
-            /assets/cursors/cursor-help.png
             /assets/cursors/cursor-move.png
             /assets/cursors/cursor-not-allowed.png
             /assets/cursors/cursor-pointer.png

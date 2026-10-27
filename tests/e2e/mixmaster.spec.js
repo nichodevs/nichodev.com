@@ -115,7 +115,7 @@ test("falha de armazenamento mantém a estrutura anterior do projeto", async ({ 
       return put.apply(this, args);
     };
   });
-  const value = backup([audioClip("clip-a", 0, 0, 1), audioClip("clip-b", 1, 0, 1, { audioId: "asset-b" })]);
+  const value = backup([audioClip("clip-a", 0, 0, 1), audioClip("clip-b", 3, 0, 1, { audioId: "asset-b" })]);
   value.assets.push({ ...value.assets[0], id: "asset-b" });
   await upload(page, value);
   await expect(page.locator("#projectStatus")).toContainText("Não foi possível importar o backup");
@@ -165,7 +165,8 @@ test("juntar aplica ganho e envelope uma vez e mantém o resultado no backup", a
   for await (const chunk of stream) chunks.push(chunk);
   const exported = JSON.parse(Buffer.concat(chunks).toString("utf8"));
   const merged = Buffer.from(exported.assets[0].dataBase64, "base64"), rate = merged.readUInt32LE(24), channels = merged.readUInt16LE(22);
-  const sampleAt = seconds => merged.readInt16LE(44 + Math.floor(seconds * rate) * channels * 2) / 32768;
+  expect(merged.readUInt16LE(20)).toBe(3);
+  const sampleAt = seconds => merged.readFloatLE(44 + Math.floor(seconds * rate) * channels * 4);
   expect(sampleAt(.25)).toBeCloseTo(.2, 3);
   expect(sampleAt(1.25)).toBeCloseTo(.3, 3);
 });
@@ -208,4 +209,194 @@ test("reprodução no meio do clipe começa no envelope correto e usa o tempo re
   expect(ramps.at(-1).value).toBe(1);
   expect(ramps.at(-1).time - playback.start).toBeCloseTo(5, 4);
   await page.locator("#stopButton").click();
+});
+
+async function downloadBytes(page, selector) {
+  const pending = page.waitForEvent("download");
+  await page.locator(selector).click();
+  const stream = await (await pending).createReadStream(), chunks = [];
+  for await (const chunk of stream) chunks.push(chunk);
+  return Buffer.concat(chunks);
+}
+
+test("áudio sem IndexedDB permanece recuperável e não é anunciado como salvo", async ({ page }) => {
+  await page.addInitScript(() => {
+    indexedDB.open = () => { throw new DOMException("Bloqueado", "SecurityError"); };
+  });
+  await page.reload();
+  await expect(page.locator(".track-row")).toHaveCount(1);
+  await page.locator("#audioFiles").setInputFiles({ name: "temporario.wav", mimeType: "audio/wav", buffer: wav() });
+  await expect(page.locator(".audio-clip")).toHaveCount(1);
+  await expect(page.locator("#recoverAudio")).toBeVisible();
+  const saved = await savedProject(page);
+  expect(saved.tracks[0].clips).toHaveLength(0);
+  await expect(page.locator("#projectStatus")).toContainText("temporário");
+  expect(await downloadBytes(page, "#recoverAudio")).toEqual(wav());
+});
+
+test("gravação sem quota mantém o áudio e oferece download de recuperação", async ({ page }) => {
+  await page.evaluate(bytes => {
+    IDBObjectStore.prototype.put = () => { throw new DOMException("Sem espaço", "QuotaExceededError"); };
+    const context = new AudioContext(), destination = context.createMediaStreamDestination();
+    navigator.mediaDevices.getUserMedia = async () => destination.stream;
+    window.MediaRecorder = class {
+      static isTypeSupported() { return false; }
+      state = "inactive";
+      mimeType = "audio/wav";
+      start() { this.state = "recording"; }
+      stop() {
+        this.state = "inactive";
+        this.ondataavailable({ data: new Blob([new Uint8Array(bytes)], { type: this.mimeType }) });
+        queueMicrotask(() => this.onstop());
+      }
+    };
+  }, [...wav()]);
+  await page.locator("#recordButton").click();
+  await expect(page.locator("#recordButton")).toHaveClass(/recording/);
+  await page.locator("#recordButton").click();
+  await expect(page.locator("#recoverAudio")).toBeVisible();
+  await expect(page.locator("#recordButton")).toBeEnabled();
+  expect(await downloadBytes(page, "#recoverAudio")).toEqual(wav());
+  expect((await savedProject(page)).tracks[0].clips).toHaveLength(0);
+  expect(await storedAudioCount(page)).toBe(0);
+});
+
+test("união preserva picos acima de um após salvar e reabrir", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.decodedMixSamples = [];
+    const decode = AudioContext.prototype.decodeAudioData;
+    AudioContext.prototype.decodeAudioData = async function (...args) {
+      const buffer = await decode.apply(this, args);
+      window.decodedMixSamples.push(buffer.getChannelData(0)[Math.floor(buffer.sampleRate * .25)]);
+      return buffer;
+    };
+  });
+  await page.reload();
+  const value = backup([
+    audioClip("clip-a", 0, 0, 1, { gain: 1.5, envelope: [{ x: 0, y: 1 }, { x: 1, y: 1 }] }),
+    audioClip("clip-b", 0, 0, 1, { gain: 1.5, envelope: [{ x: 0, y: 1 }, { x: 1, y: 1 }] })
+  ]);
+  await restore(page, value);
+  await page.locator("#joinButton").click();
+  await expect(page.locator(".audio-clip")).toHaveCount(1);
+  const exported = JSON.parse((await downloadBytes(page, "#exportProjectButton")).toString("utf8"));
+  const data = Buffer.from(exported.assets[0].dataBase64, "base64");
+  expect(data.readUInt16LE(20)).toBe(3);
+  expect(data.readFloatLE(44 + Math.floor(data.readUInt32LE(24) * .25) * data.readUInt16LE(22) * 4)).toBeCloseTo(1.5, 4);
+  await savedProject(page);
+  await page.reload();
+  await expect(page.locator(".audio-clip")).toHaveCount(1);
+  await expect.poll(() => page.evaluate(() => window.decodedMixSamples.at(-1))).toBeCloseTo(1.5, 4);
+});
+
+test("transporte para no fim e exportação ignora cursor além do projeto", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.mixAudioTime = 0;
+    Object.defineProperty(AudioContext.prototype, "currentTime", { get() { return window.mixAudioTime; } });
+  });
+  await page.reload();
+  await restore(page, backup([audioClip("clip-a", 0, 0, 1)]));
+  await page.locator("#playButton").click();
+  await expect(page.locator("#playButton")).toHaveClass(/playing/);
+  await page.evaluate(() => { window.mixAudioTime = 1.1; });
+  await page.clock.fastForward(100);
+  await expect(page.locator("#playButton")).not.toHaveClass(/playing/);
+  const value = backup([audioClip("clip-a", 0, 0, 1)]);
+  value.project.playhead = 700;
+  await restore(page, value);
+  const file = await downloadBytes(page, "#exportButton");
+  expect(file.readUInt16LE(20)).toBe(1);
+  const seconds = file.readUInt32LE(40) / file.readUInt32LE(28);
+  expect(seconds).toBeCloseTo(1, 3);
+});
+
+test("MIDI usa a mesma duração e envelope na prévia e no WAV", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.mixNotes = [];
+    for (const [Context, kind] of [[AudioContext, "live"], [OfflineAudioContext, "offline"]]) {
+      const create = Context.prototype.createOscillator;
+      Context.prototype.createOscillator = function () {
+        const source = create.call(this), start = source.start.bind(source), stop = source.stop.bind(source);
+        let at;
+        source.start = time => { at = time; start(time); };
+        source.stop = (...args) => { if (args.length) window.mixNotes.push({ kind, duration: args[0] - at }); stop(...args); };
+        return source;
+      };
+    }
+  });
+  await page.reload();
+  for (const bpm of [60, 240]) {
+    const value = backup([{ id: "midi-a", type: "midi", name: "NOTA", start: 0, duration: 1, notes: [{ step: 0, pitch: 0, velocity: .8 }] }]);
+    value.project.bpm = bpm;
+    value.project.tracks[0].type = "midi";
+    await restore(page, value);
+    await page.evaluate(() => { window.mixNotes = []; });
+    await page.locator("#playButton").click();
+    await expect.poll(() => page.evaluate(() => window.mixNotes.length)).toBe(1);
+    await page.locator("#stopButton").click();
+    await downloadBytes(page, "#exportButton");
+    const notes = await page.evaluate(() => window.mixNotes);
+    expect(notes.map(note => note.kind)).toEqual(["live", "offline"]);
+    expect(notes[0].duration).toBeCloseTo(60 / bpm / 4, 6);
+    expect(notes[1].duration).toBeCloseTo(notes[0].duration, 6);
+  }
+});
+
+test("excluir faixa interrompe suas fontes e desconecta o áudio", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.mixSources = [];
+    const create = AudioContext.prototype.createBufferSource;
+    AudioContext.prototype.createBufferSource = function () {
+      const source = create.call(this), stop = source.stop.bind(source), disconnect = source.disconnect.bind(source);
+      const record = { stopped: false, disconnected: false };
+      source.stop = (...args) => { record.stopped = true; stop(...args); };
+      source.disconnect = (...args) => { record.disconnected = true; disconnect(...args); };
+      window.mixSources.push(record);
+      return source;
+    };
+  });
+  await page.reload();
+  const value = backup([audioClip("clip-a", 0, 0, 3)], 3);
+  value.project.tracks.push({ ...value.project.tracks[0], id: "track-b", name: "VAZIA", clips: [] });
+  await restore(page, value);
+  await page.locator("#playButton").click();
+  await expect.poll(() => page.evaluate(() => window.mixSources.length)).toBe(1);
+  await page.locator(".track-row").first().locator('[data-action="remove-track"]').click();
+  await expect(page.locator(".track-row")).toHaveCount(1);
+  expect(await page.evaluate(() => window.mixSources[0])).toEqual({ stopped: true, disconnected: true });
+});
+
+test("limpeza preserva undo e outra aba e libera áudio sem referências", async ({ page }) => {
+  const value = backup([audioClip("clip-a", 0, 0, 1), audioClip("clip-b", 1, 0, 1, { audioId: "asset-b" })]);
+  value.assets.push({ ...value.assets[0], id: "asset-b" });
+  await restore(page, value);
+  await savedProject(page);
+  const other = await page.context().newPage();
+  await other.goto("/mixmaster.html");
+  await expect(other.locator(".audio-clip")).toHaveCount(2);
+  await page.locator('[data-clip-id="clip-a"]').click();
+  await page.locator("#deleteButton").click();
+  await savedProject(page);
+  expect(await storedAudioCount(page)).toBe(2);
+  await page.locator("#undoButton").click();
+  await expect(page.locator(".audio-clip")).toHaveCount(2);
+  await page.locator("#redoButton").click();
+  await expect(page.locator(".audio-clip")).toHaveCount(1);
+  for (let i = 0; i < 42; i++) await page.locator(".audio-clip").click();
+  await savedProject(page);
+  expect(await storedAudioCount(page)).toBe(2);
+  await other.close();
+  await page.locator(".audio-clip").click();
+  await savedProject(page);
+  await expect.poll(() => storedAudioCount(page)).toBe(1);
+});
+
+test("Excluir funciona com múltiplos clipes e desfazer restaura ambos", async ({ page }) => {
+  await restore(page, backup([audioClip("clip-a", 0, 0, 1), audioClip("clip-b", 1, 0, 1)]));
+  await expect(page.locator("#deleteButton")).toBeEnabled();
+  await expect(page.locator("#duplicateButton")).toBeDisabled();
+  await page.locator("#deleteButton").click();
+  await expect(page.locator(".audio-clip")).toHaveCount(0);
+  await page.locator("#undoButton").click();
+  await expect(page.locator(".audio-clip")).toHaveCount(2);
 });
