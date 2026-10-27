@@ -1,5 +1,17 @@
 "use strict";
-(() => {
+(async () => {
+  const [
+    { PITCHES, FREQUENCIES, durationOf, clipEnd },
+    {
+      blobs, temporaryAudio, openDB, storeBlob, loadBlob, readProjectMetadata, persistProject,
+      getStoredAudioKeys, deleteStoredAudioKeys, storeBackupAudio, clearProjectStorage
+    },
+    { createProjectBackup, validateProjectBackup }
+  ] = await Promise.all([
+    import("./mixmaster/project-model.js?v=1"),
+    import("./mixmaster/project-store.js?v=1"),
+    import("./mixmaster/project-backup.js?v=1")
+  ]);
   const $ = id => document.getElementById(id);
   const els = {
     list: $("trackList"), ruler: $("ruler"), playhead: $("playhead"), timeline: $("timeline"),
@@ -7,16 +19,13 @@
     audioFiles: $("audioFiles"), record: $("recordButton"), play: $("playButton"), stop: $("stopButton"), recordingMonitor: $("recordingMonitor"), recordingWaveform: $("recordingWaveform"), recordingTime: $("recordingTime"),
     selection: $("selectionLabel"), piano: $("pianoRoll"), envelope: $("envelopeCanvas"), envelopeStatus: $("envelopeStatus"), projectFile: $("projectFile")
   };
-  const DB_NAME = "nichodev-mixmaster-v1";
-  const PROJECT_KEY = "nichodev-mixmaster-project-v1";
-  const PITCHES = ["C5", "B4", "A4", "G4", "F4", "E4", "D4", "C4"];
-  const FREQUENCIES = [523.25, 493.88, 440, 392, 349.23, 329.63, 293.66, 261.63];
+
   const state = { tracks: [], selected: [], selectedTrackId: null, playhead: 0, zoom: 16, bpm: 120, tab: "edit", master: .8, playing: false };
-  let db, audioContext, masterNode, meterFrame, playFrame = 0, playStartedAt = 0, playOffset = 0, activeSources = [];
+  let audioContext, masterNode, meterFrame, playFrame = 0, playStartedAt = 0, playOffset = 0, activeSources = [];
   let recorder, recorderStream, recordingSource, recordingAnalyser, recordingSilencer, recordingFrame = 0, recordingStartedAt = 0, lastWaveformSampleAt = 0, liveWaveformPeaks = [], recordChunks = [], undoStack = [], redoStack = [], saveTimer;
   let projectReady = Promise.resolve(), recordingSetup = false, recordingFinalizing = false;
   let recordingClip = null, recordingTrack = null, lastClipWaveformUpdate = 0;
-  const buffers = new Map(), blobs = new Map(), routeNodes = new Map(), temporaryAudio = new Set();
+  const buffers = new Map(), routeNodes = new Map();
   let audioOperations = 0, recoveryUrl = null, recoveryId = null;
   const id = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   // Keep on-disk audio while another editor tab may still need it for undo.
@@ -27,8 +36,7 @@
     return new Promise(() => {});
   }).catch(error => console.error("Proteção entre abas indisponível:", error));
   const esc = value => String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const durationOf = clip => clip.type === "midi" ? clip.duration : Math.max(0, clip.sourceEnd - clip.sourceStart);
-  const clipEnd = clip => clip.start + durationOf(clip);
+
   const selectedClip = () => state.selected.length === 1 ? findClip(state.selected[0]) : null;
   const activeTrack = () => selectedClip()?.track || state.tracks.find(track => track.id === state.selectedTrackId) || null;
   function findClip(clipId) {
@@ -152,12 +160,7 @@
   function updateUndoButtons() { $("undoButton").disabled = !undoStack.length; $("redoButton").disabled = !redoStack.length; }
   function persistProjectNow() {
     clearTimeout(saveTimer); saveTimer = null;
-    try {
-      // Keep volatile takes recoverable in this tab without autosaving missing audio references.
-      const tracks = state.tracks.map(track => ({ ...track, clips: track.clips.filter(clip => clip.type === "midi" || (clip.audioId && !temporaryAudio.has(clip.audioId))) }));
-      localStorage.setItem(PROJECT_KEY, JSON.stringify({ tracks, selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master }));
-      return !state.tracks.some(track => track.clips.some(clip => temporaryAudio.has(clip.audioId)));
-    } catch { return false; }
+    return persistProject(state);
   }
   function saveProject() {
     clearTimeout(saveTimer);
@@ -170,32 +173,7 @@
       collectUnusedAudio().catch(error => console.error("Não foi possível liberar áudios sem uso:", error));
     }, 180);
   }
-  function openDB() {
-    return new Promise((resolve, reject) => {
-      if (!indexedDB) return reject(new Error("Armazenamento local indisponível."));
-      const request = indexedDB.open(DB_NAME, 1);
-      request.onupgradeneeded = () => request.result.createObjectStore("audio");
-      request.onsuccess = () => { db = request.result; resolve(db); };
-      request.onerror = () => reject(request.error);
-    });
-  }
-  async function storeBlob(key, blob) {
-    blobs.set(key, blob); temporaryAudio.add(key);
-    try {
-      if (!db) await openDB();
-      await new Promise((resolve, reject) => {
-        const tx = db.transaction("audio", "readwrite");
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-        tx.onabort = () => reject(tx.error || new Error("Gravação local cancelada."));
-        tx.objectStore("audio").put(blob, key);
-      });
-      temporaryAudio.delete(key);
-      return true;
-    } catch {
-      return false;
-    }
-  }
+
   function updateRecoveryLink() {
     const item = selectedClip(), key = item?.clip.audioId;
     const blob = temporaryAudio.has(key) ? blobs.get(key) : null;
@@ -216,39 +194,28 @@
     // shortcut: without Web Locks, keep disk assets; add tab coordination before enabling cleanup on older browsers.
     const locks = storageLockReady ? await navigator.locks.query() : { held: [] };
     const canCleanDisk = storageLockReady && locks.held.filter(lock => lock.name.startsWith("nichodev-mixmaster-tab-")).length === 1;
-    const keys = db && canCleanDisk ? await new Promise((resolve, reject) => {
-      const request = db.transaction("audio").objectStore("audio").getAllKeys();
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    }) : [];
+    const keys = canCleanDisk ? await getStoredAudioKeys() : [];
     if (audioOperations || recordingSetup || recordingFinalizing || recorder?.state === "recording") return;
     const keep = new Set();
     const retain = tracks => { for (const track of tracks || []) for (const clip of track.clips || []) if (clip.audioId) keep.add(clip.audioId); };
     retain(state.tracks);
     for (const entry of [...undoStack, ...redoStack]) retain(JSON.parse(entry).tracks);
     // A failed metadata write must not orphan the last autosaved project's audio.
-    try { retain(JSON.parse(localStorage.getItem(PROJECT_KEY) || "null")?.tracks); } catch { return; }
+    try { retain(readProjectMetadata()?.tracks); } catch { return; }
     const unused = keys.filter(key => !keep.has(key));
-    if (unused.length) await new Promise((resolve, reject) => {
-      const tx = db.transaction("audio", "readwrite");
-      tx.oncomplete = resolve; tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
-      for (const key of unused) tx.objectStore("audio").delete(key);
-    });
+    if (unused.length) await deleteStoredAudioKeys(unused);
     for (const key of new Set([...buffers.keys(), ...blobs.keys()])) if (!keep.has(key)) {
       buffers.delete(key); blobs.delete(key); temporaryAudio.delete(key);
     }
   }
-  function loadBlob(key) {
-    if (blobs.has(key)) return Promise.resolve(blobs.get(key));
-    return new Promise((resolve, reject) => { const request = db.transaction("audio").objectStore("audio").get(key); request.onsuccess = () => { if (request.result) blobs.set(key, request.result); resolve(request.result); }; request.onerror = () => reject(request.error); });
-  }
+
   async function decodeBlob(blob) {
     const ctx = audioCtx();
     return ctx.decodeAudioData(await blob.arrayBuffer());
   }
   async function loadProject() {
     try {
-      const saved = JSON.parse(localStorage.getItem(PROJECT_KEY) || "null");
+      const saved = readProjectMetadata();
       if (saved?.tracks?.length) {
         state.tracks = saved.tracks;
         state.selectedTrackId = saved.selectedTrackId || state.tracks[0]?.id || null;
@@ -712,19 +679,7 @@
       playFrame = requestAnimationFrame(tick);
     } catch (error) { setStatus(error.message); }
   }
-  function blobToBase64(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
-      reader.onerror = () => reject(reader.error || new Error("Falha ao ler um áudio do projeto."));
-      reader.readAsDataURL(blob);
-    });
-  }
-  function base64ToBlob(value, mimeType) {
-    const binary = atob(value), bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return new Blob([bytes], { type: mimeType || "application/octet-stream" });
-  }
+
   function downloadProjectFile(blob, filename) {
     const url = URL.createObjectURL(blob), link = document.createElement("a");
     link.href = url; link.download = filename; link.click();
@@ -734,70 +689,12 @@
     await projectReady;
     if (recorder?.state === "recording" || recordingFinalizing) { setStatus("Pare a gravação antes de criar um backup."); return; }
     try {
-      const project = { tracks: JSON.parse(JSON.stringify(state.tracks)), selected: [...state.selected], selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master };
-      const audioIds = [...new Set(project.tracks.flatMap(track => track.clips.filter(clip => clip.type !== "midi").map(clip => clip.audioId).filter(Boolean)))];
-      let totalBytes = 0; const assets = [];
-      for (const assetId of audioIds) {
-        const blob = await loadBlob(assetId);
-        if (!blob) throw new Error("Um áudio deste projeto não está disponível no armazenamento local.");
-        totalBytes += blob.size;
-        if (totalBytes > 150 * 1024 * 1024) throw new Error("O backup excede 150 MB de áudio. Exporte uma mixagem WAV ou divida o projeto em partes menores.");
-        assets.push({ id: assetId, mimeType: blob.type || "application/octet-stream", dataBase64: await blobToBase64(blob) });
-      }
-      const backup = { app: "nichodev-mixmaster", formatVersion: 1, exportedAt: new Date().toISOString(), project, assets };
+      const backup = await createProjectBackup(state);
       downloadProjectFile(new Blob([JSON.stringify(backup)], { type: "application/json" }), `nichodev-mixmaster-${new Date().toISOString().slice(0, 10)}.nichodev.json`);
-      setStatus(`Backup criado · ${assets.length} áudio(s) incluído(s)`);
+      setStatus(`Backup criado · ${backup.assets.length} áudio(s) incluído(s)`);
     } catch (error) { setStatus(`Não foi possível criar o backup: ${error.message}`); }
   }
-  function validateProjectBackup(backup) {
-    const validId = value => typeof value === "string" && value.trim().length > 0;
-    const inRange = (value, min, max = Infinity) => typeof value === "number" && Number.isFinite(value) && value >= min && value <= max;
-    const invalid = message => { throw new Error(message); };
-    if (backup?.app !== "nichodev-mixmaster" || backup?.formatVersion !== 1 || !Array.isArray(backup?.project?.tracks) || !backup.project.tracks.length || !Array.isArray(backup.assets)) invalid("O arquivo não é um backup MIXMASTER compatível.");
-    const project = backup.project, trackIds = new Set(), clipIds = new Set(), referencedIds = new Set();
-    const maxTimeline = 24 * 60 * 60; // Bound imported timelines before creating ruler marks in the DOM.
-    if (!inRange(project.playhead ?? 0, 0, maxTimeline) || !inRange(project.bpm ?? 120, 40, 240) || !inRange(project.master ?? .8, 0, 1)) invalid("O backup contém controles de projeto inválidos.");
-    for (const track of project.tracks) {
-      if (!track || !validId(track.id) || trackIds.has(track.id) || typeof track.name !== "string" || !["audio", "midi"].includes(track.type) || !Array.isArray(track.clips)) invalid("O backup contém uma faixa inválida ou repetida.");
-      trackIds.add(track.id);
-      for (const [key, min, max] of [["volume", 0, 1], ["pan", -1, 1], ["tone", 0, 1], ["delay", 0, 1], ["reverb", 0, 1]]) if (!inRange(track[key], min, max)) invalid("O backup contém controles de faixa inválidos.");
-      if ((track.muted !== undefined && typeof track.muted !== "boolean") || (track.solo !== undefined && typeof track.solo !== "boolean")) invalid("O backup contém controles de faixa inválidos.");
-      for (const clip of track.clips) {
-        if (!clip || !validId(clip.id) || clipIds.has(clip.id) || !["audio", "midi"].includes(clip.type) || !inRange(clip.start, 0, maxTimeline) || (clip.name !== undefined && typeof clip.name !== "string") || (clip.gain !== undefined && !inRange(clip.gain, 0, 1.5))) invalid("O backup contém um clipe inválido ou repetido.");
-        clipIds.add(clip.id);
-        if (clip.envelope !== undefined) {
-          if (!Array.isArray(clip.envelope)) invalid("O backup contém um envelope inválido.");
-          let previousX = -1;
-          for (const point of clip.envelope) {
-            if (!point || !inRange(point.x, 0, 1) || !inRange(point.y, 0, 1) || point.x < previousX) invalid("O backup contém um envelope inválido.");
-            previousX = point.x;
-          }
-        }
-        if (clip.waveformPeaks !== undefined && (!Array.isArray(clip.waveformPeaks) || clip.waveformPeaks.some(pair => !Array.isArray(pair) || pair.length !== 2 || !Number.isFinite(pair[0]) || !Number.isFinite(pair[1]) || pair[0] > pair[1]))) invalid("O backup contém uma forma de onda inválida.");
-        if (clip.type === "midi") {
-          if (!inRange(clip.duration, Number.MIN_VALUE, maxTimeline) || !Array.isArray(clip.notes ?? [])) invalid("O backup contém uma região MIDI inválida.");
-          for (const note of clip.notes || []) if (!note || !Number.isInteger(note.step) || note.step < 0 || note.step > 15 || !Number.isInteger(note.pitch) || note.pitch < 0 || note.pitch >= PITCHES.length || (note.velocity !== undefined && !inRange(note.velocity, 0, 1))) invalid("O backup contém uma nota MIDI inválida.");
-        } else {
-          if (!validId(clip.audioId) || !inRange(clip.sourceStart, 0) || !inRange(clip.sourceEnd, 0) || clip.sourceEnd <= clip.sourceStart) invalid("O backup contém limites de áudio inválidos.");
-          referencedIds.add(clip.audioId);
-        }
-        if (!inRange(clipEnd(clip), 0, maxTimeline)) invalid("O backup excede o limite de 24 horas da linha do tempo.");
-      }
-    }
-    if (project.selected !== undefined && (!Array.isArray(project.selected) || new Set(project.selected).size !== project.selected.length || project.selected.some(clipId => !clipIds.has(clipId)))) invalid("O backup contém uma seleção inválida.");
-    if (project.selectedTrackId != null && !trackIds.has(project.selectedTrackId)) invalid("O backup contém uma faixa selecionada inválida.");
-    let totalBytes = 0;
-    const assetMap = new Map();
-    for (const asset of backup.assets) {
-      if (!asset || !validId(asset.id) || assetMap.has(asset.id) || typeof asset.dataBase64 !== "string" || !asset.dataBase64.length || asset.dataBase64.length > 210 * 1024 * 1024 || (asset.mimeType !== undefined && typeof asset.mimeType !== "string")) invalid("O backup contém um áudio inválido ou repetido.");
-      const blob = base64ToBlob(asset.dataBase64, asset.mimeType);
-      totalBytes += blob.size;
-      if (totalBytes > 150 * 1024 * 1024) invalid("O backup excede 150 MB de áudio.");
-      assetMap.set(asset.id, blob);
-    }
-    for (const audioId of referencedIds) if (!assetMap.has(audioId)) invalid("O backup não contém todos os áudios usados pelo projeto.");
-    return { project, assetMap, referencedIds };
-  }
+
   async function importProjectBackup(file) {
     await projectReady;
     if (!file) return;
@@ -807,7 +704,7 @@
     audioOperations++;
     try {
       const { project, assetMap, referencedIds } = validateProjectBackup(JSON.parse(await file.text()));
-      if (!db) await openDB();
+      await openDB();
       setStatus("Importando backup e restaurando áudios…");
       const newAudioIds = new Map(), decoded = new Map();
       for (const oldId of referencedIds) {
@@ -819,19 +716,7 @@
         if (clip.sourceStart >= buffer.duration || clip.sourceEnd > buffer.duration + 1 / buffer.sampleRate) throw new Error("O backup contém um clipe fora dos limites do áudio.");
         clip.sourceEnd = Math.min(clip.sourceEnd, buffer.duration);
       }
-      if (referencedIds.size) {
-        // Commit the imported audio together so a quota error cannot leave half a backup stored.
-        await new Promise((resolve, reject) => {
-          const tx = db.transaction("audio", "readwrite");
-          tx.oncomplete = resolve;
-          tx.onerror = () => reject(tx.error || new Error("Não foi possível salvar os áudios do backup."));
-          tx.onabort = () => reject(tx.error || new Error("A importação dos áudios foi cancelada."));
-          try {
-            for (const oldId of referencedIds) tx.objectStore("audio").put(assetMap.get(oldId), newAudioIds.get(oldId));
-          } catch (error) { tx.abort(); reject(error); }
-        });
-        for (const oldId of referencedIds) blobs.set(newAudioIds.get(oldId), assetMap.get(oldId));
-      }
+      if (referencedIds.size) await storeBackupAudio(assetMap, newAudioIds);
       checkpoint(); stopPlayback(true);
       state.tracks = project.tracks;
       for (const track of state.tracks) for (const clip of track.clips) if (clip.type === "audio") clip.audioId = newAudioIds.get(clip.audioId);
@@ -854,15 +739,7 @@
     if (!confirm("Isso apagará as faixas, gravações e áudios salvos deste projeto neste navegador. Não será possível desfazer. Continuar?")) return;
     stopPlayback(true);
     try {
-      if (!db) await openDB();
-      await new Promise((resolve, reject) => {
-        const tx = db.transaction("audio", "readwrite");
-        tx.objectStore("audio").clear();
-        tx.oncomplete = resolve;
-        tx.onerror = () => reject(tx.error);
-        tx.onabort = () => reject(tx.error || new Error("Não foi possível limpar os áudios."));
-      });
-      localStorage.removeItem(PROJECT_KEY);
+      await clearProjectStorage();
     } catch (error) {
       setStatus(`Não foi possível resetar o projeto: ${error.message}`);
       return;
@@ -1027,4 +904,8 @@
     stopPlayback(); if (meterFrame) cancelAnimationFrame(meterFrame);
   });
   projectReady = loadProject();
-})();
+})().catch(error => {
+  const status = document.getElementById("projectStatus");
+  if (status) status.textContent = "Não foi possível abrir o MIXMASTER. Recarregue a página.";
+  console.error("Não foi possível iniciar o MIXMASTER:", error);
+});

@@ -26,6 +26,9 @@ jobs:
       - name: Instalar dependencias registradas no lockfile
         run: npm ci
 
+      - name: Testar o validador de módulos e publicação
+        run: npm test
+
       - name: Validar site e arquivos do deploy
         run: npm run check
 

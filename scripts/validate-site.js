@@ -62,24 +62,45 @@ for (const page of pages) {
     }
   }
 
-  const scripts = [...html.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi)]
-    .map(match => match[1])
-    .filter(src => !/^(?:[a-z]+:|\/\/)/i.test(src));
-  for (const src of scripts) {
-    const resolved = resolveLocal(page, src);
-    const file = resolved.relative;
-    const syntax = spawnSync(process.execPath, ["--check", path.join(publicRoot, ...file.split("/"))], { encoding: "utf8" });
-    if (syntax.status !== 0) {
-      errors.push(`${page}: erro de sintaxe em ${file}: ${(syntax.stderr || syntax.stdout).trim()}`);
-      continue;
+  const scripts = [...html.matchAll(/<script\b[^>]*>/gi)]
+    .map(match => attrs(match[0]))
+    .filter(tag => tag.src && !/^(?:[a-z]+:|\/\/)/i.test(tag.src));
+  const checkedScripts = new Set();
+  function checkScript(file, isModule = false) {
+    const key = file + ":" + isModule;
+    if (checkedScripts.has(key)) return;
+    checkedScripts.add(key);
+    requiredDeployFiles.add(file);
+    if (!fs.existsSync(path.join(publicRoot, file))) {
+      errors.push(`${page}: arquivo local ausente: ${file}`);
+      return;
     }
     const js = read(file);
+    const syntax = spawnSync(process.execPath, ["--check", "--input-type=" + (isModule ? "module" : "commonjs")], { input: js, encoding: "utf8" });
+    if (syntax.status !== 0) {
+      errors.push(`${page}: erro de sintaxe em ${file}: ${(syntax.stderr || syntax.stdout).trim()}`);
+      return;
+    }
     const refs = [...js.matchAll(/\$\(\s*["']([^"']+)["']\s*\)|getElementById\(\s*["']([^"']+)["']\s*\)/g)]
       .map(match => match[1] || match[2]);
     for (const id of new Set(refs)) {
       if (!idSet.has(id)) errors.push(`${page}: ${file} usa ID ausente: ${id}`);
     }
+    // shortcut: follow literal relative imports; extend before introducing computed module URLs.
+    const imports = [
+      ...js.matchAll(/^\s*import\s+(?:[^'";]+\s+from\s+)?["'](\.[^"']+)["']/gm),
+      ...js.matchAll(/\bimport\s*\(\s*["'](\.[^"']+)["']\s*\)/g)
+    ];
+    for (const [, target] of imports) {
+      const resolved = resolveLocal(file, target);
+      if (!resolved.relative || resolved.relative.startsWith("../")) {
+        errors.push(`${page}: import fora do site: ${target}`);
+        continue;
+      }
+      checkScript(resolved.relative, true);
+    }
   }
+  for (const tag of scripts) checkScript(resolveLocal(page, tag.src).relative, tag.type === "module");
 }
 
 const cssFiles = [];
