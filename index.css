@@ -172,11 +172,17 @@ body *{font-family:inherit!important}
 
 .site-footer .social-links {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  font-size: clamp(6px, 2vw, 9px);
+}
+
+.site-footer .social-links-primary {
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: clamp(6px, 2vw, 9px);
 }
 
 
