@@ -94,7 +94,7 @@ public:
         if (phase >= 6.28318530717958647692f)
             phase -= 6.28318530717958647692f;
 
-        return depth > 0.0001f ? delayed : input;
+        return delayed;
     }
 
 private:
@@ -249,8 +249,10 @@ public:
         const auto inputGain = 1.0f - inputTwo * 0.4988128f;
         const auto source = input * inputGain;
 
-        const auto normalDrive = 1.2f + std::clamp(finiteOr(controls.normalVolume), 0.0f, 10.0f) * 0.38f;
-        const auto clean = tubeStage(source, normalDrive, 0.045f);
+        const auto normalVolume = std::clamp(finiteOr(controls.normalVolume), 0.0f, 10.0f);
+        const auto normalDrive = 1.2f + normalVolume * 0.38f;
+        // Keep the default 5.5 output level while allowing zero volume to mute.
+        const auto clean = tubeStage(source, normalDrive, 0.045f) * (normalVolume / 5.5f);
 
         const auto dirtyGain = std::clamp(finiteOr(controls.vibratoDrive), 0.0f, 10.0f);
         auto dirty = tubeStage(source, 1.6f + dirtyGain * 0.83f, 0.075f);

@@ -23,10 +23,87 @@ float parameterValue(const NichodevGuitarFXAudioProcessor& processor, const char
     const auto* value = processor.parameters.getRawParameterValue(id);
     return value != nullptr ? value->load() : -1.0f;
 }
+
+void testOrderStateRoundTrip()
+{
+    NichodevGuitarFXAudioProcessor processor;
+    processor.movePedal(7, -1);
+    expect(processor.getPedalAtPosition(6) == 7, "moving a pedal updates the stored chain order");
+    juce::MemoryBlock state;
+    processor.getStateInformation(state);
+    const auto reorderedRevision = processor.getOrderRevision();
+
+    processor.resetGuitar();
+    bool defaultOrder = true;
+    for (int position = 0; position < NichodevGuitarFXAudioProcessor::pedalCount; ++position)
+        defaultOrder = defaultOrder && processor.getPedalAtPosition(position) == position;
+    expect(defaultOrder, "RESET restores the default pedal order");
+    expect(processor.getOrderRevision() != reorderedRevision,
+           "RESET invalidates the editor's displayed order revision");
+    const auto resetRevision = processor.getOrderRevision();
+
+    processor.setStateInformation(state.getData(), static_cast<int>(state.getSize()));
+    expect(processor.getPedalAtPosition(6) == 7 && processor.getPedalAtPosition(7) == 6,
+           "host state restoration restores the saved pedal order");
+    expect(processor.getOrderRevision() != resetRevision,
+           "host state restoration invalidates the editor's displayed order revision");
+}
+
+void testReportedReverbTail()
+{
+    NichodevGuitarFXAudioProcessor processor;
+    const auto reportedTail = processor.getTailLengthSeconds();
+
+    for (int configuration = 0; configuration < 3; ++configuration)
+    {
+        const auto sampleRate = configuration == 2 ? 48000.0 : 1000.0;
+        guitarfx::dsp::GuitarFxEngine engine;
+        engine.prepare(sampleRate);
+        std::array<float, 15> amounts{}, enabled{};
+        std::array<int, 15> order{};
+        for (int pedal = 0; pedal < 15; ++pedal)
+        {
+            const auto index = static_cast<std::size_t>(pedal);
+            order[index] = pedal;
+            if (pedal == 13 || (configuration == 1 && guitarfx::dsp::needsDelayBuffer(pedal)))
+                amounts[index] = enabled[index] = 1.0f;
+        }
+
+        if (configuration == 2)
+        {
+            order = {{13, 12, 14, 5, 6, 10, 1, 2, 3, 4, 7, 8, 9, 11, 0}};
+            amounts.fill(1.0f);
+            enabled.fill(1.0f);
+            enabled[0] = 0.0f;
+        }
+
+        float latePeak = 0.0f;
+        float afterReportedTail = 0.0f;
+        const auto samples = static_cast<int>(std::ceil((reportedTail + 0.8) * sampleRate));
+        for (int sample = 0; sample < samples; ++sample)
+        {
+            const auto input = sample == 0 ? 0.8f : 0.0f;
+            const auto output = engine.processSample(input, 0, amounts, enabled, order,
+                                                      1.0f, 1.0f, 0.5f);
+            if (sample >= static_cast<int>(4.0 * sampleRate))
+                latePeak = std::max(latePeak, std::abs(output));
+            if (sample >= static_cast<int>(reportedTail * sampleRate))
+                afterReportedTail = std::max(afterReportedTail, std::abs(output));
+        }
+        expect(latePeak > 0.01f,
+               "maximum temporal feedback retains audible echoes after four seconds");
+        expect(afterReportedTail < 1.0e-4f,
+               "the reported tail covers maximum feedback and downstream drive below minus eighty dB");
+    }
+}
+
 }
 
 int main()
 {
+    testOrderStateRoundTrip();
+    testReportedReverbTail();
+
     constexpr double sampleRate = 48000.0;
     constexpr int blockSize = 256;
     constexpr int totalSamples = 48000;
