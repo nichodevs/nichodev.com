@@ -33,6 +33,7 @@ test("NS-2 gates quiet audio without compressing loud or cancelling stereo", asy
     const stereo = await render([loud, inverted]);
     const leftOnly = await render([loud, silent]);
     const [compressed] = await render([loud], 50, true, "cs3");
+    const [compressedQuiet] = await render([nearThreshold], 50, true, "cs3");
     const step = Float32Array.from({ length }, (_, i) => i < .3 * sampleRate ? .05 : .0001);
     const [smooth] = await render([step]);
     let bypassError = 0, gainStep = 0, lastGain = 0, minGain = Infinity, maxGain = -Infinity, finite = true;
@@ -53,7 +54,8 @@ test("NS-2 gates quiet audio without compressing loud or cancelling stereo", asy
       stereoRatios: stereo.map(channel => rms(channel) / rms(loud)),
       leftOnlyRatio: rms(leftOnly[0]) / rms(loud),
       silentRight: Math.max(...leftOnly[1].map(Math.abs)),
-      compressorRatio: rms(compressed) / rms(loud),
+      // Makeup gain may exceed unity; high/low gain measures compression itself.
+      compressorGainRatio: (rms(compressed) / rms(loud)) / (rms(compressedQuiet) / rms(nearThreshold)),
       bypassError, gainStep, minGain, maxGain, finite
     };
   });
@@ -67,7 +69,7 @@ test("NS-2 gates quiet audio without compressing loud or cancelling stereo", asy
   for (const ratio of result.stereoRatios) expect(ratio).toBeCloseTo(1, 3);
   expect(result.leftOnlyRatio).toBeCloseTo(1, 3);
   expect(result.silentRight).toBe(0);
-  expect(result.compressorRatio).toBeLessThan(.8);
+  expect(result.compressorGainRatio).toBeLessThan(.8);
   expect(result.bypassError).toBeLessThan(1e-7);
   expect(result.gainStep).toBeLessThan(.01);
   expect(result.minGain).toBeGreaterThanOrEqual(-.001);
