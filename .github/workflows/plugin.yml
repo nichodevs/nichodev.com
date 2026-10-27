@@ -33,6 +33,18 @@ jobs:
       - name: Baixar arquivos do repositório
         uses: actions/checkout@v7
 
+      - name: Conferir versão e notas do release
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^project(NichodevVST3Suite VERSION \([^ ]*\) .*/\1/p' plugin/CMakeLists.txt)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test -s "plugin/releases/v$version.md"
+
+      - name: Testar proteções da publicação
+        if: runner.os == 'Linux'
+        run: python3 plugin/tests/release_workflow_tests.py
+
       - name: Instalar dependências de compilação (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -57,7 +69,7 @@ jobs:
 
       - name: Compilar os bundles VST3
         run: cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3 NichodevDeluxe65_VST3
-      
+
       - name: Compilar e executar testes DSP e do processador
         run: |
           cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests
@@ -76,3 +88,55 @@ jobs:
           path: build/plugin/release-package/
           if-no-files-found: error
           retention-days: 14
+
+  release:
+    name: Publicar release VST3
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    concurrency:
+      group: vst3-release
+      cancel-in-progress: false
+    steps:
+      - name: Baixar arquivos do repositório
+        uses: actions/checkout@v7
+
+      - name: Publicar os pacotes validados desta execução
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^project(NichodevVST3Suite VERSION \([^ ]*\) .*/\1/p' plugin/CMakeLists.txt)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          tag="v$version"
+          notes="plugin/releases/$tag.md"
+          test -s "$notes"
+
+          if ready="$(gh release view "$tag" --json isDraft,assets --jq '(.isDraft | not) and ([.assets[].name] | index("NichodevVST3-windows-latest.zip") != null and index("NichodevVST3-ubuntu-latest.zip") != null)' 2>/dev/null)"; then
+            test "$ready" = true || { echo "::error::Release existente incompleto ou em rascunho; confira os assets no GitHub."; exit 1; }
+            echo "Release $tag já publicado; arquivos preservados."
+            exit 0
+          fi
+
+          refs="$(gh api "repos/$GH_REPO/git/matching-refs/tags/$tag" --jq '.[].ref')"
+          if grep -Fxq "refs/tags/$tag" <<<"$refs"; then
+            echo "::error::Tag $tag já existe sem release; confira seu commit antes de publicar."
+            exit 1
+          fi
+
+          for name in NichodevVST3-windows-latest NichodevVST3-ubuntu-latest; do
+            gh run download "$GITHUB_RUN_ID" --name "$name" --dir "$name"
+            test -d "$name/Nichodev Guitar FX.vst3/Contents"
+            test -d "$name/Nichodev Deluxe 65 Amp.vst3/Contents"
+            (cd "$name" && zip -qr "../$name.zip" .)
+            unzip -tq "$name.zip"
+          done
+
+          gh release create "$tag" NichodevVST3-windows-latest.zip NichodevVST3-ubuntu-latest.zip \
+            --target "$GITHUB_SHA" --title "Nichodev VST3 Suite $tag" --notes-file "$notes"
