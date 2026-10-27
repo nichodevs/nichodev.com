@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - ".github/workflows/deploy.yml"
       - "*.html"
       - "*.css"
       - "assets/**"
@@ -73,11 +74,19 @@ jobs:
             set net:max-retries 2
             set cmd:fail-exit yes
             cd domains/nichodev.com/public_html
-            # Create upload directories from public_html before transferring files.
+            # SFTP may report an existing directory as Failure; verify every destination afterwards.
+            set cmd:fail-exit no
             mkdir -p assets
             mkdir -p assets/cursors
             mkdir -p js
             mkdir -p onda
+            set cmd:fail-exit yes
+            cd assets/cursors
+            cd ../..
+            cd js
+            cd ..
+            cd onda
+            cd ..
             put style.css -o style.css
             put index.css -o index.css
             put voz.css -o voz.css

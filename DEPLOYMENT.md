@@ -4,17 +4,19 @@ O site é publicado na Hostinger pelo workflow [Publicar site na Hostinger](.git
 
 ## Quando o deploy roda
 
-- **Push para `main`:** somente quando a alteração inclui arquivos HTML ou CSS na raiz, `assets/**`, `js/**`, `onda/**` ou `robots.txt`.
+- **Push para `main`:** quando a alteração inclui arquivos HTML ou CSS na raiz, `assets/**`, `js/**`, `onda/**`, `robots.txt` ou o próprio `.github/workflows/deploy.yml`.
 - **Manual:** `workflow_dispatch` publica o branch escolhido na execução do GitHub Actions; selecione `main` para publicar a versão integrada.
 - **Agendado:** uma publicação diária às 09:00 UTC (06:00 em Brasília).
 
-Alterações somente em documentação, no plugin, nos testes ou em arquivos de configuração não acionam o deploy por push. O workflow de validação do site é separado e pode rodar sem publicar.
+Alterações somente em documentação, no plugin, nos testes ou em outros arquivos de configuração não acionam o deploy por push. O workflow de validação do site é separado e pode rodar sem publicar.
 
 As execuções compartilham o grupo `hostinger-production`: somente um envio pode escrever em `public_html` por vez. Uma execução já iniciada termina antes da próxima, evitando interrupção no meio do upload e sobrescrita por envios simultâneos.
 
 ## Validações e envio
 
 Antes do SFTP, o workflow executa `npm run check`, confere os secrets de conexão e envia uma lista explícita de arquivos para a pasta pública do domínio. Depois, faz requisições HTTP às páginas e assets publicados. Ele não executa `npm run test:e2e`; esses testes rodam no workflow **Validar site**.
+
+Antes do primeiro arquivo, o cliente tenta criar as pastas e depois verifica cada destino com falhas fatais habilitadas. Isso permite reutilizar diretórios existentes sem esconder falhas de acesso ou de upload.
 
 O envio e a lista de URLs verificadas estão em `deploy.yml`. A validação em `scripts/validate-site.js` compara os arquivos locais referenciados pelas páginas e CSS com os arquivos declarados no envio SFTP.
 
