@@ -32,7 +32,7 @@ body {
       animation: home-enter 820ms 390ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
-    a[href="https://github.com/nichodevs/nichodev.com/releases/latest"] {
+    a[href="downloads.html"] {
       animation: home-enter 820ms 520ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
@@ -144,7 +144,7 @@ body {
   #startBtn,
   a[href="guitarra.html"],
   a[href="mixmaster.html"],
-  a[href="https://github.com/nichodevs/nichodev.com/releases/latest"],
+  a[href="downloads.html"],
   .repository-qr-card,
   .site-footer {
     animation: none;

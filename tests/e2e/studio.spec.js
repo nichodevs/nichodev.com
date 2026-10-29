@@ -5,6 +5,7 @@ const studioPages = [
   { path: "/voz.html", heading: /estúdio de voz/i },
   { path: "/guitarra.html", heading: /guitar fx lab/i },
   { path: "/mixmaster.html", heading: /mixmaster/i },
+  { path: "/downloads.html", heading: /download vst3/i },
   { path: "/onda/", heading: /uma onda de gratidão/i }
 ];
 
@@ -90,7 +91,7 @@ test("onda continua animando após os eventos de ida e retorno do histórico", a
 
 
 test("servidor entrega o site pela raiz e mantém arquivos de desenvolvimento fora dela", async ({ request }) => {
-  for (const path of ["/", "/voz.html", "/guitarra.html", "/mixmaster.html", "/onda/", "/robots.txt"]) {
+  for (const path of ["/", "/voz.html", "/guitarra.html", "/mixmaster.html", "/downloads.html", "/onda/", "/robots.txt"]) {
     const response = await request.get(path);
     expect(response.status(), path).toBe(200);
   }
@@ -99,4 +100,26 @@ test("servidor entrega o site pela raiz e mantém arquivos de desenvolvimento fo
     expect(response.status(), path).toBe(404);
   }
   expect((await (await request.get("/health")).json()).status).toBe("ok");
+});
+
+test.describe("downloads VST3 sem JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("menu leva aos dois downloads diretos e ao guia de instalação", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("link", { name: "Baixar a suite Nichodev VST3" }).click();
+    await expect(page).toHaveURL(/\/downloads\.html$/);
+    await expect(page.getByRole("heading", { name: "NICHODEV GUITAR FX", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "NICHODEV DELUXE 65 AMP", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "BAIXAR PARA WINDOWS", exact: true }))
+      .toHaveAttribute("href", "https://github.com/nichodevs/nichodev.com/releases/latest/download/NichodevVST3-windows-latest.zip");
+    await expect(page.getByRole("link", { name: "BAIXAR PARA LINUX", exact: true }))
+      .toHaveAttribute("href", "https://github.com/nichodevs/nichodev.com/releases/latest/download/NichodevVST3-ubuntu-latest.zip");
+    await page.getByRole("link", { name: "COMO INSTALAR ↓" }).click();
+    await expect(page.locator("#instalacao")).toBeInViewport();
+    await expect(page.getByRole("heading", { name: "NO REAPER", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "EM OUTRA DAW", exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "← MENU", exact: true }).click();
+    await expect(page).toHaveURL(/\/index\.html$/);
+  });
 });

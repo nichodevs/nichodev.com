@@ -11,7 +11,7 @@ Estúdio de áudio para navegador e dois plugins VST3 para DAWs, com visual retr
 | [MIXMASTER](https://nichodev.com/mixmaster.html) | Edição de áudio, regiões MIDI, envelopes e mixagem | [mixmaster.html](public/mixmaster.html), [public/js/mixmaster.js](public/js/mixmaster.js) |
 | [Onda de gratidão](https://nichodev.com/onda/) | Animação interativa com mouse, toque e teclado | [public/onda/README.md](public/onda/README.md) |
 
-A [suite VST3](plugin/README.md) contém **Nichodev Guitar FX**, com 15 pedais, e **Nichodev Deluxe 65 Amp**, com canais Clean/Dirty, reverb de mola e vibrato de afinação. Baixe os pacotes Windows ou Linux nos **Assets** do [release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest).
+A [suite VST3](plugin/README.md) contém **Nichodev Guitar FX**, com 15 pedais, e **Nichodev Deluxe 65 Amp**, com canais Clean/Dirty, reverb de mola e vibrato de afinação. Baixe os pacotes Windows ou Linux na [página de downloads](https://nichodev.com/downloads.html), com links diretos e instruções para o Reaper ou outra DAW VST3. Os arquivos permanecem nos [GitHub Releases](https://github.com/nichodevs/nichodev.com/releases/latest).
 
 ## Executar o site
 

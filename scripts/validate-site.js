@@ -5,7 +5,7 @@ const { spawnSync } = require("node:child_process");
 
 const root = path.resolve(__dirname, "..");
 const publicRoot = path.join(root, "public");
-const pages = ["index.html", "voz.html", "guitarra.html", "mixmaster.html", "onda/index.html"];
+const pages = ["index.html", "voz.html", "guitarra.html", "mixmaster.html", "downloads.html", "onda/index.html"];
 const errors = [];
 const requiredDeployFiles = new Set(pages);
 const read = file => fs.readFileSync(path.join(publicRoot, file), "utf8");

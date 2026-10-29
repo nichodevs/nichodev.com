@@ -82,6 +82,7 @@ jobs:
             cd ..
             put public/style.css -o style.css
             put public/index.css -o index.css
+            put public/downloads.css -o downloads.css
             put public/voz.css -o voz.css
             put public/voz-compacto.css -o voz-compacto.css
             put public/cursores-retro.css -o cursores-retro.css
@@ -107,6 +108,7 @@ jobs:
             put public/js/mixmaster.js -o js/mixmaster.js
             put public/robots.txt -o robots.txt
             put public/index.html -o index.html
+            put public/downloads.html -o downloads.html
             put public/voz.html -o voz.html
             put public/guitarra.html -o guitarra.html
             put public/mixmaster.html -o mixmaster.html
@@ -133,6 +135,8 @@ jobs:
             /onda/onda.js
             /style.css
             /index.css
+            /downloads.html
+            /downloads.css
             /voz.css
             /voz-compacto.css
             /guitarra-8bit.css

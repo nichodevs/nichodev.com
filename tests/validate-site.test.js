@@ -14,7 +14,7 @@ function validateFixture(mode) {
     const files = {
       "index.html": '<script src="js/main.js" defer></script>',
       "voz.html": "<h1>Voz</h1>", "guitarra.html": "<h1>Guitarra</h1>",
-      "mixmaster.html": "<h1>Mixmaster</h1>", "onda/index.html": "<h1>Onda</h1>",
+      "downloads.html": "<h1>Downloads</h1>", "mixmaster.html": "<h1>Mixmaster</h1>", "onda/index.html": "<h1>Onda</h1>",
       "js/main.js": 'import("./feature.js?v=1");',
       "js/feature.js": 'import { value } from "./model.js?v=1"; export const result = value;',
       "js/model.js": "export const value = 1;"
