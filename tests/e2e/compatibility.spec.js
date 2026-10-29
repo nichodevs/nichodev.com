@@ -58,7 +58,8 @@ test("MIXMASTER restaura IndexedDB em outra página e importa o backup sem mudar
   await expect(page.locator(".audio-clip")).toHaveCount(1);
   await expect(page.locator("#projectStatus")).toHaveText("Projeto salvo neste navegador");
   const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), PROJECT_KEY);
-  expect(saved.tracks[0].clips[0].sourceEnd).toBeCloseTo(4, 4);
+  // Resampling can round the duration by one sample of the source WAV.
+  expect(Math.abs(saved.tracks[0].clips[0].sourceEnd - 4)).toBeLessThanOrEqual(1 / audio.readUInt32LE(24));
   await page.close();
 
   const restored = await context.newPage();
