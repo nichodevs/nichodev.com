@@ -8,15 +8,15 @@ h1{margin:0 0 20px;font-weight:400;font-size:clamp(14px,4.4vw,20px);line-height:
 
 /* Visualizador de áudio retrô */
 .waveform-frame {
-  margin: 14px 0 4px;
-  padding: 10px;
-  border: 3px solid var(--line);
+  margin: 16px 0;
+  padding: 12px;
+  border: 2px dashed var(--line);
   background: var(--bg);
 }
 .waveform-heading {
   margin-bottom: 8px;
   font-family: "Press Start 2P", monospace;
-  font-size: 8px;
+  font-size: 9px;
   line-height: 1.8;
   color: var(--fg);
 }
@@ -29,10 +29,10 @@ h1{margin:0 0 20px;font-weight:400;font-size:clamp(14px,4.4vw,20px);line-height:
   image-rendering: pixelated;
 }
 .waveform-caption {
-  margin: 7px 0 0;
+  margin: 8px 0 0;
   font-family: var(--font-text);
   color: var(--mute);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -133,10 +133,6 @@ h1{margin:0 0 20px;font-weight:400;font-size:clamp(14px,4.4vw,20px);line-height:
 
 
 /* Voice Studio 2.0 additions */
-.waveform-frame{margin:16px 0;padding:12px;border:2px dashed var(--line)}
-.waveform-heading{font-size:9px;line-height:1.8;margin-bottom:8px}
-#liveWaveform{display:block;width:100%;height:112px;border:1px solid var(--line);background:var(--bg)}
-.waveform-caption{font-family:var(--font-text);font-size:12px;color:var(--mute);margin:8px 0 0}
 .processed-record-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .processed-record-actions button{font-size:9px}
 #stopProcessedBtn{background:var(--bg);color:var(--fg)}
