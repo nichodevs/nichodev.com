@@ -70,6 +70,12 @@ No Linux, use `npx playwright install --with-deps chromium firefox webkit` para 
 - `.github/workflows/`: validação, builds, releases e deploy.
 - `build/`: saída local do CMake, ignorada pelo Git.
 
+## Buscas e compartilhamentos
+
+As seis páginas públicas incluem descrição, URL canônica, Open Graph e Twitter Cards no HTML estático. O cartão comum está em `public/assets/social-card.png` (1200 × 630). O [sitemap](https://nichodev.com/sitemap.xml), anunciado em `robots.txt`, lista as mesmas URLs canônicas. Ao criar uma página, atualize seus metadados, o sitemap e os testes de SEO em conjunto.
+
+Os testes verificam os metadados sem JavaScript, a imagem PNG e sua inclusão no deploy. A indexação e a atualização das prévias dependem dos buscadores e dos caches de cada plataforma.
+
 ## Publicação
 
 **Site:** o workflow [Publicar site na Hostinger](.github/workflows/deploy.yml) valida o mesmo commit com `npm run check` e Playwright antes do SFTP. Uma falha impede o envio. As publicações são serializadas e terminam com conferência HTTP.
