@@ -1,16 +1,8 @@
 const { test, expect } = require("@playwright/test");
+const { wav, downloadBytes } = require("../helpers/audio");
 
 const PROJECT_KEY = "nichodev-mixmaster-project-v1";
 
-function wav(seconds = 1) {
-  const rate = 8000, samples = rate * seconds, buffer = Buffer.alloc(44 + samples * 2);
-  buffer.write("RIFF", 0); buffer.writeUInt32LE(buffer.length - 8, 4); buffer.write("WAVEfmt ", 8);
-  buffer.writeUInt32LE(16, 16); buffer.writeUInt16LE(1, 20); buffer.writeUInt16LE(1, 22);
-  buffer.writeUInt32LE(rate, 24); buffer.writeUInt32LE(rate * 2, 28); buffer.writeUInt16LE(2, 32); buffer.writeUInt16LE(16, 34);
-  buffer.write("data", 36); buffer.writeUInt32LE(samples * 2, 40);
-  for (let i = 0; i < samples; i++) buffer.writeInt16LE(16384, 44 + i * 2);
-  return buffer;
-}
 
 function audioClip(id, start, sourceStart, sourceEnd, values = {}) {
   return { id, type: "audio", audioId: "asset-a", name: id, start, sourceStart, sourceEnd, gain: 1, envelope: [{ x: 0, y: .8 }, { x: 1, y: .8 }], ...values };
@@ -211,13 +203,6 @@ test("reprodução no meio do clipe começa no envelope correto e usa o tempo re
   await page.locator("#stopButton").click();
 });
 
-async function downloadBytes(page, selector) {
-  const pending = page.waitForEvent("download");
-  await page.locator(selector).click();
-  const stream = await (await pending).createReadStream(), chunks = [];
-  for await (const chunk of stream) chunks.push(chunk);
-  return Buffer.concat(chunks);
-}
 
 test("áudio sem IndexedDB permanece recuperável e não é anunciado como salvo", async ({ page }) => {
   await page.addInitScript(() => {

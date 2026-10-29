@@ -9,9 +9,14 @@ module.exports = defineConfig({
   reporter: process.env.CI ? "github" : "list",
   use: {
     baseURL: "http://127.0.0.1:3000",
-    trace: "retain-on-failure"
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure"
   },
-  projects: [{ name: "chromium", use: { browserName: "chromium" } }],
+  projects: [
+    { name: "chromium", use: { browserName: "chromium" } },
+    { name: "firefox", testMatch: "**/compatibility.spec.js", use: { browserName: "firefox" } },
+    { name: "webkit", testMatch: "**/compatibility.spec.js", use: { browserName: "webkit" } }
+  ],
   webServer: {
     command: "npm start",
     url: "http://127.0.0.1:3000/health",

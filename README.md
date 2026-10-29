@@ -41,15 +41,18 @@ No Guitar FX LAB, ajustar parâmetros reutiliza os nós existentes e preserva os
 ```sh
 npm test
 npm run check
-npx playwright install chromium
+npx playwright install chromium firefox webkit
 npm run test:e2e
 ```
 
-No Linux, use `npx playwright install --with-deps chromium` para instalar também as bibliotecas de sistema. O Playwright inicia o servidor local automaticamente quando necessário.
+No Linux, use `npx playwright install --with-deps chromium firefox webkit` para instalar também as bibliotecas de sistema. O Playwright inicia o servidor local automaticamente quando necessário.
 
 - `npm test`: verifica a descoberta de módulos e rejeita dependências ausentes ou sem upload SFTP.
 - `npm run check`: sintaxe JavaScript, IDs, referências locais e cobertura dos arquivos enviados por SFTP.
-- `npm run test:e2e`: navegação, responsividade, teclado, retorno pelo histórico e regressões de áudio no Chromium.
+- `npm run test:e2e`: suíte completa no Chromium e cenários essenciais em Firefox/WebKit. A suíte essencial também roda no Chromium e cobre navegação, importação WAV, reprodução real, restauração pelo IndexedDB, backup e recuperação sem armazenamento.
+- Para rodar um motor: `npm run test:e2e -- --project=firefox` (ou `chromium` / `webkit`). Para somente os cenários essenciais nos três: `npm run test:e2e -- compatibility.spec.js`.
+- O CI instala os três motores e bloqueia a publicação se qualquer cenário falhar. Traces e capturas de falhas ficam em artefatos por sete dias.
+- WebKit no Linux não equivale a Safari/iOS em um dispositivo real. Esses testes usam WAV PCM e não validam todos os codecs, gravação por microfone, drivers ou qualidade audível; a prévia de voz carrega a biblioteca Tone.js dos CDNs usados pelo site.
 - Os testes do MIXMASTER cobrem falha de armazenamento, recuperação, precisão após reabrir, envelopes, MIDI/BPM, transporte, exclusão e limpeza com histórico e outra aba.
 - O Guitar FX LAB verifica o gate NS-2 e a preservação dos efeitos com `OfflineAudioContext`.
 - Os testes dos VST3 e os comandos CMake estão em [plugin/README.md](plugin/README.md).

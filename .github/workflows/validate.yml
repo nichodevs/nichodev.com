@@ -12,7 +12,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Baixar arquivos do repositorio
         uses: actions/checkout@v7
@@ -32,8 +32,17 @@ jobs:
       - name: Validar site e arquivos do deploy
         run: npm run check
 
-      - name: Instalar Chromium para os testes
-        run: npx playwright install --with-deps chromium
+      - name: Instalar Chromium, Firefox e WebKit para os testes
+        run: npx playwright install --with-deps chromium firefox webkit
 
       - name: Testar interface, edição e processamento de áudio
         run: npm run test:e2e
+
+      - name: Guardar diagnóstico de testes que falharam
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-failures
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7
