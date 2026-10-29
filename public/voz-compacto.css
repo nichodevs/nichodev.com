@@ -90,11 +90,6 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 .control-content fieldset { margin: 0 0 14px; padding: 0; border: 0; }
 .control-content fieldset:last-child { margin-bottom: 0; }
 
-/* Grade previsível: duas colunas em telas largas e uma em celulares. */
-.studio-panels { column-count: 2; column-gap: 12px; }
-.studio-panels > .control-panel { display: inline-block; width: 100%; min-width: 0; margin: 0 0 10px; break-inside: avoid; vertical-align: top; }
-@media (max-width: 700px) { .studio-panels { column-count: 1; } }
-
 .microphone-select {
   display: block; width: 100%; min-width: 0; margin: 8px 0; padding: 10px 12px;
   border: 2px solid var(--line); border-radius: 0; color: var(--fg); background: var(--bg);
@@ -107,7 +102,6 @@ input[type=range]:hover::-webkit-slider-thumb,input[type=range]:hover::-moz-rang
 .recording-state, #micDeviceStatus, .processed-record-time { margin: 8px 0; }
 .recording-state[data-state="recording"] { font-weight: 700; }
 @media (max-width: 700px) {
-  .studio-panels { column-gap: 8px; }
   .custom-preset-item { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .custom-preset-name { grid-column: 1 / -1; }
 }
@@ -142,12 +136,6 @@ h2 .cursor, h3 .cursor { animation: fx-caret-blink 1s steps(1, end) infinite !im
 
 
 /* Pedais de efeitos: painel amplo, controles em cartões e cores por função. */
-.studio-panels > .effects-panel {
-  display: block;
-  width: auto;
-  column-span: all;
-  margin-bottom: 16px;
-}
 .control-content.effect-pedals {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -233,24 +221,6 @@ h2 .cursor, h3 .cursor { animation: fx-caret-blink 1s steps(1, end) infinite !im
   line-height: 1.5;
 }
 
-/* Cores associadas ao caráter de cada pedal. */
-.effect-pedals [data-pedal="pitch"] { --pedal-color: #3b82f6; }
-.effect-pedals [data-pedal="formant"] { --pedal-color: #a855f7; }
-.effect-pedals [data-pedal="eq"] { --pedal-color: #14b8a6; }
-.effect-pedals [data-pedal="drive"] { --pedal-color: #f97316; }
-.effect-pedals [data-pedal="chorus"] { --pedal-color: #06b6d4; }
-.effect-pedals [data-pedal="reverb"] { --pedal-color: #6366f1; }
-.effect-pedals [data-pedal="tremolo"] { --pedal-color: #eab308; }
-.effect-pedals [data-pedal="phaser"] { --pedal-color: #8b5cf6; }
-.effect-pedals [data-pedal="delay"] { --pedal-color: #22c55e; }
-.effect-pedals [data-pedal="octave"] { --pedal-color: #ec4899; }
-.effect-pedals [data-pedal="distortion"] { --pedal-color: #ef4444; }
-.effect-pedals [data-pedal="wah"] { --pedal-color: #d97706; }
-.effect-pedals [data-pedal="fuzz"] { --pedal-color: #b45309; }
-.effect-pedals [data-pedal="octafuzz"] { --pedal-color: #f43f5e; }
-.effect-pedals [data-pedal="vibrato"] { --pedal-color: #0d9488; }
-.effect-pedals [data-pedal="volume"] { --pedal-color: #64748b; }
-
 @media (max-width: 760px) {
   .control-content.effect-pedals {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -309,26 +279,20 @@ h2 .cursor, h3 .cursor { animation: fx-caret-blink 1s steps(1, end) infinite !im
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: start;
   gap: 18px;
-  column-count: initial;
-  column-gap: 18px;
 }
 .studio-panels > .control-panel {
   display: block;
   width: auto;
   min-width: 0;
   margin: 0;
-  break-inside: auto;
-  vertical-align: initial;
 }
 .studio-panels > .effects-panel {
   grid-column: 1 / -1;
-  column-span: none;
 }
 @media (max-width: 700px) {
   .studio-panels {
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
-    column-gap: 14px;
   }
   .studio-panels > .effects-panel {
     grid-column: auto;
