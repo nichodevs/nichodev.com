@@ -106,6 +106,8 @@ jobs:
             put public/js/mixmaster/project-store.js -o js/mixmaster/project-store.js
             put public/js/mixmaster/project-backup.js -o js/mixmaster/project-backup.js
             put public/js/mixmaster.js -o js/mixmaster.js
+            put public/assets/social-card.png -o assets/social-card.png
+            put public/sitemap.xml -o sitemap.xml
             put public/robots.txt -o robots.txt
             put public/index.html -o index.html
             put public/downloads.html -o downloads.html
@@ -134,6 +136,9 @@ jobs:
             /onda/onda.css
             /onda/onda.js
             /style.css
+            /sitemap.xml
+            /robots.txt
+            /assets/social-card.png
             /index.css
             /downloads.html
             /downloads.css

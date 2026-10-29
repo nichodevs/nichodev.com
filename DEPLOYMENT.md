@@ -29,6 +29,7 @@ O envio e a lista de URLs verificadas estão em `deploy.yml`. A validação em `
 3. Se criar uma página HTML nova, inclua seu caminho relativo a `public/` na lista `pages` de `scripts/validate-site.js`; seus assets referenciados passam a ser verificados pela validação.
 4. Inclua a URL nos checks HTTP pós-deploy do workflow.
 5. Ao alterar módulos do MIXMASTER, atualize os tokens `?v=` das importações e do script no HTML em conjunto, mantendo a mesma URL para cada módulo compartilhado.
-6. Rode `npm test`, `npm run check` e `npm run test:e2e` antes de integrar a alteração.
+6. Mantenha o sitemap, a URL canônica e os metadados sociais coerentes ao adicionar páginas. Inclua imagens de compartilhamento e sitemap nos uploads e checks HTTP; não publique URLs de preview no sitemap.
+7. Rode `npm test`, `npm run check` e `npm run test:e2e` antes de integrar a alteração.
 
 O envio usa os secrets `HOSTINGER_HOST`, `HOSTINGER_USERNAME`, `HOSTINGER_PASSWORD` e `HOSTINGER_KNOWN_HOSTS`. Os bundles VST3 não são publicados na Hostinger; eles são anexados aos GitHub Releases.
