@@ -410,3 +410,78 @@ test("falha ao carregar um módulo informa como recuperar a abertura", async ({ 
   await page.goto("/mixmaster.html");
   await expect(page.locator("#projectStatus")).toContainText("Não foi possível abrir o MIXMASTER. Recarregue a página.");
 });
+
+test("falha ao salvar metadados avisa ao sair e oferece backup sem limpar o aviso", async ({ page }) => {
+  await restore(page, backup());
+  await savedProject(page);
+  await page.evaluate(() => {
+    window.originalSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === "nichodev-mixmaster-project-v1") throw new DOMException("Sem quota", "QuotaExceededError");
+      return window.originalSetItem.call(this, key, value);
+    };
+  });
+  await page.locator("#newTrackButton").click();
+  await page.clock.fastForward(250);
+  await expect(page.locator("#saveWarning")).toBeVisible();
+  const leaving = () => page.evaluate(() => {
+    const event = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(event); return event.defaultPrevented;
+  });
+  expect(await leaving()).toBe(true);
+  const recovered = JSON.parse((await downloadBytes(page, "#backupUnsavedButton")).toString());
+  expect(recovered.project.tracks).toHaveLength(2);
+  await expect(page.locator("#saveWarning")).toBeVisible();
+  expect(await leaving()).toBe(true);
+  await page.evaluate(() => { Storage.prototype.setItem = window.originalSetItem; });
+  expect(await leaving()).toBe(false);
+  await expect(page.locator("#saveWarning")).toBeHidden();
+  expect((await savedProject(page)).tracks).toHaveLength(2);
+});
+
+test("espaço preserva botões e só controla transporte no contexto do editor", async ({ page }) => {
+  await page.locator("#newMidiButton").focus();
+  await page.keyboard.press("Space");
+  await expect(page.locator(".track-row")).toHaveCount(2);
+  await expect(page.locator("#playButton")).not.toHaveClass(/playing/);
+  await page.locator("#timeline").focus();
+  await page.keyboard.press("Space");
+  await expect(page.locator("#playButton")).toHaveClass(/playing/);
+  await page.locator("#stopButton").click();
+  await page.locator("#newMidiButton").focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".track-row")).toHaveCount(3);
+});
+
+test("ajustes de som têm uma etapa por gesto e preservam a edição anterior", async ({ page }) => {
+  await restore(page, backup([audioClip("clip-a", 0, 0, 1)]));
+  await page.locator("#newTrackButton").click();
+  const baseline = await savedProject(page);
+  for (const [selector, read] of [
+    ["#masterVolume", state => state.master],
+    ["#clipGain", state => state.tracks[0].clips[0].gain],
+    ["#toneControl", state => state.tracks[0].tone],
+    ["#delayControl", state => state.tracks[0].delay],
+    ["#reverbControl", state => state.tracks[0].reverb],
+    [".track-volume", state => state.tracks[0].volume],
+    [".track-pan", state => state.tracks[0].pan]
+  ]) {
+    await page.locator(".audio-clip").click();
+    const control = page.locator(selector).first();
+    const before = read(await savedProject(page));
+    await control.evaluate(el => {
+      el.focus();
+      for (const value of ["30", "40"]) { el.value = value; el.dispatchEvent(new Event("input", { bubbles: true })); }
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(read(await savedProject(page))).toBeCloseTo(.4);
+    await page.locator("#undoButton").click();
+    expect(read(await savedProject(page))).toBe(before);
+    await expect(page.locator(".track-row")).toHaveCount(baseline.tracks.length);
+    await page.locator("#redoButton").click();
+    expect(read(await savedProject(page))).toBeCloseTo(.4);
+    await page.locator("#undoButton").click();
+    expect(read(await savedProject(page))).toBe(before);
+    if (selector === "#masterVolume") await expect(page.locator("#masterValue")).toHaveText(Math.round(before * 100) + "%");
+  }
+});

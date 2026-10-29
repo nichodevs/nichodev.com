@@ -29,6 +29,8 @@ A gravação requer permissão de microfone e uma página em HTTPS ou `localhost
 ## Projetos e áudio no MIXMASTER
 
 - O projeto fica no `localStorage` e os áudios no IndexedDB deste navegador e desta origem.
+- Se o salvamento do projeto falhar, um aviso permanece visível com um botão de backup, e o navegador pede confirmação ao sair. O aviso só desaparece quando o salvamento local volta a funcionar.
+- Ajustes de volume, ganho, pan e efeitos podem ser desfeitos por gesto; os atalhos do editor preservam botões, campos e links focados.
 - **BACKUP** baixa um arquivo `.nichodev.json` com o projeto e seus áudios, para recuperação ou transferência entre navegadores.
 - Se o armazenamento falhar, o áudio fica temporário na aba. Use o download de recuperação do clipe selecionado ou **BACKUP** antes de sair; o aviso de salvamento distingue essa situação.
 - As uniões preservam o áudio interno em WAV float32. **EXPORTAR WAV** renderiza a mixagem em PCM16 estéreo, com até dez minutos de conteúdo e a cauda dos efeitos ao final.
