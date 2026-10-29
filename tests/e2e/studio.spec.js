@@ -123,3 +123,38 @@ test.describe("downloads VST3 sem JavaScript", () => {
     await expect(page).toHaveURL(/\/index\.html$/);
   });
 });
+
+test("legendas aparecem somente sobre o botão, sem deslocar o menu, e preservam o guia do rodapé", async ({ page }) => {
+  await page.goto("/");
+  await page.locator(".home-tool").evaluateAll(items =>
+    Promise.all(items.flatMap(item => item.getAnimations().map(animation => animation.finished))));
+  await expect(page.locator(".site-menu-guide")).toHaveText("Start - Voz / Select - Guitarra / MIX/MASTER - Editor de áudio");
+  await expect(page.locator(".home-tool")).toHaveCount(4);
+  for (const group of await page.locator(".home-tool").all()) {
+    const button = group.locator(".btn"), caption = group.locator(".tool-caption");
+    await page.mouse.move(0, 0);
+    await expect(caption).toHaveCSS("opacity", "0");
+    const original = await button.boundingBox();
+    await button.hover();
+    await expect(caption).toHaveCSS("opacity", "1");
+    await expect(caption).toHaveCSS("animation-name", "caption-glitch");
+    await expect(caption).toHaveCSS("animation-iteration-count", "1");
+    const box = await caption.boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(caption).toHaveCSS("opacity", "0");
+    expect(await button.boundingBox()).toEqual(original);
+  }
+});
+
+test("legendas têm acesso pelo teclado e respeitam movimento reduzido", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/");
+  for (const group of await page.locator(".home-tool").all()) {
+    const button = group.locator(".btn"), caption = group.locator(".tool-caption");
+    await page.keyboard.press("Tab");
+    await expect(button).toBeFocused();
+    await expect(caption).toHaveCSS("opacity", "1");
+    await expect(caption).toHaveCSS("animation-name", "none");
+    await expect(button).toHaveAttribute("aria-describedby", await caption.getAttribute("id"));
+  }
+});
