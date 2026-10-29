@@ -2,14 +2,11 @@ const { test: base, expect } = require("@playwright/test");
 
 // WebKit private contexts cannot persist IDB blobs: microsoft/playwright#42795.
 const test = base.extend({
-  context: async ({ playwright, browserName, baseURL }, use, testInfo) => {
+  context: async ({ playwright, browserName, baseURL }, use) => {
     const context = await playwright[browserName].launchPersistentContext("", { baseURL });
-    await context.tracing.start({ screenshots: true, snapshots: true });
     try {
       await use(context);
     } finally {
-      await context.tracing.stop(testInfo.status !== testInfo.expectedStatus
-        ? { path: testInfo.outputPath("trace.zip") } : {});
       await context.close();
     }
   }
