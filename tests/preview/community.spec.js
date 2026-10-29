@@ -206,6 +206,13 @@ test("áudio inicia só por ação, ajusta parâmetros e fecha ao sair do labora
   await expect(page.locator("#toneOutput")).toHaveText("80%");
   await page.keyboard.press("Escape");
   await expect.poll(() => page.evaluate(() => window.previewContexts.at(-1)?.state)).toBe("closed");
+  await page.getByRole("link", { name: "GALERIA", exact: true }).click();
+  await page.locator("#galleryCards .sound-card").first().getByRole("button", { name: "▶ OUVIR PRÉVIA" }).click();
+  await page.locator("#detailPlay").click();
+  await expect(page.locator("#detailPlay")).toHaveText("■ PARAR PRÉVIA");
+  await page.locator("#detailPlay").click();
+  await expect(page.locator("#detailPlay")).toHaveText("▶ OUVIR PRÉVIA");
+  await expect.poll(() => page.evaluate(() => window.previewContexts.at(-1)?.state)).toBe("closed");
 });
 test("exemplo baixado importa no MIXMASTER real sem arquivos de áudio externos", async ({ page, context }) => {
   await page.locator("#exampleCards .sound-card").first().getByRole("button", { name: "EXPERIMENTAR →" }).click();
@@ -217,6 +224,9 @@ test("exemplo baixado importa no MIXMASTER real sem arquivos de áudio externos"
   expect(backup.app).toBe("nichodev-mixmaster");
   expect(backup.assets).toEqual([]);
   await expect(page.locator("#labFeedback")).toBeVisible();
+  await page.locator("#labFeedback").click();
+  await expect(page.locator("#feedbackTool")).toHaveValue("mixmaster");
+  await page.keyboard.press("Escape");
   const mixer = await context.newPage();
   mixer.on("dialog", dialog => dialog.accept());
   await mixer.goto("http://127.0.0.1:3000/mixmaster.html");

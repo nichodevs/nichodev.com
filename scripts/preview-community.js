@@ -6,7 +6,7 @@ const root = path.join(__dirname, "..", "prototypes", "community");
 const files = { "/": ["index.html", "text/html"], "/index.html": ["index.html", "text/html"], "/preview.css": ["preview.css", "text/css"], "/preview.js": ["preview.js", "text/javascript"] };
 const port = Number(process.env.PREVIEW_PORT || 3100);
 const server = http.createServer((req, res) => {
-  const pathname = new URL(req.url, "http://localhost").pathname;
+  const pathname = req.url.split("?")[0];
   const file = Object.hasOwn(files, pathname) ? files[pathname] : null;
   if (!file || !["GET", "HEAD"].includes(req.method)) { res.writeHead(404); res.end("Não encontrado"); return; }
   fs.readFile(path.join(root, file[0]), (error, content) => {

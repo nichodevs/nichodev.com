@@ -118,6 +118,7 @@
   }
   function route() {
     const view = location.hash.slice(1) || "inicio";
+    if (view === "main") return;
     const selected = view.startsWith("criacao/") ? "galeria" : ["inicio", "timbres", "galeria", "estudio", "painel"].includes(view) ? view : "inicio";
     closeDialogs(); stopAudio();
     document.querySelectorAll("[data-view]").forEach(section => { section.hidden = section.dataset.view !== selected; });
@@ -222,6 +223,7 @@
     if (audioTimer) window.clearTimeout(audioTimer);
     audioTimer = null;
     if (activeAudio) { const context = activeAudio.context; activeAudio = null; context.close().catch(() => {}); }
+    $("detailPlay").textContent = "▶ OUVIR PRÉVIA";
     $("labPlay").textContent = "▶ OUVIR EXEMPLO"; $("labPlaybackStatus").textContent = "AMOSTRA SINTETIZADA · 4 SEGUNDOS";
     document.querySelectorAll(".lab-display").forEach(element => element.classList.remove("playing"));
   }
@@ -252,6 +254,7 @@
         envelope.gain.setValueAtTime(0, time); envelope.gain.linearRampToValueAtTime(.12, time + .015); envelope.gain.exponentialRampToValueAtTime(.001, time + .32);
         oscillator.connect(envelope).connect(filter); oscillator.start(time); oscillator.stop(time + .34);
       }
+      $("detailPlay").textContent = "■ PARAR PRÉVIA";
       $("labPlay").textContent = "■ PARAR EXEMPLO"; $("labPlaybackStatus").textContent = "REPRODUZINDO · AMOSTRA SINTETIZADA";
       document.querySelectorAll("dialog[open] .lab-display").forEach(element => element.classList.add("playing"));
       audioTimer = window.setTimeout(stopAudio, 4000);

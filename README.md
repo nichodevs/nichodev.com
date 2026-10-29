@@ -64,6 +64,12 @@ No Linux, use `npx playwright install --with-deps chromium firefox webkit` para 
 - O Guitar FX LAB verifica o gate NS-2 e a preservação dos efeitos com `OfflineAudioContext`.
 - Os testes dos VST3 e os comandos CMake estão em [plugin/README.md](plugin/README.md).
 
+## Prévia da comunidade para homologação
+
+A interface demonstrativa de avaliações, exemplos, presets, contas e galeria está em [prototypes/community/README.md](prototypes/community/README.md). Execute `npm run preview:community` e abra `http://127.0.0.1:3100`. Use somente dados fictícios: não há envio real, autenticação, persistência no servidor ou publicação. O conteúdo desta prévia fica na memória da aba e desaparece ao recarregar.
+
+A prévia tem testes próprios (`npm run test:preview`) em Chromium, Firefox e WebKit, incluindo a importação do exemplo no MIXMASTER. Seus arquivos ficam fora de `public/` e do deploy na Hostinger. A API e o armazenamento serão definidos após a homologação.
+
 ## Organização
 
 - `public/`: arquivos do site, servidos pelas mesmas URLs públicas.
