@@ -196,6 +196,10 @@ body *{font-family:inherit!important}
   text-align: center;
 }
 
+.home-tool + .home-tool {
+  margin-top: -8px;
+}
+
 .tool-caption {
   max-width: 32ch;
   margin: 0;
