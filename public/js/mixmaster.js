@@ -27,6 +27,7 @@
   let recordingClip = null, recordingTrack = null, lastClipWaveformUpdate = 0;
   const buffers = new Map(), routeNodes = new Map();
   let audioOperations = 0, recoveryUrl = null, recoveryId = null;
+  let unsavedChanges = false, activeAdjustment = null;
   const id = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
   // Keep on-disk audio while another editor tab may still need it for undo.
   const storageLockName = "nichodev-mixmaster-tab-" + id();
@@ -137,12 +138,14 @@
     return JSON.stringify({ tracks: state.tracks, selected: state.selected, selectedTrackId: state.selectedTrackId, playhead: state.playhead, bpm: state.bpm, master: state.master });
   }
   function checkpoint() {
+    activeAdjustment = null;
     undoStack.push(snapshot());
     if (undoStack.length > 40) undoStack.shift();
     redoStack.length = 0;
     updateUndoButtons();
   }
   function restoreSnapshot(value) {
+    activeAdjustment = null;
     stopPlayback(false);
     const parsed = JSON.parse(value);
     state.tracks = parsed.tracks || [];
@@ -153,23 +156,37 @@
     state.master = parsed.master ?? .8;
     $("bpmInput").value = state.bpm;
     $("masterVolume").value = Math.round(state.master * 100);
+    $("masterValue").textContent = Math.round(state.master * 100) + "%";
+    if (audioContext) masterNode.gain.setTargetAtTime(state.master, audioContext.currentTime, .02);
     pruneTrackRoutes();
     for (const track of state.tracks) if (audioContext) { if (!routeNodes.has(track.id)) createTrackRoute(track); else updateRoute(track); }
     saveProject(); render();
   }
+  function bindAdjustment(control, apply) {
+    control.addEventListener("input", event => {
+      if (activeAdjustment !== control) { checkpoint(); activeAdjustment = control; }
+      apply(event);
+    });
+    for (const type of ["change", "blur"]) control.addEventListener(type, () => {
+      if (activeAdjustment === control) activeAdjustment = null;
+    });
+  }
   function updateUndoButtons() { $("undoButton").disabled = !undoStack.length; $("redoButton").disabled = !redoStack.length; }
   function persistProjectNow() {
     clearTimeout(saveTimer); saveTimer = null;
-    return persistProject(state);
+    unsavedChanges = !persistProject(state);
+    $("saveWarning").hidden = !unsavedChanges;
+    return !unsavedChanges;
   }
   function saveProject() {
+    unsavedChanges = true;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       const saved = persistProjectNow();
       if (recorder?.state === "recording" || recordingFinalizing) return;
       els.status.textContent = state.tracks.some(track => track.clips.some(clip => temporaryAudio.has(clip.audioId)))
         ? "Há áudio temporário: baixe o clipe selecionado ou crie um BACKUP antes de sair"
-        : saved ? "Projeto salvo neste navegador" : "Não foi possível salvar o projeto neste navegador";
+        : saved ? "Projeto salvo neste navegador" : "Alterações não salvas: baixe um BACKUP antes de sair";
       collectUnusedAudio().catch(error => console.error("Não foi possível liberar áudios sem uso:", error));
     }, 180);
   }
@@ -279,8 +296,8 @@
       if (action === "mute" || action === "solo") { checkpoint(); track[action === "mute" ? "muted" : "solo"] = !track[action === "mute" ? "muted" : "solo"]; state.tracks.forEach(updateRoute); }
       saveProject(); render();
     }));
-    controls.querySelector(".track-volume").addEventListener("input", event => { track.volume = Number(event.target.value) / 100; updateRoute(track); saveProject(); });
-    controls.querySelector(".track-pan").addEventListener("input", event => { track.pan = Number(event.target.value) / 100; updateRoute(track); saveProject(); });
+    bindAdjustment(controls.querySelector(".track-volume"), event => { track.volume = Number(event.target.value) / 100; updateRoute(track); saveProject(); });
+    bindAdjustment(controls.querySelector(".track-pan"), event => { track.pan = Number(event.target.value) / 100; updateRoute(track); saveProject(); });
     lane.addEventListener("pointerdown", event => {
       if (event.target.closest(".audio-clip")) return;
       state.selectedTrackId = track.id; const rect = lane.getBoundingClientRect(); state.playhead = Math.max(0, (event.clientX - rect.left + lane.scrollLeft) / state.zoom); positionPlayhead(); renderSelection(); renderPiano(); saveProject();
@@ -879,6 +896,7 @@
   $("joinButton").addEventListener("click", joinSelected);
   $("exportButton").addEventListener("click", exportMix);
   $("exportProjectButton").addEventListener("click", exportProjectBackup);
+  $("backupUnsavedButton").addEventListener("click", exportProjectBackup);
   els.projectFile.addEventListener("change", event => importProjectBackup(event.target.files?.[0]));
   $("resetProjectButton").addEventListener("click", resetProject);
   $("zoomControl").addEventListener("input", event => { state.zoom = Number(event.target.value); render(); });
@@ -889,16 +907,27 @@
     state.bpm = bpm; event.target.value = bpm; saveProject(); render();
     if (wasPlaying) play();
   });
-  $("masterVolume").addEventListener("input", event => { state.master = Number(event.target.value) / 100; $("masterValue").textContent = `${event.target.value}%`; if (audioContext) masterNode.gain.setTargetAtTime(state.master, audioContext.currentTime, .02); saveProject(); });
-  $("clipGain").addEventListener("input", event => { const item = selectedClip(); if (!item) return; item.clip.gain = Number(event.target.value) / 100; $("clipGainValue").textContent = `${event.target.value}%`; saveProject(); });
-  for (const [control, property, scale] of [["toneControl", "tone", .01], ["delayControl", "delay", .01], ["reverbControl", "reverb", .01]]) $(control).addEventListener("input", event => { const track = activeTrack(); if (!track) return; track[property] = Number(event.target.value) * scale; $(control.replace("Control", "Value")).textContent = `${event.target.value}%`; updateRoute(track); saveProject(); });
+  bindAdjustment($("masterVolume"), event => { state.master = Number(event.target.value) / 100; $("masterValue").textContent = `${event.target.value}%`; if (audioContext) masterNode.gain.setTargetAtTime(state.master, audioContext.currentTime, .02); saveProject(); });
+  bindAdjustment($("clipGain"), event => { const item = selectedClip(); if (!item) return; item.clip.gain = Number(event.target.value) / 100; $("clipGainValue").textContent = `${event.target.value}%`; saveProject(); });
+  for (const [control, property, scale] of [["toneControl", "tone", .01], ["delayControl", "delay", .01], ["reverbControl", "reverb", .01]]) bindAdjustment($(control), event => { const track = activeTrack(); if (!track) return; track[property] = Number(event.target.value) * scale; $(control.replace("Control", "Value")).textContent = `${event.target.value}%`; updateRoute(track); saveProject(); });
   document.querySelectorAll("[data-tab]").forEach(button => button.addEventListener("click", () => setTab(button.dataset.tab)));
   $("undoButton").addEventListener("click", () => { if (!undoStack.length) return; redoStack.push(snapshot()); restoreSnapshot(undoStack.pop()); setStatus("Ação desfeita"); updateUndoButtons(); });
   $("redoButton").addEventListener("click", () => { if (!redoStack.length) return; undoStack.push(snapshot()); restoreSnapshot(redoStack.pop()); setStatus("Ação refeita"); updateUndoButtons(); });
-  window.addEventListener("keydown", event => { if (event.target.matches("input,textarea,select")) return; if (event.code === "Space") { event.preventDefault(); state.playing ? stopPlayback(false) : play(); } if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") { event.preventDefault(); $("undoButton").click(); } if (event.key === "Delete" || event.key === "Backspace") deleteSelected(); });
+  window.addEventListener("keydown", event => {
+    const target = event.target;
+    if (event.defaultPrevented || event.repeat || target.closest("input,textarea,select,button,a,summary,[role=button],[contenteditable]:not([contenteditable=false])")) return;
+    if (target !== document.body && !target.closest(".mix-app")) return;
+    if (event.code === "Space" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+      event.preventDefault(); state.playing ? stopPlayback(false) : play();
+    } else if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "z") {
+      event.preventDefault(); $(event.shiftKey ? "redoButton" : "undoButton").click();
+    } else if (!event.ctrlKey && !event.metaKey && !event.altKey && (event.key === "Delete" || event.key === "Backspace")) {
+      event.preventDefault(); deleteSelected();
+    }
+  });
   window.addEventListener("beforeunload", event => {
-    persistProjectNow();
-    if (recorder?.state === "recording" || recordingFinalizing || state.tracks.some(track => track.clips.some(clip => temporaryAudio.has(clip.audioId)))) {
+    if (unsavedChanges || saveTimer) persistProjectNow();
+    if (unsavedChanges || recorder?.state === "recording" || recordingFinalizing || state.tracks.some(track => track.clips.some(clip => temporaryAudio.has(clip.audioId)))) {
       event.preventDefault(); event.returnValue = ""; return;
     }
     stopPlayback(); if (meterFrame) cancelAnimationFrame(meterFrame);

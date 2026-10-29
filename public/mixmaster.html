@@ -63,12 +63,14 @@
 
     <section class="mix-statusbar" aria-label="Estado do projeto"><span id="projectStatus" role="status">Projeto pronto · suas alterações são salvas neste navegador</span><a id="recoverAudio" hidden download>BAIXAR ÁUDIO TEMPORÁRIO</a><span class="time-readout" id="timeReadout">00:00.00</span><span id="audioMeter" class="meter" aria-label="Nível de saída"><i></i></span><label class="bpm-control">BPM <input id="bpmInput" type="number" min="40" max="240" value="120" aria-label="Andamento em batidas por minuto"></label></section>
 
+    <p id="saveWarning" class="mix-help" role="status" hidden>Alterações não salvas neste navegador. Baixe um backup antes de sair. <button id="backupUnsavedButton" type="button">BAIXAR BACKUP</button></p>
+
     <section class="quick-start" aria-label="Como começar no MIXMASTER"><strong>COMECE EM 3 PASSOS</strong><span>1. Importe um áudio ou grave pelo microfone.</span><span>2. Arraste e edite os clipes; use o inspetor para ajustar o som.</span><span>3. Exporte a mixagem WAV ou baixe um backup restaurável com os áudios.</span></section>
 
     <section id="recordingMonitor" class="recording-monitor" aria-label="Forma de onda da gravação em andamento" hidden><div class="recording-monitor-heading"><strong>GRAVANDO · FORMA DE ONDA AO VIVO</strong><span id="recordingTime">00:00.00</span></div><canvas id="recordingWaveform" width="900" height="100"></canvas></section>
 
     <section class="editor-shell" aria-label="Editor multifaixa">
-      <div class="timeline" id="timeline">
+      <div class="timeline" id="timeline" tabindex="0" aria-label="Linha do tempo: espaço reproduz ou pausa">
         <div class="track-label-header">FAIXAS</div>
         <div class="ruler-wrap"><div id="ruler" class="ruler"></div><div id="playhead" class="playhead" aria-hidden="true"></div></div>
         <div id="trackList" class="track-list"></div>
@@ -123,6 +125,6 @@
     </footer>
   </main>
   <script src="js/back-sound.js?v=2" defer></script>
-  <script src="js/mixmaster.js?v=27" defer></script>
+  <script src="js/mixmaster.js?v=28" defer></script>
 </body>
 </html>
