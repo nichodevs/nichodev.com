@@ -1,13 +1,15 @@
 # Nichodev VST3 Suite
 
-Dois plugins nativos de guitarra para DAWs VST3, feitos com JUCE 9.0.4 e interface em 8 bits:
+Pedaleira e amplificador nativos para DAWs de 64 bits com suporte a VST3, feitos com JUCE 9.0.4 e interface em 8 bits. Os pacotes publicados atendem Windows e Linux x86_64; a compatibilidade do build Linux depende da distribuição e da DAW. Ainda não há pacote para macOS.
 
 | Plugin | Função |
 | --- | --- |
 | **Nichodev Guitar FX** | Cadeia reordenável de 15 pedais e controles de amplificador |
 | **Nichodev Deluxe 65 Amp** | Amplificador independente com canais Normal/Clean e Vibrato/Dirty |
 
-Ambos aceitam áudio mono ou estéreo, salvam o estado no projeto da DAW e expõem parâmetros para automação do host. Não recebem nem geram MIDI. O Deluxe pode ser usado sozinho ou depois do Guitar FX; os controles completos estão no [guia do amplificador](DELUXE_65.md).
+O [release v0.2.2](https://github.com/nichodevs/nichodev.com/releases/tag/v0.2.2) contém Guitar FX **0.1.8** e Deluxe 65 Amp **0.1.2**, conforme [CMakeLists.txt](CMakeLists.txt). A versão do pacote é independente da versão de cada plugin; ao preparar um novo release, atualize esta referência.
+
+Ambos aceitam áudio mono ou estéreo, salvam o estado no projeto da DAW e expõem parâmetros para automação do host. Não recebem nem geram MIDI. O Deluxe pode ser usado sozinho ou depois do Guitar FX; os controles completos estão no [guia do amplificador](DELUXE_65.md). Instalar os VST3 não exige Node.js nem iniciar o site.
 
 ## Download e instalação
 

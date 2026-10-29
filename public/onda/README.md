@@ -1,6 +1,6 @@
 # Onda de gratidão
 
-Página surpresa acessada pela onda animada no rodapé do [estúdio](../../README.md). A animação em canvas acompanha o ponteiro e se adapta ao tamanho da tela.
+Página de agradecimento acessada pela onda animada no rodapé das páginas do [estúdio](../../README.md), incluindo a página de downloads VST3. A animação em canvas acompanha o ponteiro e se adapta ao tamanho da tela. Seu desenho é gerado por fórmulas; não representa uma captura do microfone.
 
 [Abrir a página publicada](https://nichodev.com/onda/)
 
@@ -10,7 +10,7 @@ Página surpresa acessada pela onda animada no rodapé do [estúdio](../../READM
 - **Toque:** arraste o dedo sobre a área interativa.
 - **Teclado:** use Tab para focar a área e as setas esquerda/direita para mover a interação. Segure Shift para aumentar o passo.
 - A preferência do sistema por **redução de movimento** mantém a fase da onda estática, com interação ainda disponível.
-- **VOLTAR AO ESTÚDIO** retorna à página inicial.
+- **VOLTAR AO ESTÚDIO** retorna à página inicial. A página também pode ser aberta diretamente, sem passar pelo menu do estúdio.
 
 ## Arquivos
 
