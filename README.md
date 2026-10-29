@@ -1,6 +1,6 @@
 # nichodev.com
 
-Estúdio de áudio para navegador e dois plugins VST3 para DAWs, com visual retrô em 8 bits. Acesse [nichodev.com](https://nichodev.com).
+Ferramentas para gravar, processar e mixar áudio no navegador, com visual retrô em 8 bits. O projeto reúne Voice Studio, Guitar FX LAB, MIXMASTER, uma onda interativa e dois plugins VST3 para Windows e Linux. Acesse [nichodev.com](https://nichodev.com).
 
 ## Ferramentas
 
@@ -10,6 +10,8 @@ Estúdio de áudio para navegador e dois plugins VST3 para DAWs, com visual retr
 | [Guitar FX LAB](https://nichodev.com/guitarra.html) | Pedaleira, afinador e gravação de guitarra | [guitarra.html](public/guitarra.html), [public/js/guitarra.js](public/js/guitarra.js) |
 | [MIXMASTER](https://nichodev.com/mixmaster.html) | Edição de áudio, regiões MIDI, envelopes e mixagem | [mixmaster.html](public/mixmaster.html), [public/js/mixmaster.js](public/js/mixmaster.js) |
 | [Onda de gratidão](https://nichodev.com/onda/) | Animação interativa com mouse, toque e teclado | [public/onda/README.md](public/onda/README.md) |
+
+Na página inicial, **START** abre o Voice Studio, **SELECT** abre o Guitar FX LAB, **MIX/MASTER** abre o editor e **DOWNLOAD VST** abre as instruções de download e instalação. As legendas dos botões aparecem ao passar o ponteiro ou focá-los pelo teclado, com um glitch breve que respeita a preferência por redução de movimento. O guia no rodapé continua disponível.
 
 A [suite VST3](plugin/README.md) contém **Nichodev Guitar FX**, com 15 pedais, e **Nichodev Deluxe 65 Amp**, com canais Clean/Dirty, reverb de mola e vibrato de afinação. Baixe os pacotes Windows ou Linux na [página de downloads](https://nichodev.com/downloads.html), com links diretos e instruções para o Reaper ou outra DAW VST3. Os arquivos permanecem nos [GitHub Releases](https://github.com/nichodevs/nichodev.com/releases/latest).
 
@@ -28,7 +30,7 @@ A gravação requer permissão de microfone e uma página em HTTPS ou `localhost
 
 ## Projetos e áudio no MIXMASTER
 
-- O projeto fica no `localStorage` e os áudios no IndexedDB deste navegador e desta origem.
+- O projeto fica no `localStorage` e os áudios no IndexedDB deste navegador e desta origem. Não há sincronização automática entre navegadores ou dispositivos; limpar os dados do site pode remover o trabalho salvo. Mantenha um **BACKUP** fora do navegador.
 - Se o salvamento do projeto falhar, um aviso permanece visível com um botão de backup, e o navegador pede confirmação ao sair. O aviso só desaparece quando o salvamento local volta a funcionar.
 - Ajustes de volume, ganho, pan e efeitos podem ser desfeitos por gesto; os atalhos do editor preservam botões, campos e links focados.
 - **BACKUP** baixa um arquivo `.nichodev.json` com o projeto e seus áudios, para recuperação ou transferência entre navegadores.
@@ -37,6 +39,8 @@ A gravação requer permissão de microfone e uma página em HTTPS ou `localhost
 - Backups importados aceitam linhas do tempo de até 24 horas. A limpeza de áudio preserva o projeto e os históricos de desfazer/refazer; a remoção em disco exige suporte a Web Locks e uma única aba de edição.
 
 No Guitar FX LAB, ajustar parâmetros reutiliza os nós existentes e preserva os ecos. RV-6 e SHIMMER controlam o nível de caudas fixas de 2 e 4,4 segundos.
+
+As ferramentas web usam o áudio do navegador; os VST3 são instalados separadamente em uma DAW. Os pacotes atuais são de 64 bits para Windows e Linux x86_64. O build Linux depende da compatibilidade da distribuição e da DAW; ainda não há pacote para macOS.
 
 ## Verificar alterações
 

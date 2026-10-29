@@ -2,7 +2,7 @@
   "name": "nichodevs",
   "version": "1.0.0",
   "private": true,
-  "description": "Projeto web Nichodevs",
+  "description": "Estúdio de áudio no navegador com voz, guitarra e MIXMASTER, mais plugins VST3 para Windows e Linux, em visual retrô de 8 bits.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
