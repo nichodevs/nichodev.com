@@ -8,7 +8,9 @@
     "start": "node server.js",
     "check": "node scripts/validate-site.js",
     "test:e2e": "playwright test",
-    "test": "node --test tests/validate-site.test.js"
+    "test": "node --test tests/validate-site.test.js",
+    "preview:community": "node scripts/preview-community.js",
+    "test:preview": "playwright test --config=playwright.preview.config.js"
   },
   "dependencies": {
     "express": "^5.1.0"

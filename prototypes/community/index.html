@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#10160f">
+  <title>Comunidade — homologação · nichodev.com</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="preview.css">
+  <script src="preview.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">PULAR PARA O CONTEÚDO</a>
+  <div class="preview-notice"><span class="status-dot" aria-hidden="true"></span><strong>HOMOLOGAÇÃO</strong><span>Interface demonstrativa · nada é enviado ou publicado · use apenas dados fictícios.</span></div>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="#inicio" aria-label="Nichodev, início da prévia"><span class="pixel-mark" aria-hidden="true">▥</span><span>NICHODEV<span class="brand-sub">AUDIO ARCADE / COMUNIDADE</span></span></a>
+      <button class="account-button" type="button" data-action="account"><span aria-hidden="true">＋</span><span id="accountLabel">ENTRAR / CRIAR CONTA</span></button>
+    </header>
+    <nav class="main-nav" aria-label="Navegação da prévia">
+      <a href="#inicio" data-view-link="inicio" aria-current="page">EXPLORAR</a>
+      <a href="#timbres" data-view-link="timbres">TIMBRES</a>
+      <a href="#galeria" data-view-link="galeria">GALERIA</a>
+      <a href="#estudio" data-view-link="estudio">MEU ESTÚDIO</a>
+    </nav>
+    <main id="main">
+      <section class="view" data-view="inicio">
+        <div class="hero">
+          <div class="hero-copy"><p class="eyebrow">SEU PRÓXIMO SOM COMEÇA AQUI</p><h1>CRIE.<br>EXPERIMENTE.<br><span>COMPARTILHE.</span></h1><p class="body-copy">Um lugar para encontrar timbres, testar ideias e dar o próximo passo na sua música.</p><div class="button-row"><a class="button primary" href="#timbres">EXPLORAR TIMBRES <span aria-hidden="true">↗</span></a><a class="text-link" href="#exemplos">COMEÇAR COM UM EXEMPLO →</a></div></div>
+          <div class="hero-art" aria-hidden="true"><div class="art-label">NICHODEV / PLAYGROUND</div><div class="equalizer"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="art-bottom"><span>● SINAL CRIATIVO</span><span>8 BIT / INFINITAS IDEIAS</span></div></div>
+        </div>
+        <section class="content-section" id="exemplos" aria-labelledby="exampleTitle">
+          <div class="section-heading"><div><p class="eyebrow">APERTE PLAY. EXPLORE O QUE MUDA.</p><h2 id="exampleTitle">COMECE POR UMA IDEIA</h2></div><span class="section-note">Exemplos sintetizados · sem microfone</span></div>
+          <div class="card-grid" id="exampleCards"></div>
+        </section>
+        <section class="feedback-strip"><div><p class="eyebrow">VOCÊ AJUDA A CONSTRUIR O PRÓXIMO PASSO</p><h2>COMO FOI SUA EXPERIÊNCIA?</h2><p>Uma dificuldade, uma ideia ou um detalhe que fez diferença.</p></div><button class="button outline" type="button" data-action="feedback">DAR MINHA OPINIÃO →</button></section>
+      </section>
+      <section class="view" data-view="timbres" hidden>
+        <div class="page-heading"><p class="eyebrow">UM AJUSTE PODE VIRAR UMA NOVA IDEIA</p><h1>TIMBRES DA COMUNIDADE</h1><p>Experimente, favorite e salve uma cópia para continuar criando.</p></div>
+        <div class="filter-bar"><div class="filters" role="group" aria-label="Filtrar timbres"><button type="button" data-preset-filter="todos" aria-pressed="true">TODOS</button><button type="button" data-preset-filter="guitarra" aria-pressed="false">GUITARRA WEB</button><button type="button" data-preset-filter="voz" aria-pressed="false">VOZ WEB</button></div><button class="text-link" type="button" data-action="new-preset">＋ COMPARTILHAR TIMBRE</button></div>
+        <p class="section-note">Presets de exemplo do navegador. Os VST3 terão biblioteca e compatibilidade próprias.</p>
+        <div class="card-grid" id="presetCards"></div>
+      </section>
+      <section class="view" data-view="galeria" hidden>
+        <div class="page-heading"><p class="eyebrow">IDEIAS GANHAM VIDA QUANDO ALGUÉM APERTA PLAY</p><h1>GALERIA DA COMUNIDADE</h1><p>Ouça um começo. Encontre uma referência. Crie a sua versão.</p></div>
+        <div class="filter-bar"><div class="filters" role="group" aria-label="Filtrar galeria"><button type="button" data-gallery-filter="todos" aria-pressed="true">TODOS</button><button type="button" data-gallery-filter="musica" aria-pressed="false">MÚSICAS</button><button type="button" data-gallery-filter="experimento" aria-pressed="false">EXPERIMENTOS</button></div><button class="button primary compact" type="button" data-action="new-publication">＋ NOVA PRÉVIA</button></div>
+        <div class="card-grid" id="galleryCards"></div>
+      </section>
+      <section class="view" data-view="estudio" hidden>
+        <div class="page-heading"><p class="eyebrow">SUAS IDEIAS, NO SEU RITMO</p><h1>MEU ESTÚDIO</h1><p id="studioSubtitle">Entre na demonstração para explorar sua área pessoal.</p></div>
+        <div id="studioGuest" class="empty-state"><span aria-hidden="true">▣</span><h2>UM LUGAR PARA SUAS CRIAÇÕES</h2><p>Presets favoritos, cópias dos timbres e prévias que você escolheu compartilhar.</p><button class="button primary" type="button" data-action="account">EXPERIMENTAR MINHA CONTA</button></div>
+        <div id="studioMember" hidden><div class="studio-actions"><button class="button outline compact" type="button" data-action="settings">CONFIGURAÇÕES DA CONTA</button><button class="text-link" type="button" data-action="logout">SAIR DA DEMONSTRAÇÃO</button></div><h2 class="subheading">MEUS FAVORITOS</h2><div class="card-grid" id="favoriteCards"></div><h2 class="subheading">MEUS TIMBRES</h2><div class="card-grid" id="savedCards"></div><h2 class="subheading">MINHAS PRÉVIAS</h2><div class="card-grid" id="myPublications"></div></div>
+      </section>
+      <section class="view" data-view="painel" hidden>
+        <div class="page-heading"><p class="eyebrow">VISÃO DO RESPONSÁVEL PELO SITE / DEMONSTRAÇÃO</p><h1>AVALIAÇÕES RECEBIDAS</h1><p>Somente opiniões simuladas nesta aba. O painel real exigirá acesso administrativo.</p></div>
+        <label class="inline-label" for="feedbackFilter">SITUAÇÃO <select id="feedbackFilter"><option value="todos">Todas</option><option value="recebido">Recebido</option><option value="analise">Em análise</option><option value="concluido">Concluído</option></select></label>
+        <div id="feedbackList"></div>
+      </section>
+      <p id="pageStatus" class="page-status" role="status" aria-live="polite"></p>
+    </main>
+    <footer class="app-footer"><div><strong>NICHODEV.COM</strong><p>FEITO PARA QUEM GOSTA DE CRIAR SOM.</p></div><div class="footer-actions"><button class="text-link" type="button" data-action="feedback">COMO FOI SUA EXPERIÊNCIA?</button><a class="text-link" href="#painel">PAINEL DE AVALIAÇÕES DEMO</a></div><p class="demo-footnote">Todos os autores e conteúdos desta prévia são fictícios. Os dados ficam apenas na memória desta aba e desaparecem ao recarregar.</p><div class="footer-wave" aria-hidden="true">▁ ▂ ▅ ▃ ▆ █ ▆ ▃ ▅ ▂ ▁</div></footer>
+  </div>
+
+  <dialog id="feedbackDialog" aria-labelledby="feedbackTitle">
+    <div class="dialog-heading"><div><p class="eyebrow">AVALIAÇÃO PRIVADA / DEMO</p><h2 id="feedbackTitle">COMO FOI SUA EXPERIÊNCIA?</h2></div><button class="close-button" type="button" data-close aria-label="Fechar avaliação">×</button></div>
+    <form id="feedbackForm">
+      <p class="form-intro">Esta prévia não envia sua opinião. Use informações fictícias para testar o formulário.</p>
+      <label for="feedbackTool">FERRAMENTA UTILIZADA</label><select id="feedbackTool" name="tool" required><option value="mixmaster">MIXMASTER</option><option value="guitarra">Guitar FX LAB</option><option value="voz">Voice Studio</option><option value="site">Site / Comunidade</option></select>
+      <fieldset class="choice-field"><legend>COMO FUNCIONOU?</legend><label><input type="radio" name="experience" value="bem" required> Funcionou bem</label><label><input type="radio" name="experience" value="dificuldade"> Tive dificuldade</label><label><input type="radio" name="experience" value="problema"> Encontrei um problema</label></fieldset>
+      <label for="feedbackComment">COMENTÁRIO <span>(OPCIONAL)</span></label><textarea id="feedbackComment" name="comment" maxlength="1200" rows="3" placeholder="O que ajudou ou o que poderia melhorar?"></textarea>
+      <label for="feedbackContact">CONTATO <span>(OPCIONAL · APENAS PARA RESPOSTA)</span></label><input id="feedbackContact" name="contact" type="email" maxlength="254" placeholder="exemplo@exemplo.com" autocomplete="off">
+      <p class="privacy-note">No produto final, esta avaliação será visível somente ao responsável pelo site. Ela não vira depoimento público automaticamente.</p>
+      <button class="button primary full" type="submit">SIMULAR ENVIO PRIVADO →</button>
+    </form>
+    <div id="feedbackSuccess" hidden><div class="success-mark" aria-hidden="true">✓</div><h3>OBRIGADO POR PARTICIPAR!</h3><p>A avaliação foi adicionada apenas ao painel demonstrativo desta aba. Nenhuma mensagem foi enviada.</p><div class="button-row"><button class="button primary" type="button" data-action="view-feedback">VER PAINEL DEMO</button><button class="text-link" type="button" data-close>CONTINUAR EXPLORANDO</button></div></div>
+  </dialog>
+
+  <dialog id="labDialog" aria-labelledby="labTitle">
+    <div class="dialog-heading"><div><p class="eyebrow" id="labTool">LABORATÓRIO DE EXEMPLO</p><h2 id="labTitle">EXPERIMENTAR TIMBRE</h2></div><button class="close-button" type="button" data-close aria-label="Fechar laboratório">×</button></div>
+    <p id="labDescription" class="form-intro"></p><div class="lab-display"><div class="mini-wave" aria-hidden="true"></div><p id="labPlaybackStatus" role="status">AMOSTRA SINTETIZADA · 4 SEGUNDOS</p></div>
+    <div class="lab-controls"><label for="labTone">TOM <output id="toneOutput">50%</output><input id="labTone" type="range" min="0" max="100" value="50"></label><label for="labDelay">DELAY <output id="delayOutput">20%</output><input id="labDelay" type="range" min="0" max="70" value="20"></label><label for="labSpace">AMBIÊNCIA <output id="spaceOutput">20%</output><input id="labSpace" type="range" min="0" max="70" value="20"></label></div>
+    <div class="button-row"><button id="labPlay" class="button primary" type="button">▶ OUVIR EXEMPLO</button><button id="labFavorite" class="button outline" type="button">☆ FAVORITAR</button></div>
+    <p class="privacy-note">Este laboratório serve para homologar a experiência. O som é sintético e não representa o processamento do Voice Studio, Guitar FX LAB ou VST3.</p>
+    <button id="downloadExample" class="text-link" type="button" hidden>↓ BAIXAR EXEMPLO EDITÁVEL PARA O MIXMASTER</button><button id="labFeedback" class="text-link" type="button" data-action="feedback" hidden>EXEMPLO BAIXADO. COMO FOI SUA EXPERIÊNCIA?</button><p id="downloadHelp" class="privacy-note" hidden>Importe o arquivo como BACKUP no MIXMASTER. A importação substitui o projeto aberto; guarde seu backup antes.</p>
+  </dialog>
+
+  <dialog id="accountDialog" aria-labelledby="accountTitle">
+    <div class="dialog-heading"><div><p class="eyebrow">MEU ESTÚDIO / CONTA DEMONSTRATIVA</p><h2 id="accountTitle">ENTRAR</h2></div><button class="close-button" type="button" data-close aria-label="Fechar conta">×</button></div>
+    <p class="form-intro">Sem e-mail ou nome real. Somente dados fictícios: esta prévia não autentica nem armazena senhas.</p>
+    <div class="account-tabs" role="group" aria-label="Opções de conta"><button type="button" data-account-mode="login" aria-pressed="true">ENTRAR</button><button type="button" data-account-mode="register" aria-pressed="false">CRIAR CONTA</button></div>
+    <form id="accountForm">
+      <label for="accountUser">USUÁRIO</label><input id="accountUser" name="username" type="text" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" value="visitante_demo" autocomplete="off" autocapitalize="none" spellcheck="false" required aria-describedby="usernameHelp"><p id="usernameHelp" class="field-help">3 a 24 caracteres: letras, números ou _. Maiúsculas e minúsculas representam o mesmo login.</p>
+      <label for="accountPassword">SENHA DE DEMONSTRAÇÃO</label><input id="accountPassword" name="password" type="password" minlength="15" maxlength="128" autocomplete="off" required aria-describedby="passwordHelp"><p id="passwordHelp" class="field-help">Use uma frase fictícia com pelo menos 15 caracteres. Sem exigência de símbolos ou letras maiúsculas.</p>
+      <div id="confirmPasswordField" hidden><label for="accountConfirm">CONFIRMAR SENHA</label><input id="accountConfirm" name="confirm" type="password" minlength="15" maxlength="128" autocomplete="off"></div>
+      <p id="accountError" class="form-error" role="alert"></p><button id="accountSubmit" class="button primary full" type="submit">SIMULAR ENTRADA →</button>
+    </form><button class="text-link" type="button" data-action="recover">ESQUECI MINHA SENHA</button>
+  </dialog>
+
+  <dialog id="recoveryKeyDialog" aria-labelledby="keyTitle">
+    <div class="dialog-heading"><div><p class="eyebrow">ÚLTIMO PASSO DO CADASTRO / DEMO</p><h2 id="keyTitle">GUARDE SUA CHAVE</h2></div><button class="close-button" type="button" data-close aria-label="Fechar chave de demonstração">×</button></div>
+    <p>Na versão real, essa chave permitirá recuperar sua conta sem e-mail. Quem tiver a chave poderá redefinir sua senha.</p><label for="recoveryKey">CHAVE FICTÍCIA · SEM VALIDADE REAL</label><input id="recoveryKey" type="text" readonly value="DEMO-CHAVE-SEM-VALIDADE-0001"><div class="button-row"><button class="button outline compact" type="button" data-action="copy-key">COPIAR</button><button class="button outline compact" type="button" data-action="download-key">BAIXAR CHAVE DEMO</button></div>
+    <p class="privacy-note">Sem senha e sem chave, uma conta sem outro método de recuperação não poderá ser recuperada.</p><label class="checkbox-label"><input id="keySaved" type="checkbox"> Guardei minha chave de demonstração.</label><button id="finishSignup" class="button primary full" type="button" disabled>ABRIR MEU ESTÚDIO →</button><p id="keyStatus" role="status"></p>
+  </dialog>
+
+  <dialog id="passwordDialog" aria-labelledby="passwordTitle">
+    <div class="dialog-heading"><div><p class="eyebrow">CONTA DEMONSTRATIVA</p><h2 id="passwordTitle">RECUPERAR SENHA</h2></div><button class="close-button" type="button" data-close aria-label="Fechar alteração de senha">×</button></div>
+    <form id="passwordForm"><p id="passwordIntro" class="form-intro"></p><label for="passwordUser">USUÁRIO</label><input id="passwordUser" type="text" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" value="visitante_demo" required autocomplete="off">
+      <label for="passwordProof" id="passwordProofLabel">CHAVE DE RECUPERAÇÃO DEMO</label><input id="passwordProof" type="text" required autocomplete="off">
+      <label for="newPassword">NOVA SENHA FICTÍCIA</label><input id="newPassword" type="password" minlength="15" maxlength="128" required autocomplete="off"><label for="newPasswordConfirm">CONFIRMAR NOVA SENHA</label><input id="newPasswordConfirm" type="password" minlength="15" maxlength="128" required autocomplete="off">
+      <p id="passwordError" class="form-error" role="alert"></p><button class="button primary full" type="submit">SIMULAR ALTERAÇÃO →</button>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog" aria-labelledby="settingsTitle"><div class="dialog-heading"><div><p class="eyebrow">MEU ESTÚDIO</p><h2 id="settingsTitle">MINHA CONTA</h2></div><button class="close-button" type="button" data-close aria-label="Fechar configurações">×</button></div><p id="settingsUser"></p><div class="settings-actions"><button class="button outline" type="button" data-action="change-password">ALTERAR SENHA</button><button class="button outline" type="button" data-action="rotate-key">GERAR OUTRA CHAVE DEMO</button></div><p class="privacy-note">Na implementação real, ambas as ações exigirão confirmação da senha atual. A prévia apenas demonstra as telas.</p></dialog>
+
+  <dialog id="publishDialog" aria-labelledby="publishTitle"><div class="dialog-heading"><div><p class="eyebrow">CRIAÇÃO DEMONSTRATIVA</p><h2 id="publishTitle">COMPARTILHAR UMA IDEIA</h2></div><button class="close-button" type="button" data-close aria-label="Fechar publicação">×</button></div><form id="publishForm"><label for="creationTitle">NOME</label><input id="creationTitle" maxlength="60" required placeholder="Minha próxima ideia"><label for="creationDescription">DESCRIÇÃO CURTA</label><textarea id="creationDescription" maxlength="240" rows="2" required placeholder="Conte como você imaginou esse som."></textarea><label for="creationTool">FERRAMENTA</label><select id="creationTool"><option value="guitarra">Guitar FX LAB · navegador</option><option value="voz">Voice Studio · navegador</option><option value="mixmaster">MIXMASTER</option></select><label for="creationVisibility">VISIBILIDADE</label><select id="creationVisibility"><option value="private">Privado · somente eu</option><option value="unlisted">Não listado · quem tiver o link</option><option value="public">Público · aparece na galeria</option></select><p id="visibilityHelp" class="privacy-note">Começa privado. Nada será enviado; o exemplo ficará apenas nesta sessão.</p><p class="privacy-note">Uploads de áudio e publicação real serão implementados após homologação. A prévia usa uma amostra sintetizada.</p><button class="button primary full" type="submit">SALVAR EXEMPLO NESTA SESSÃO →</button></form></dialog>
+
+  <dialog id="detailDialog" aria-labelledby="detailTitle"><div class="dialog-heading"><div><p class="eyebrow" id="detailMeta"></p><h2 id="detailTitle"></h2></div><button class="close-button" type="button" data-close aria-label="Fechar criação">×</button></div><p id="detailDescription"></p><div class="lab-display"><div class="mini-wave" aria-hidden="true"></div><p>PRÉVIA DEMONSTRATIVA · AMOSTRA SINTETIZADA</p></div><div class="button-row"><button class="button primary" type="button" data-action="play-detail">▶ OUVIR PRÉVIA</button><button class="button outline" type="button" data-action="remix-detail">CRIAR MINHA VERSÃO</button></div><p class="privacy-note" id="detailVisibility"></p><button class="text-link" type="button" data-action="share-detail">COMPARTILHAR PRÉVIA →</button><p id="shareStatus" role="status"></p></dialog>
+
+  <noscript><p>Ative JavaScript para explorar a demonstração. Nenhum dado será enviado.</p></noscript>
+</body>
+</html>
