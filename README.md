@@ -51,7 +51,8 @@ No Linux, use `npx playwright install --with-deps chromium firefox webkit` para 
 - `npm run check`: sintaxe JavaScript, IDs, referências locais e cobertura dos arquivos enviados por SFTP.
 - `npm run test:e2e`: suíte completa no Chromium e cenários essenciais em Firefox/WebKit. A suíte essencial também roda no Chromium e cobre navegação, importação WAV, reprodução real, restauração pelo IndexedDB, backup e recuperação sem armazenamento.
 - Para rodar um motor: `npm run test:e2e -- --project=firefox` (ou `chromium` / `webkit`). Para somente os cenários essenciais nos três: `npm run test:e2e -- compatibility.spec.js`.
-- O CI instala os três motores e bloqueia a publicação se qualquer cenário falhar. Traces e capturas de falhas ficam em artefatos por sete dias.
+- O CI instala os três motores e prepara uma saída virtual PulseAudio para o processamento real, sem precisar de placa de som. Uma falha em qualquer cenário bloqueia a publicação. Traces e capturas de falhas ficam em artefatos por sete dias.
+- Os cenários essenciais usam um perfil temporário normal por teste, descartado ao encerrar. Isso permite testar blobs no IndexedDB do WebKit; suas sessões privadas têm uma [limitação conhecida](https://github.com/microsoft/playwright/issues/42795). O cenário de armazenamento indisponível verifica a recuperação separadamente.
 - WebKit no Linux não equivale a Safari/iOS em um dispositivo real. Esses testes usam WAV PCM e não validam todos os codecs, gravação por microfone, drivers ou qualidade audível; a prévia de voz carrega a biblioteca Tone.js dos CDNs usados pelo site.
 - Os testes do MIXMASTER cobrem falha de armazenamento, recuperação, precisão após reabrir, envelopes, MIDI/BPM, transporte, exclusão e limpeza com histórico e outra aba.
 - O Guitar FX LAB verifica o gate NS-2 e a preservação dos efeitos com `OfflineAudioContext`.

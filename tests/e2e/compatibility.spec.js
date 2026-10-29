@@ -1,4 +1,19 @@
-const { test, expect } = require("@playwright/test");
+const { test: base, expect } = require("@playwright/test");
+
+// WebKit private contexts cannot persist IDB blobs: microsoft/playwright#42795.
+const test = base.extend({
+  context: async ({ playwright, browserName, baseURL }, use, testInfo) => {
+    const context = await playwright[browserName].launchPersistentContext("", { baseURL });
+    await context.tracing.start({ screenshots: true, snapshots: true });
+    try {
+      await use(context);
+    } finally {
+      await context.tracing.stop(testInfo.status !== testInfo.expectedStatus
+        ? { path: testInfo.outputPath("trace.zip") } : {});
+      await context.close();
+    }
+  }
+});
 const { wav, downloadBytes } = require("../helpers/audio");
 
 const PROJECT_KEY = "nichodev-mixmaster-project-v1";
@@ -62,7 +77,8 @@ test("MIXMASTER restaura IndexedDB em outra página e importa o backup sem mudar
   expect(Buffer.from(backup.assets[0].dataBase64, "base64")).toEqual(audio);
   restored.on("dialog", dialog => dialog.accept());
   await restored.locator("#projectFile").setInputFiles({ name: "restaurar.nichodev.json", mimeType: "application/json", buffer: bytes });
-  await expect(restored.locator("#projectStatus")).toContainText("Backup restaurado");
+  await expect.poll(() => restored.evaluate(key => JSON.parse(localStorage.getItem(key))?.tracks[0]?.clips[0]?.audioId, PROJECT_KEY))
+    .not.toBe(saved.tracks[0].clips[0].audioId);
   await expect(restored.locator(".audio-clip")).toHaveCount(1);
   const roundTrip = JSON.parse((await downloadBytes(restored, "#exportProjectButton")).toString());
   expect(Buffer.from(roundTrip.assets[0].dataBase64, "base64")).toEqual(audio);

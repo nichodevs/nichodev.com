@@ -35,6 +35,14 @@ jobs:
       - name: Instalar Chromium, Firefox e WebKit para os testes
         run: npx playwright install --with-deps chromium firefox webkit
 
+      - name: Preparar saída de áudio virtual para os navegadores
+        run: |
+          sudo apt-get install -y pulseaudio
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=nichodev_ci
+          pactl set-default-sink nichodev_ci
+          pactl info
+
       - name: Testar interface, edição e processamento de áudio
         run: npm run test:e2e
 
