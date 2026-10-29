@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Download VST3 — nichodev.com</title>
+  <meta name="description" content="Baixe Nichodev Guitar FX e Deluxe 65 Amp para Windows ou Linux. Instale os dois VST3 no Reaper ou em outra DAW compatível.">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Crect x='4' y='3' width='8' height='10' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=footer-wave-20261020">
+  <link rel="stylesheet" href="cursores-retro.css">
+  <link rel="stylesheet" href="downloads.css?v=1">
+</head>
+<body>
+  <main class="downloads">
+    <nav class="downloads-nav" aria-label="Navegação">
+      <a class="btn" href="index.html">← MENU</a>
+      <a href="#instalacao">COMO INSTALAR ↓</a>
+    </nav>
+
+    <header class="downloads-heading">
+      <p class="eyebrow">NICHODEVS / AUDIO ARCADE</p>
+      <h1>DOWNLOAD VST3<span class="cursor" aria-hidden="true"></span></h1>
+      <p>Dois plugins de guitarra. Um pacote.<br>Pedais e amplificador com visual em 8 bits, direto na sua DAW.</p>
+    </header>
+
+    <section aria-labelledby="sistema-title">
+      <h2 id="sistema-title">01 / ESCOLHA SEU SISTEMA</h2>
+      <div class="download-grid">
+        <article class="download-card">
+          <h3>WINDOWS</h3>
+          <p>64 bits · VST3 · arquivo ZIP</p>
+          <a class="btn download-button" href="https://github.com/nichodevs/nichodev.com/releases/latest/download/NichodevVST3-windows-latest.zip">BAIXAR PARA WINDOWS</a>
+        </article>
+        <article class="download-card">
+          <h3>LINUX</h3>
+          <p>x86_64 · VST3 · arquivo ZIP</p>
+          <a class="btn download-button" href="https://github.com/nichodevs/nichodev.com/releases/latest/download/NichodevVST3-ubuntu-latest.zip">BAIXAR PARA LINUX</a>
+        </article>
+      </div>
+      <p class="download-note">Download direto do release mais recente no GitHub. Cada ZIP inclui os dois plugins. O build Linux é compilado em Ubuntu; a compatibilidade depende da distribuição e da DAW. Ainda não há pacote para macOS.</p>
+      <a href="https://github.com/nichodevs/nichodev.com/releases/latest">Ver versão e notas do release ↗</a>
+    </section>
+
+    <section aria-labelledby="plugins-title">
+      <h2 id="plugins-title">02 / O QUE VEM NO PACOTE</h2>
+      <div class="plugin-grid">
+        <article>
+          <h3>NICHODEV GUITAR FX</h3>
+          <p>15 pedais em uma cadeia reordenável, com drives, modulações, delay, reverb e presets.</p>
+        </article>
+        <article>
+          <h3>NICHODEV DELUXE 65 AMP</h3>
+          <p>Amplificador com canais Clean e Dirty, reverb de mola e vibrato de afinação no canal Dirty.</p>
+        </article>
+      </div>
+      <p class="download-note">Use cada plugin sozinho ou coloque o Deluxe depois do Guitar FX na cadeia de efeitos.</p>
+    </section>
+
+    <section id="instalacao" aria-labelledby="instalacao-title">
+      <h2 id="instalacao-title">03 / INSTALE EM 3 PASSOS</h2>
+      <ol class="install-steps">
+        <li>
+          <h3>EXTRAIA O ZIP</h3>
+          <p>Feche a DAW e extraia o pacote baixado. Você encontrará as pastas <code>Nichodev Guitar FX.vst3</code> e <code>Nichodev Deluxe 65 Amp.vst3</code>.</p>
+        </li>
+        <li>
+          <h3>COPIE AS PASTAS COMPLETAS</h3>
+          <p>Copie uma ou as duas pastas <code>.vst3</code> para o local do seu sistema:</p>
+          <dl class="install-paths">
+            <dt>WINDOWS</dt>
+            <dd><code>C:\Program Files\Common Files\VST3</code></dd>
+            <dt>LINUX</dt>
+            <dd><code>~/.vst3</code></dd>
+          </dl>
+          <p>Preserve o conteúdo de cada pasta, incluindo <code>Contents</code>. No Windows, a cópia pode pedir permissão de administrador. No Linux, crie a pasta <code>.vst3</code> na sua pasta pessoal se ela ainda não existir.</p>
+        </li>
+        <li>
+          <h3>ABRA SUA DAW E PROCURE NICHODEV</h3>
+          <p>Faça uma nova varredura de plugins e adicione o Guitar FX ou o Deluxe 65 Amp como efeito em uma faixa de áudio.</p>
+        </li>
+      </ol>
+
+      <div class="daw-guides">
+        <article>
+          <h3>NO REAPER</h3>
+          <p>Abra <strong>Options → Preferences → Plug-ins → VST</strong>. Confira a pasta de instalação e clique em <strong>Re-scan</strong>. Depois, abra <strong>FX</strong> em uma faixa e pesquise <strong>Nichodev</strong>.</p>
+        </article>
+        <article>
+          <h3>EM OUTRA DAW</h3>
+          <p>Use uma DAW de 64 bits com suporte a VST3 no seu sistema. Nas preferências ou no gerenciador de plugins, confira as pastas VST3 e execute a busca de novos plugins. Os nomes dos menus variam conforme a DAW.</p>
+        </article>
+      </div>
+      <p class="download-note">Ao atualizar, substitua o bundle completo com a DAW fechada e evite cópias antigas em outras pastas que ela também verifica.</p>
+    </section>
+
+    <footer class="downloads-footer">
+      <p>Não apareceu ou ficou sem áudio? <a href="https://github.com/nichodevs/nichodev.com/blob/main/plugin/TROUBLESHOOTING.md">Abra o guia de diagnóstico ↗</a></p>
+      <p class="download-note">Referências: <a href="https://www.reaper.fm/userguide.php">manual do Reaper</a> · <a href="https://steinbergmedia.github.io/vst3_dev_portal/pages/Technical%2BDocumentation/Locations%2BFormat/Plugin%2BLocations.html">pastas padrão VST3</a></p>
+      <p class="site-audio-credit">© 2026 nichodev.com</p>
+    </footer>
+  </main>
+  <script src="js/back-sound.js?v=2" defer></script>
+</body>
+</html>

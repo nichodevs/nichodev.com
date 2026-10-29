@@ -11,7 +11,7 @@ Ambos aceitam áudio mono ou estéreo, salvam o estado no projeto da DAW e expõ
 
 ## Download e instalação
 
-1. Abra o [release mais recente](https://github.com/nichodevs/nichodev.com/releases/latest) e baixe o ZIP para seu sistema em **Assets**:
+1. Abra a [página de downloads](https://nichodev.com/downloads.html) e escolha Windows ou Linux. Ela oferece os links diretos do release mais recente e instruções curtas para o Reaper ou outra DAW VST3. Os mesmos ZIPs estão em **Assets** do [release no GitHub](https://github.com/nichodevs/nichodev.com/releases/latest):
 
    | Sistema | Arquivo |
    | --- | --- |

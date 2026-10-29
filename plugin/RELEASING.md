@@ -7,7 +7,7 @@ O workflow [Compilar plugin de áudio](../.github/workflows/plugin.yml) compila 
 - `project(... VERSION ...)` em [`plugin/CMakeLists.txt`](CMakeLists.txt) identifica a versão do pacote e a tag `vX.Y.Z`.
 - Cada chamada `juce_add_plugin(... VERSION ...)` identifica a versão individual do plugin. O Guitar FX e o Deluxe 65 Amp podem evoluir em ritmos diferentes.
 - As notas ficam em `plugin/releases/vX.Y.Z.md`. O CI exige uma versão `X.Y.Z` válida e notas não vazias antes da compilação.
-- O botão **DOWNLOAD VST** aponta para `/releases/latest`; cada release inclui os dois bundles para preservar ambos os downloads.
+- O botão **DOWNLOAD VST** abre a [página de downloads](https://nichodev.com/downloads.html). Os botões de Windows/Linux usam `/releases/latest/download/` com os nomes fixos dos ZIPs; cada release deve manter esses nomes e incluir os dois bundles.
 
 ## Processo automático
 
@@ -16,7 +16,7 @@ O workflow [Compilar plugin de áudio](../.github/workflows/plugin.yml) compila 
 3. Crie `plugin/releases/vX.Y.Z.md` no formato abaixo. Descreva somente mudanças presentes no código e validadas; não anuncie correção de áudio que os testes não cobrem.
 4. Abra o PR e confira os builds e testes nos dois sistemas operacionais.
 5. Integre a mudança em `main`. Após os dois builds e testes passarem novamente, o job **Publicar release VST3** baixa os artefatos dessa mesma execução, confere os dois bundles e a integridade dos ZIPs e cria `Nichodev VST3 Suite vX.Y.Z`, com a tag no commit compilado.
-6. Abra o release e confirme os downloads `NichodevVST3-windows-latest.zip` e `NichodevVST3-ubuntu-latest.zip`. O link da página inicial acompanha `/releases/latest`; não é necessário enviar os bundles para a Hostinger.
+6. Abra o release e confirme os downloads `NichodevVST3-windows-latest.zip` e `NichodevVST3-ubuntu-latest.zip`. Os botões da página de downloads acompanham `/releases/latest/download/`; não é necessário enviar os bundles para a Hostinger.
 
 O token tem escrita em conteúdo apenas no job de publicação da `main`. As publicações são serializadas. Se a versão já tiver release publicado com os dois ZIPs, o job termina sem substituir arquivos. Uma tag sem release, um rascunho ou um release sem os dois arquivos interrompe o job para conferência manual.
 
