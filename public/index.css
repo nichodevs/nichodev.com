@@ -20,19 +20,19 @@ body {
       animation: home-enter 820ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
-    #startBtn {
+    .menu-start {
       animation: home-enter 820ms 130ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
-    a[href="guitarra.html"] {
+    .menu-guitar {
       animation: home-enter 820ms 260ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
-    a[href="mixmaster.html"] {
+    .menu-mix {
       animation: home-enter 820ms 390ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
-    a[href="downloads.html"] {
+    .menu-vst {
       animation: home-enter 820ms 520ms cubic-bezier(.22, 1, .36, 1) both;
     }
 
@@ -141,10 +141,10 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   h1,
-  #startBtn,
-  a[href="guitarra.html"],
-  a[href="mixmaster.html"],
-  a[href="downloads.html"],
+  .menu-start,
+  .menu-guitar,
+  .menu-mix,
+  .menu-vst,
   .repository-qr-card,
   .site-footer {
     animation: none;
@@ -186,3 +186,20 @@ body *{font-family:inherit!important}
 }
 
 
+
+.home-tool {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  max-width: 100%;
+  text-align: center;
+}
+
+.tool-caption {
+  max-width: 32ch;
+  margin: 0;
+  color: var(--mute);
+  font-size: 9px;
+  line-height: 1.8;
+}
