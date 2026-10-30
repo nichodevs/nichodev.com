@@ -38,6 +38,36 @@ test.beforeEach(async({page})=>{
   await page.route("https://fonts.googleapis.com/**",r=>r.abort());await page.route("https://fonts.gstatic.com/**",r=>r.abort());
   await page.goto("/comunidade/");await expect(page.locator("#exampleCards .sound-card")).toHaveCount(3);
 });
+test("paletas prontas e personalizadas persistem, recusam baixo contraste e restauram o padrão",async({page})=>{
+  await page.getByRole("link",{name:"MEU ESTÚDIO",exact:true}).click();
+  for(const name of ["noite","ambar","clara"]){
+    await page.locator("#paletteChoice").selectOption(name);
+    await expect(page.locator("#paletteStatus")).toHaveText("Cores salvas neste navegador.");
+    await page.reload();await expect(page.locator("#paletteChoice")).toHaveValue(name);
+  }
+  await page.locator("#paletteLime").fill("#7042a0");
+  await page.getByRole("button",{name:"APLICAR CORES",exact:true}).click();
+  await page.reload();await expect(page.locator("#paletteChoice")).toHaveValue("custom");
+  await expect(page.locator("#paletteLime")).toHaveValue("#7042a0");
+  await page.locator("#paletteInk").fill("#ffffff");
+  await page.getByRole("button",{name:"APLICAR CORES",exact:true}).click();
+  await expect(page.locator("#paletteStatus")).toContainText("Contraste insuficiente");
+  await page.reload();await expect(page.locator("#paletteInk")).toHaveValue("#25251e");
+  await page.setViewportSize({width:360,height:900});
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.getByRole("button",{name:"RESTAURAR PADRÃO"}).click();
+  await page.reload();await expect(page.locator("#paletteChoice")).toHaveValue("arcade");
+  expect(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue("--bg").trim())).toBe("#10160f");
+});
+test("paleta inválida é ignorada e falha ao salvar informa preferência temporária",async({page})=>{
+  await page.evaluate(()=>localStorage.setItem("nichodev-community-palette-v1",JSON.stringify(["url(https://example.com)"])));
+  await page.reload();await page.getByRole("link",{name:"MEU ESTÚDIO",exact:true}).click();
+  await expect(page.locator("#paletteChoice")).toHaveValue("arcade");
+  await page.evaluate(()=>{Storage.prototype.setItem=()=>{throw new Error("quota");};});
+  await page.locator("#paletteChoice").selectOption("noite");
+  await expect(page.locator("#paletteStatus")).toContainText("só nesta sessão");
+  expect(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue("--bg").trim())).toBe("#101425");
+});
 test("exemplos abrem ferramentas integradas, preservando tema, recursos e âncoras",async({page})=>{
   const links=page.locator('#exampleCards a[href*="/comunidade/ferramentas/"]');
   await expect(links).toHaveCount(2);

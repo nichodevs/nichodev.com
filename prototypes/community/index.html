@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="preview.css">
   <script src="/community/preset-format.js" defer></script>
+  <script src="palette.js" defer></script>
   <script src="preview.js" defer></script>
 </head>
 <body>
@@ -52,6 +53,21 @@
       </section>
       <section class="view" data-view="estudio" hidden>
         <div class="page-heading"><p class="eyebrow">SUAS IDEIAS, NO SEU RITMO</p><h1>MEU ESTÚDIO</h1><p id="studioSubtitle">Entre para acessar seus favoritos e suas criações.</p></div>
+        <form id="paletteForm" class="sound-card palette-settings" aria-labelledby="paletteTitle">
+          <h2 id="paletteTitle">CORES DO MEU ESTÚDIO</h2>
+          <p class="field-help">Personalize a comunidade. A escolha fica neste navegador; não altera as cores das ferramentas Voz e Guitarra.</p>
+          <label for="paletteChoice">PALETA</label>
+          <select id="paletteChoice"><option value="arcade">ARCADE — PADRÃO</option><option value="noite">NOITE AZUL</option><option value="ambar">ÂMBAR</option><option value="clara">PAPEL CLARO</option><option value="custom">PERSONALIZADA</option></select>
+          <div class="palette-colors">
+            <label>FUNDO <input type="color" id="paletteBg" value="#10160f"></label>
+            <label>PAINÉIS <input type="color" id="palettePanel" value="#192217"></label>
+            <label>TEXTO <input type="color" id="paletteInk" value="#edf3e4"></label>
+            <label>DESTAQUE <input type="color" id="paletteLime" value="#c9f27a"></label>
+            <label>DESTAQUE SECUNDÁRIO <input type="color" id="palettePurple" value="#d5b5ff"></label>
+          </div>
+          <div class="button-row"><button class="button primary" type="submit">APLICAR CORES</button><button id="paletteReset" class="button outline" type="button">RESTAURAR PADRÃO</button></div>
+          <p id="paletteStatus" role="status" aria-live="polite"></p>
+        </form>
         <div id="studioGuest" class="empty-state"><span aria-hidden="true">▣</span><h2>UM LUGAR PARA SUAS CRIAÇÕES</h2><p>Presets favoritos, cópias dos timbres e prévias que você escolheu compartilhar.</p><button class="button primary" type="button" data-action="account">ENTRAR NA MINHA CONTA</button></div>
         <div id="studioMember" hidden><div class="studio-actions"><button class="button outline compact" type="button" data-action="settings">CONFIGURAÇÕES DA CONTA</button><button class="text-link" type="button" data-action="logout">SAIR DA CONTA</button></div><h2 class="subheading">MEUS FAVORITOS</h2><div class="card-grid" id="favoriteCards"></div><h2 class="subheading">MEUS TIMBRES</h2><div class="card-grid" id="savedCards"></div><h2 class="subheading">MINHAS PRÉVIAS</h2><div class="card-grid" id="myPublications"></div></div>
       </section>
