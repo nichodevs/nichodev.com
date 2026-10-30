@@ -16,7 +16,7 @@ Na Hostinger, quando autorizado: Node.js **24**, Express, raiz `.`, saída `.`, 
 
 - `COMMUNITY_PUBLIC_RELEASE=enabled` e `NODE_ENV=production`.
 - `APP_ORIGIN=https://nichodev.com`, sem barra final.
-- `COMMUNITY_DATA_DIR=/home/USUARIO/domains/nichodev.com/community-private`, usando o diretório real do usuário da hospedagem. A entrada rejeita outros caminhos e um diretório que seja atalho para os dados da homologação.
+- `COMMUNITY_DATA_DIR=/home/USUARIO/domains/nichodev.com/community-private`, usando o diretório real da conta obtido pelo sistema (`os.userInfo().homedir`). O LiteSpeed pode apresentar a pasta do domínio em `os.homedir()`, portanto esse valor não define a raiz da conta. A entrada rejeita outros caminhos e um diretório que seja atalho para os dados da homologação.
 - `TRUSTED_PROXY` com IPs/CIDRs explicitamente verificados do proxy da Hostinger. Não usar `true`, contagem de saltos presumida ou redes universais. A origem do tráfego deve ser conferida no transporte real antes de liberar o ambiente.
 - O transporte LiteSpeed pode usar socket Unix e ainda apresentar `remoteAddress` de loopback ao Express. Configure os IPs efetivamente observados; o tipo do socket, sozinho, não define a confiança. Compare o endereço escolhido em requisições normais e com `X-Forwarded-For` falso antes de ativar produção.
 

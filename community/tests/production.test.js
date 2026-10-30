@@ -53,3 +53,12 @@ test("entrada de homologação não contorna a liberação do domínio público"
     assert.equal(fs.existsSync(data),false);
   }
 });
+
+test("produção usa a pasta da conta mesmo quando o runtime apresenta a pasta do domínio como home",t=>{
+  const {home,data,env}=fixture(t);
+  t.mock.method(os,"userInfo",()=>({homedir:home}));
+  t.mock.method(os,"homedir",()=>path.join(home,"domains/nichodev.com"));
+  assert.deepEqual(productionConfig(env),{origin:"https://nichodev.com",data});
+  assert.throws(()=>productionConfig({...env,COMMUNITY_DATA_DIR:path.join(home,"domains/staging.test/community-private")}));
+  assert.equal(fs.existsSync(data),false);
+});
