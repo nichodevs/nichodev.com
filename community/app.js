@@ -43,7 +43,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   const db=openStore(dbPath),app=express(),rateSecret=crypto.randomBytes(32);
   let hashing=0;
   const cookieName=secure?"__Host-nichodev":"nichodev_local";
-  app.disable("x-powered-by");if(trustedProxy)app.set("trust proxy",trustedProxy==="unix"?((address,index)=>address===undefined&&index===0):trustedProxy);
+  app.disable("x-powered-by");if(trustedProxy)app.set("trust proxy",trustedProxy);
   app.locals.origin=origin;
   const now=()=>Date.now();
   const get=(sql,...params)=>db.prepare(sql).get(...params);

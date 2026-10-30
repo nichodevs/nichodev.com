@@ -4,7 +4,7 @@ fetch('/api/community/session').then(response=>response.ok?response.json():null)
   if(!data?.publicRelease)return;
   const root=document.getElementById('communityAccess'),link=document.createElement('a');
   link.className='btn';link.href='/comunidade/';link.textContent='COMUNIDADE';link.setAttribute('aria-label','Abrir comunidade de áudio');
-  root.append(link);root.hidden=false;
+  root.classList.add("home-tool");root.append(link);root.hidden=false;
 }).catch(()=>{});
 
 const startButton = document.getElementById("startBtn");

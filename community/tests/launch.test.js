@@ -41,8 +41,8 @@ test("convite do primeiro administrador não permite cadastrar outros usuários 
  const confirmed=await call("/register/confirm",post({saved:true}));assert.equal(confirmed.status,200);assert.equal(confirmed.data.user.admin,true);
  assert.equal((await call("/admin/feedback")).status,200);
 });
-test("diagnóstico de proxy não fica público e unix não confia em conexões TCP diretas",async t=>{
- const f=await openCommunity({probeToken:"privado",trustedProxy:"unix"});t.after(()=>f.close());
+test("diagnóstico de proxy não fica público e recusa encaminhamento de uma origem não confiável",async t=>{
+ const f=await openCommunity({probeToken:"privado",trustedProxy:"192.0.2.1"});t.after(()=>f.close());
  assert.equal((await fetch(f.origin+"/api/community/operations/proxy")).status,404);
  const r=await fetch(f.origin+"/api/community/operations/proxy",{headers:{"X-Nichodev-Probe":"privado","X-Forwarded-For":"198.51.100.7"}});const data=await r.json();assert.equal(r.status,200);assert.notEqual(data.selectedIP,"198.51.100.7");
 });
