@@ -13,4 +13,6 @@ Consulte o [guia do backend](../../community/README.md) para cadastro e chave de
 
 Os links de Voz e Guitarra desta interface apontam para `/comunidade/ferramentas/`, rotas atendidas pelo Node mesmo quando a hospedagem prioriza os arquivos estáticos. Use esses links para testar a captura e a aplicação de presets; as ferramentas na raiz permanecem sem a integração.
 
+Em **Meu Estúdio → Cores do meu estúdio**, há quatro paletas predefinidas e cinco cores personalizáveis. A preferência é local ao navegador, disponível também sem login, e não muda as ferramentas Voz/Guitarra nem sincroniza entre dispositivos. Texto e destaques precisam manter contraste mínimo de 4,5:1 sobre fundo e painéis; o padrão pode ser restaurado a qualquer momento. Se o navegador recusar o armazenamento, a interface informa que a escolha vale apenas para a sessão.
+
 Esta pasta continua fora de `public/` e do deploy SFTP. A comunidade não aparece em produção ao integrar apenas os seus arquivos; o módulo MIDI compartilhado em `public/` faz parte do site e segue a validação/publicação habitual quando houver autorização de merge.
