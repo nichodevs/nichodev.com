@@ -275,9 +275,20 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   app.get("/community/preset-format.js",(req,res)=>res.sendFile(path.join(__dirname,"preset-format.js")));
   app.get("/community/tool-bridge.js",(req,res)=>res.sendFile(path.join(__dirname,"tool-bridge.js")));
   for(const file of ["voz.html","guitarra.html"]){
-    app.get("/"+file,(req,res,next)=>{
+    app.get("/comunidade/ferramentas/"+file,(req,res,next)=>{
       fs.readFile(path.join(siteDir,file),"utf8",(error,html)=>{
         if(error)return next(error);
+        // Hostinger serves existing public files before Express; these URLs must stay Node-only.
+        html=html.replace(/\b(src|href)=(?:"([^"]*)"|'([^']*)')/g,(attribute,name,double,single)=>{
+          const value=double??single;
+          if(/^(?:[a-z][\w+.-]*:|\/|#)/i.test(value))return attribute;
+          const prefix=/^(?:voz|guitarra)\.html(?:[?#]|$)/.test(value)?"/comunidade/ferramentas/":"/";
+          const quote=double!==undefined?'"':"'";
+          return name+"="+quote+prefix+value+quote;
+        });
+        const nonce=crypto.randomBytes(18).toString("base64");
+        res.set("Content-Security-Policy",res.get("Content-Security-Policy").replace("script-src 'self'","script-src 'self' 'nonce-"+nonce+"'"));
+        html=html.replace(/<script\b/g,'<script nonce="'+nonce+'"');
         const scripts='<script src="/community/preset-format.js" defer></script><script src="/community/tool-bridge.js" defer></script>';
         res.type("html").send(html.replace("</body>",scripts+"</body>"));
       });

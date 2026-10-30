@@ -13,6 +13,8 @@ npm run preview:community
 
 Abra http://127.0.0.1:3200/comunidade/. O endereço `/` abre o site e suas ferramentas. Os dados ficam em `.data/community/community.sqlite`, fora das pastas servidas e ignorados pelo Git. Reiniciar o servidor preserva os dados. Encerrar o processo torna a prévia local indisponível; não apague a pasta enquanto precisar dos dados de homologação.
 
+Para capturar e aplicar timbres, abra as ferramentas pelos exemplos ou pelo botão **ABRIR NA FERRAMENTA** da comunidade: elas usam `/comunidade/ferramentas/voz.html` e `/comunidade/ferramentas/guitarra.html`. As URLs públicas `/voz.html` e `/guitarra.html` continuam estáticas, sem a ponte da comunidade. Na Hostinger, arquivos físicos são servidos antes do Node; por isso a integração precisa dessas rotas próprias. O teste local reproduz essa ordem de entrega.
+
 ## O que é real nesta entrega
 
 - **Avaliações:** envio anônimo opcional, comentário e e-mail opcionais, confirmação somente depois de gravar no banco. Somente administradores consultam e classificam as avaliações; retenção de 90 dias.

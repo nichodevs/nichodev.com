@@ -94,6 +94,8 @@ Os testes verificam os metadados sem JavaScript, a imagem PNG e sua inclusão no
 
 **Site:** o workflow [Publicar site na Hostinger](.github/workflows/deploy.yml) valida o mesmo commit com `npm run check` e Playwright antes do SFTP. Uma falha impede o envio. As publicações são serializadas e terminam com conferência HTTP.
 
+O deploy Git direto da Hostinger para `nichodev.com` foi removido para evitar uma publicação paralela sem validação. A comunidade permanece em homologação separada; integrar seu código não ativa a comunidade no site principal. Veja os limites de cada ambiente em [DEPLOYMENT.md](DEPLOYMENT.md).
+
 Ele roda manualmente, diariamente às 09:00 UTC (06:00 em Brasília) e em pushes para `main` que atinjam seus filtros de arquivos. Os filtros incluem `public/**` e o workflow de deploy, com arquivos Markdown excluídos: editar um README não publica o site por push. A validação dos PRs continua ativa. Consulte [DEPLOYMENT.md](DEPLOYMENT.md) ao adicionar ou renomear páginas e assets.
 
 **VST3:** o workflow [Compilar plugin de áudio](.github/workflows/plugin.yml) compila e testa Windows/Linux em PRs e pushes para `main` que alterem `plugin/**` ou o próprio workflow; arquivos Markdown são excluídos dos gatilhos. Na `main`, os dois builds aprovados permitem publicar a versão declarada no CMake; um release já publicado é preservado. Mudanças apenas documentais mantêm as versões dos binários.

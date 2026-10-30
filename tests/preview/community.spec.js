@@ -38,6 +38,19 @@ test.beforeEach(async({page})=>{
   await page.route("https://fonts.googleapis.com/**",r=>r.abort());await page.route("https://fonts.gstatic.com/**",r=>r.abort());
   await page.goto("/comunidade/");await expect(page.locator("#exampleCards .sound-card")).toHaveCount(3);
 });
+test("exemplos abrem ferramentas integradas, preservando tema, recursos e âncoras",async({page})=>{
+  const links=page.locator('#exampleCards a[href*="/comunidade/ferramentas/"]');
+  await expect(links).toHaveCount(2);
+  await page.evaluate(()=>localStorage.setItem("nichodev-voice-theme","light"));
+  await page.route("https://cdnjs.cloudflare.com/ajax/libs/tone/**",route=>route.abort());
+  await page.goto("/comunidade/ferramentas/voz.html");
+  await expect(page.locator("html")).toHaveAttribute("data-theme","light");
+  await expect.poll(()=>page.evaluate(()=>Boolean(window.Tone))).toBe(true);
+  await expect(page.getByRole("button",{name:"SALVAR MEU TIMBRE"})).toBeVisible();
+  expect(await page.locator('a[href="#fxLab"]').getAttribute("href")).toBe("#fxLab");
+  await expect(page.locator('a[href="/comunidade/ferramentas/guitarra.html"]')).toHaveCount(1);
+  expect(await page.locator('link[href^="/voz.css"]').evaluate(link=>Boolean(link.sheet))).toBe(true);
+});
 for(const width of [360,768,1280])test("navegação e avaliação cabem em "+width,async({page})=>{
   const errors=[];page.on("pageerror",e=>errors.push(e.message));await page.setViewportSize({width,height:900});
   for(const name of ["TIMBRES","GALERIA","MEU ESTÚDIO","EXPLORAR"]){await page.getByRole("link",{name,exact:true}).click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
@@ -74,11 +87,11 @@ test("favoritar preserva o foco do teclado ao atualizar os cartões",async({page
 
 test("preset capturado aplica os mesmos parâmetros na ferramenta real",async({page,community})=>{
   await register(page);const errors=[];page.on("pageerror",e=>errors.push(e.message));
-  await page.goto("/guitarra.html");await page.locator("#ampGain").fill("37");await page.getByRole("button",{name:"SALVAR MEU TIMBRE"}).click();await expect(page.locator("#publishDialog")).toBeVisible();
+  await page.goto("/comunidade/ferramentas/guitarra.html");await page.locator("#ampGain").fill("37");await page.getByRole("button",{name:"SALVAR MEU TIMBRE"}).click();await expect(page.locator("#publishDialog")).toBeVisible();
   await page.locator("#creationTitle").fill("Minha guitarra");await page.locator("#creationDescription").fill("Capturei o ganho e todos os pedais");await page.locator('#publishForm button[type=submit]').click();await expect(page.locator("#savedCards")).toContainText("Minha guitarra");
   const row=community.app.locals.db.prepare("SELECT preset FROM creations").get();expect(JSON.parse(row.preset).data.gain).toBe(37);
   await page.locator('#savedCards [data-action=detail]').click();await page.locator("#applyPresetLink").click();page.once("dialog",d=>d.accept());await page.getByRole("button",{name:"APLICAR: Minha guitarra"}).click();await expect(page.locator("#ampGain")).toHaveValue("37");expect(errors).toEqual([]);
-  await page.goto("/voz.html");await page.locator("#pitch").fill("3");await page.getByRole("button",{name:"SALVAR MEU TIMBRE"}).click();await expect(page.locator("#presetSummary")).toContainText("VOZ WEB");
+  await page.goto("/comunidade/ferramentas/voz.html");await page.locator("#pitch").fill("3");await page.getByRole("button",{name:"SALVAR MEU TIMBRE"}).click();await expect(page.locator("#presetSummary")).toContainText("VOZ WEB");
   await page.locator("#creationTitle").fill("Minha voz");await page.locator("#creationDescription").fill("Afinação capturada");await page.locator('#publishForm button[type=submit]').click();
   await page.locator('#savedCards .sound-card').filter({hasText:"Minha voz"}).locator('[data-action=detail]').click();await page.locator("#applyPresetLink").click();page.once("dialog",d=>d.accept());await page.getByRole("button",{name:"APLICAR: Minha voz"}).click();await expect(page.locator("#pitch")).toHaveValue("3");expect(errors).toEqual([]);
 });
