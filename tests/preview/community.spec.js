@@ -69,7 +69,7 @@ test("cadastro confirmado persiste, senha incorreta falha e recuperação troca 
 });
 
 test("favoritar preserva o foco do teclado ao atualizar os cartões",async({page,community})=>{
-  await seed(community);await register(page);await page.getByRole("link",{name:"TIMBRES",exact:true}).click();const favorite=page.locator('#presetCards [data-action=favorite]');await favorite.focus();await page.keyboard.press("Space");await expect(favorite).toHaveAttribute("aria-pressed","true");await expect(favorite).toBeFocused();await page.keyboard.press("Space");await expect(favorite).toHaveAttribute("aria-pressed","false");await expect(favorite).toBeFocused();
+  await seed(community);await register(page);await page.getByRole("link",{name:"TIMBRES",exact:true}).click();const favorite=page.locator('#presetCards [data-action=favorite]');await expect(favorite).toBeVisible();await favorite.focus();await expect(favorite).toBeFocused();await page.keyboard.press("Space");await expect(favorite).toHaveAttribute("aria-pressed","true");await expect(favorite).toBeFocused();await page.keyboard.press("Space");await expect(favorite).toHaveAttribute("aria-pressed","false");await expect(favorite).toBeFocused();
 });
 
 test("preset capturado aplica os mesmos parâmetros na ferramenta real",async({page,community})=>{
