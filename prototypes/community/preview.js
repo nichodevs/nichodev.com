@@ -321,7 +321,7 @@
     }catch(error){if(action==="share-detail")$("shareStatus").textContent=error.message;else status(error.message);}
   });
   document.querySelectorAll("dialog").forEach(dialog=>{
-    dialog.addEventListener("close",()=>{stopExample();dialog.querySelectorAll('input[type="password"]').forEach(input=>{input.value="";});});
+    dialog.addEventListener("close",()=>{stopExample();dialog.querySelectorAll('input[type="password"]').forEach(input=>{input.value="";});if(dialog.id==="recoveryKeyDialog"&&!keyFlow){$("recoveryKey").value="";keyUsername="";}});
     dialog.addEventListener("cancel",event=>{if(dialog.id==="recoveryKeyDialog"&&keyFlow){event.preventDefault();$("keyStatus").textContent="Guarde a chave e conclua a etapa ou use o botão de cancelar cadastro.";}});
   });
   window.addEventListener("beforeunload",event=>{if(keyFlow&&keyValue){event.preventDefault();event.returnValue="";}});

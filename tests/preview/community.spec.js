@@ -20,6 +20,7 @@ async function register(page, username="criador") {
   await expect(page.locator("#finishSignup")).toBeDisabled();
   await page.locator("#keySaved").check();await page.locator("#finishSignup").click();
   await expect(page.locator("#accountLabel")).toHaveText("@"+username);
+  await expect(page.locator("#recoveryKey")).toHaveValue("");
   return key;
 }
 async function login(page, username, password=phrase) {
