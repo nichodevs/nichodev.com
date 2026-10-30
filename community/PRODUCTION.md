@@ -65,17 +65,17 @@ A pasta privada de cada domínio fica fora de `public_html` e de `hbuilds/versio
 
 ## Encaminhar as páginas públicas pelo Node
 
-A Hostinger prioriza cópias físicas de HTML em `public_html`, inclusive antes das regras de redirecionamento das rotas Node.js. Após publicar um pacote que contém o renderizador público, execute na pasta `hbuilds/current/nodejs`:
+A Hostinger atende arquivos da pasta `public/` da aplicação antes do middleware Node.js; a raiz `public_html` pode conter somente a configuração Passenger. Por isso, uma regra colocada apenas nessa raiz não garante o redirecionamento dos HTML. Depois de publicar o pacote validado, execute em `hbuilds/current/nodejs`:
 
 ```sh
 /opt/alt/alt-nodejs24/root/bin/node scripts/route-public-html.cjs
 ```
 
-O comando só aceita a versão publicada de nichodev.com. Confere todas as cópias HTML contra os arquivos do pacote antes de mover qualquer uma, guarda-as em uma pasta privada `community-private/html-routing-*` e preserva o HTML original no código da aplicação. Não abre nem modifica o banco. CSS, imagens e demais assets físicos continuam no servidor estático, exceto a pequena pasta da onda: ela também é guardada para não ocultar o index atendido pelo Node, após conferir seus arquivos contra o pacote. A execução é idempotente; uma cópia divergente interrompe o comando para análise, sem mover arquivos.
+O comando só aceita a versão publicada de nichodev.com. Prepara cópias verificadas dos HTML e da pasta da onda em `server-pages/`, fora da pasta interceptada pela hospedagem. A preparação fica visível somente depois da cópia completa. Em seguida, preserva os originais em `server-pages/.originals/`; nada é apagado e o banco não é aberto. Os demais assets continuam em `public/`. Uma divergência ou destino inesperado interrompe a operação antes de mover os arquivos restantes. O comando pode ser repetido após uma interrupção; não sobrescreve originais preservados.
 
-Com isso, o redirecionamento fixo de `www` é aplicado antes de servir as páginas, preservando caminho e consulta. O renderizador reutiliza o nonce dos scripts das ferramentas integradas nas páginas públicas, sem acrescentar os controles da comunidade às ferramentas da raiz. Não remova cópias HTML antes de publicar esse renderizador: a política de scripts precisa ser aplicada aos scripts inline, inclusive tema e fallback de áudio.
+O renderizador lê os templates no local original ou no local preparado, mantendo as URLs. Ele aplica nonce aos scripts inline sem acrescentar controles da comunidade às ferramentas da raiz. A onda continua com seus recursos na mesma URL. Dados e destinos de backup são proibidos tanto em `public/` quanto em `server-pages/`. Essas pastas preparadas são artefatos de execução, ignorados pelo Git; nunca guarde ali SQLite, credenciais ou configurações privadas.
 
-Confira `/`, `/voz.html`, `/guitarra.html`, `/mixmaster.html`, `/downloads.html` e `/onda/` no domínio principal, áudio e ausência de bloqueios de scripts; em `www`, confira o redirecionamento com caminho e consulta. Para retornar ao modelo estático, restaure as cópias a partir de `public/` da versão preservada, configure `server.js` e valide novamente. Não restaure a base da homologação. O deploy nativo repõe as cópias físicas, portanto execute e valide este passo a cada publicação de produção.
+Confira todas as páginas, áudio, scripts e o redirecionamento de `www` com caminho e consulta. O validador do código roda antes da preparação, sobre os arquivos versionados; depois dela, valide as respostas HTTP e os recursos da aplicação. Cada novo deploy parte novamente do pacote original e exige esse passo. A entrada estática `server.js` também lê os HTML preparados para permitir retorno sem apagar dados. Não reative o SFTP antes de validar o retorno ao modelo estático e desativar o monitor público da comunidade.
 
 ## Registro da primeira ativação pública
 

@@ -13,6 +13,7 @@ app.get('/api/status', (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 // Serve apenas os arquivos públicos do site.
+app.use(express.static(path.join(__dirname, "server-pages")));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/health", (req, res) => {

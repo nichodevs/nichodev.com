@@ -9,12 +9,18 @@ const phrase = "uma frase de teste privada";
 async function openCommunity(options={}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "nichodev-community-test-"));
   const dbPath = path.join(directory, "test.sqlite");
+  let siteDir=options.siteDir;
+  if(options.publicRelease&&!siteDir){
+    siteDir=path.join(directory,"site/public");
+    await fs.cp(path.resolve(__dirname,"../../public"),siteDir,{recursive:true});
+    require("../../scripts/route-public-html.cjs").routePublicHtml(path.dirname(siteDir));
+  }
   let app, server, origin;
   async function start() {
-    app = createCommunityApp({ ...options, dbPath, origin: "http://127.0.0.1" });
+    app = createCommunityApp({ ...options,...(siteDir?{siteDir}:{}), dbPath, origin: "http://127.0.0.1" });
     const gateway = express();
     // Match Hostinger: physical public files are served before the Node application.
-    if(!options.publicRelease)gateway.use(express.static(path.resolve(__dirname, "../../public")));
+    gateway.use(express.static(siteDir||path.resolve(__dirname,"../../public")));
     gateway.use(app);
     server = gateway.listen(0, "127.0.0.1");
     await once(server, "listening");
