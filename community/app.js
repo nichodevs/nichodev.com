@@ -39,6 +39,8 @@ function validateWav(buffer) {
   if(format.code===3)for(let at=dataStart;at<dataStart+data;at+=4)if(!Number.isFinite(buffer.readFloatLE(at)))fail(400,"O áudio contém amostras inválidas.");
 }
 
+const publicPages={"/":"index.html","/index.html":"index.html","/voz.html":"voz.html","/guitarra.html":"guitarra.html","/mixmaster.html":"mixmaster.html","/downloads.html":"downloads.html","/onda/":"onda/index.html"};
+
 function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__dirname,"../prototypes/community"),siteDir=path.join(__dirname,"../public"),trustedProxy=false,publicRelease=false,bootstrapToken="",bootstrapUser="",probeToken=""}) {
   const db=openStore(dbPath),app=express(),rateSecret=crypto.randomBytes(32);
   let hashing=0;
@@ -94,7 +96,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   app.use((req,res,next)=>{
     if(publicRelease&&req.hostname==="www.nichodev.com")return res.redirect(308,"https://nichodev.com/"+req.originalUrl.replace(/^\/+/,""));
     if(!publicRelease||!["/","/index.html","/voz.html","/guitarra.html","/mixmaster.html","/downloads.html","/onda/","/comunidade","/comunidade/","/comunidade/privacy.html","/comunidade/rules.html","/sitemap.xml","/robots.txt"].includes(req.path))res.set("X-Robots-Tag","noindex, nofollow");
-    res.set({"X-Content-Type-Options":"nosniff","Referrer-Policy":"same-origin","Cache-Control":"no-store","Content-Security-Policy":"default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"});
+    res.set({"X-Content-Type-Options":"nosniff","Referrer-Policy":"same-origin","Cache-Control":"no-store","Content-Security-Policy":"default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"});
     next();
   });
   api.use((req,res,next)=>{
@@ -328,25 +330,27 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   app.get("/community/preset-format.js",(req,res)=>res.sendFile(path.join(__dirname,"preset-format.js")));
   app.get("/community/palette-format.js",(req,res)=>res.sendFile(path.join(__dirname,"palette-format.js")));
   app.get("/community/tool-bridge.js",(req,res)=>res.sendFile(path.join(__dirname,"tool-bridge.js")));
-  for(const file of ["voz.html","guitarra.html"]){
-    app.get("/comunidade/ferramentas/"+file,(req,res,next)=>{
-      fs.readFile(path.join(siteDir,file),"utf8",(error,html)=>{
-        if(error)return next(error);
-        // Hostinger serves existing public files before Express; these URLs must stay Node-only.
-        html=html.replace(/\b(src|href)=(?:"([^"]*)"|'([^']*)')/g,(attribute,name,double,single)=>{
-          const value=double??single;
-          if(/^(?:[a-z][\w+.-]*:|\/|#)/i.test(value))return attribute;
-          const prefix=/^(?:voz|guitarra)\.html(?:[?#]|$)/.test(value)?"/comunidade/ferramentas/":"/";
-          const quote=double!==undefined?'"':"'";
-          return name+"="+quote+prefix+value+quote;
-        });
-        const nonce=crypto.randomBytes(18).toString("base64");
-        res.set("Content-Security-Policy",res.get("Content-Security-Policy").replace("script-src 'self'","script-src 'self' 'nonce-"+nonce+"'"));
-        html=html.replace(/<script\b/g,'<script nonce="'+nonce+'"');
-        const scripts='<script src="/community/preset-format.js" defer></script><script src="/community/tool-bridge.js" defer></script>';
-        res.type("html").send(html.replace("</body>",scripts+"</body>"));
+  function renderPage(file,integrated=false){
+    return (req,res,next)=>fs.readFile(path.join(siteDir,file),"utf8",(error,html)=>{
+      if(error)return next(error);
+      if(integrated)html=html.replace(/\b(src|href)=(?:"([^"]*)"|'([^']*)')/g,(attribute,name,double,single)=>{
+        const value=double??single;
+        if(/^(?:[a-z][\w+.-]*:|\/|#)/i.test(value))return attribute;
+        const prefix=/^(?:voz|guitarra)\.html(?:[?#]|$)/.test(value)?"/comunidade/ferramentas/":"/";
+        const quote=double!==undefined?'"':"'";
+        return name+"="+quote+prefix+value+quote;
       });
+      const nonce=crypto.randomBytes(18).toString("base64");
+      res.set("Content-Security-Policy",res.get("Content-Security-Policy").replace("script-src 'self'","script-src 'self' 'nonce-"+nonce+"'"));
+      html=html.replace(/<script\b/g,'<script nonce="'+nonce+'"');
+      if(integrated)html=html.replace("</body>",'<script src="/community/preset-format.js" defer></script><script src="/community/tool-bridge.js" defer></script></body>');
+      res.type("html").send(html);
     });
+  }
+  for(const file of ["voz.html","guitarra.html"])app.get("/comunidade/ferramentas/"+file,renderPage(file,true));
+  if(publicRelease){
+    app.get("/onda",(req,res,next)=>req.path==="/onda/"?next():res.redirect(308,"/onda/"+req.originalUrl.slice(req.path.length)));
+    for(const [route,file]of Object.entries(publicPages))app.get(route,renderPage(file));
   }
   app.use("/comunidade",express.static(publicDir,{index:"index.html"}));
   app.use(express.static(siteDir));
@@ -358,4 +362,4 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   });
   return app;
 }
-module.exports={createCommunityApp,validateWav};
+module.exports={createCommunityApp,validateWav,publicPages};

@@ -14,7 +14,7 @@ async function openCommunity(options={}) {
     app = createCommunityApp({ ...options, dbPath, origin: "http://127.0.0.1" });
     const gateway = express();
     // Match Hostinger: physical public files are served before the Node application.
-    gateway.use(express.static(path.resolve(__dirname, "../../public")));
+    if(!options.publicRelease)gateway.use(express.static(path.resolve(__dirname, "../../public")));
     gateway.use(app);
     server = gateway.listen(0, "127.0.0.1");
     await once(server, "listening");

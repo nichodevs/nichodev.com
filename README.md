@@ -64,9 +64,9 @@ No Linux, use `npx playwright install --with-deps chromium firefox webkit` para 
 - O Guitar FX LAB verifica o gate NS-2 e a preservação dos efeitos com `OfflineAudioContext`.
 - Os testes dos VST3 e os comandos CMake estão em [plugin/README.md](plugin/README.md).
 
-## Comunidade para homologação
+## Comunidade
 
-A interface e o backend real estão no [guia da comunidade](community/README.md). Execute `npm run preview:community` e abra `http://127.0.0.1:3200/comunidade/`. Contas, avaliações privadas, presets completos e prévias WAV são persistidos em SQLite na pasta privada `.data/community`; não são dados apenas da aba. O cadastro exige guardar a chave de recuperação antes de ativar a conta.
+A [comunidade pública](https://nichodev.com/comunidade/) oferece contas, avaliações privadas, presets e prévias compartilháveis, paletas vinculadas ao usuário e moderação. Consulte o [guia da comunidade](community/README.md). Execute `npm run preview:community` e abra `http://127.0.0.1:3200/comunidade/`. Contas, avaliações privadas, presets completos e prévias WAV são persistidos em SQLite na pasta privada `.data/community`; não são dados apenas da aba. O cadastro exige guardar a chave de recuperação antes de ativar a conta.
 
 A API tem testes próprios (`npm run test:community`) e a interface é validada em Chromium, Firefox e WebKit (`npm run test:preview`). Os arquivos da comunidade ficam fora de `public/` e não são enviados pelo SFTP. A [homologação online](https://cornflowerblue-lapwing-604910.hostingersite.com/comunidade/) usa uma aplicação Node.js separada na Hostinger, com HTTPS e banco privado persistente. As contas e gravações locais não são migradas automaticamente; consulte o guia para operação e backup. A extração do sintetizador MIDI compartilhado mantém o exemplo e o MIXMASTER usando a mesma rotina.
 
@@ -75,7 +75,7 @@ A API tem testes próprios (`npm run test:community`) e a interface é validada 
 - `public/`: arquivos do site, servidos pelas mesmas URLs públicas.
 - `public/js/`: áudio, edição e navegação do site.
 - `public/js/mixmaster/`: armazenamento, formato dos backups e regras de duração/notas compartilhadas do MIXMASTER.
-- `community/`: API, persistência, controle de acesso e administração da comunidade em homologação.
+- `community/`: API, persistência, controle de acesso e administração da comunidade.
 - `prototypes/community/`: interface da comunidade servida pelo backend.
 - `public/assets/cursors/`: cursores retrô.
 - [public/onda/](public/onda/README.md): página da onda de gratidão.
@@ -92,11 +92,9 @@ Os testes verificam os metadados sem JavaScript, a imagem PNG e sua inclusão no
 
 ## Publicação
 
-**Site:** o workflow [Publicar site na Hostinger](.github/workflows/deploy.yml) valida o mesmo commit com `npm run check` e Playwright antes do SFTP. Uma falha impede o envio. As publicações são serializadas e terminam com conferência HTTP.
+**Site e comunidade:** a publicação usa o pacote Node.js completo da `main`, gerado por [Preparar pacote da comunidade](.github/workflows/community-package.yml) após validar o mesmo commit. O envio à Hostinger continua sendo uma ação explícita. O SFTP antigo e o deploy Git direto estão desativados para evitar concorrência.
 
-O deploy Git direto da Hostinger para `nichodev.com` foi removido para evitar uma publicação paralela sem validação. A comunidade permanece em homologação separada; integrar seu código não ativa a comunidade no site principal. Veja os limites de cada ambiente em [DEPLOYMENT.md](DEPLOYMENT.md).
-
-Ele roda manualmente, diariamente às 09:00 UTC (06:00 em Brasília) e em pushes para `main` que atinjam seus filtros de arquivos. Os filtros incluem `public/**` e o workflow de deploy, com arquivos Markdown excluídos: editar um README não publica o site por push. A validação dos PRs continua ativa. Consulte [DEPLOYMENT.md](DEPLOYMENT.md) ao adicionar ou renomear páginas e assets.
+Produção e [homologação](https://cornflowerblue-lapwing-604910.hostingersite.com/comunidade/) mantêm aplicações, pastas privadas, contas e backups separados. Integrar código não copia dados nem publica automaticamente. Consulte [DEPLOYMENT.md](DEPLOYMENT.md) para atualizar páginas, assets e o backend, e [community/PRODUCTION.md](community/PRODUCTION.md) para operação, retorno e recuperação. A validação dos PRs continua ativa.
 
 **VST3:** o workflow [Compilar plugin de áudio](.github/workflows/plugin.yml) compila e testa Windows/Linux em PRs e pushes para `main` que alterem `plugin/**` ou o próprio workflow; arquivos Markdown são excluídos dos gatilhos. Na `main`, os dois builds aprovados permitem publicar a versão declarada no CMake; um release já publicado é preservado. Mudanças apenas documentais mantêm as versões dos binários.
 
