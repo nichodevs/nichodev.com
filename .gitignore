@@ -4,3 +4,6 @@ test-results/
 build/
 
 .data/
+
+/server-pages/
+/.server-pages-*/

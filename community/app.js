@@ -330,8 +330,15 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   app.get("/community/preset-format.js",(req,res)=>res.sendFile(path.join(__dirname,"preset-format.js")));
   app.get("/community/palette-format.js",(req,res)=>res.sendFile(path.join(__dirname,"palette-format.js")));
   app.get("/community/tool-bridge.js",(req,res)=>res.sendFile(path.join(__dirname,"tool-bridge.js")));
+  const pageDir=path.join(path.dirname(siteDir),"server-pages");
+  function readPage(file,done){
+    fs.readFile(path.join(siteDir,file),"utf8",(error,html)=>{
+      if(error?.code==="ENOENT")return fs.readFile(path.join(pageDir,file),"utf8",done);
+      done(error,html);
+    });
+  }
   function renderPage(file,integrated=false){
-    return (req,res,next)=>fs.readFile(path.join(siteDir,file),"utf8",(error,html)=>{
+    return (req,res,next)=>readPage(file,(error,html)=>{
       if(error)return next(error);
       if(integrated)html=html.replace(/\b(src|href)=(?:"([^"]*)"|'([^']*)')/g,(attribute,name,double,single)=>{
         const value=double??single;
@@ -348,10 +355,9 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
     });
   }
   for(const file of ["voz.html","guitarra.html"])app.get("/comunidade/ferramentas/"+file,renderPage(file,true));
-  if(publicRelease){
-    app.get("/onda",(req,res,next)=>req.path==="/onda/"?next():res.redirect(308,"/onda/"+req.originalUrl.slice(req.path.length)));
-    for(const [route,file]of Object.entries(publicPages))app.get(route,renderPage(file));
-  }
+  app.get("/onda",(req,res,next)=>req.path==="/onda/"?next():res.redirect(308,"/onda/"+req.originalUrl.slice(req.path.length)));
+  for(const [route,file]of Object.entries(publicPages))app.get(route,renderPage(file));
+  app.use("/onda",express.static(path.join(pageDir,"onda"),{index:false}));
   app.use("/comunidade",express.static(publicDir,{index:"index.html"}));
   app.use(express.static(siteDir));
   app.use((error,req,res,next)=>{

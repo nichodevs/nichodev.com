@@ -62,3 +62,11 @@ test("produção usa a pasta da conta mesmo quando o runtime apresenta a pasta d
   assert.throws(()=>productionConfig({...env,COMMUNITY_DATA_DIR:path.join(home,"domains/staging.test/community-private")}));
   assert.equal(fs.existsSync(data),false);
 });
+
+test("dados e backups recusam a pasta de HTML preparada para execução",t=>{
+  const {data}=fixture(t),destination=path.resolve(__dirname,"../../server-pages/private");
+  const preview=spawnSync(process.execPath,[path.resolve(__dirname,"../../scripts/preview-community.js")],{env:{...process.env,NODE_ENV:"production",APP_ORIGIN:"https://preview.invalid",COMMUNITY_DATA_DIR:destination},encoding:"utf8",timeout:10000,windowsHide:true});
+  assert.notEqual(preview.status,0);assert.match(preview.stderr,/fora das pastas públicas/);
+  const backup=path.join(destination,"backup.sqlite"),result=spawnSync(process.execPath,[path.resolve(__dirname,"../manage.js"),"backup",backup],{env:{...process.env,COMMUNITY_DATA_DIR:data},encoding:"utf8",timeout:10000,windowsHide:true});
+  assert.notEqual(result.status,0);assert.match(result.stderr,/pasta pública/);assert.equal(fs.existsSync(backup),false);
+});

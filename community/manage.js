@@ -13,7 +13,7 @@ async function main(){
       console.log("Acesso administrativo concedido à conta informada.");
     }else if(action==="backup"){
       if(!value||!path.isAbsolute(value))throw new Error("Informe um caminho absoluto para o backup, fora da pasta pública.");
-      if(["../public","../prototypes/community"].some(folder=>{const relative=path.relative(path.resolve(__dirname,folder),value);return !relative||(!relative.startsWith("..")&&!path.isAbsolute(relative));}))throw new Error("O backup não pode ficar em uma pasta pública.");
+      if(["../public","../server-pages","../prototypes/community"].some(folder=>{const relative=path.relative(path.resolve(__dirname,folder),value);return !relative||(!relative.startsWith("..")&&!path.isAbsolute(relative));}))throw new Error("O backup não pode ficar em uma pasta pública.");
       await backup(db,value);
       console.log("Backup consistente concluído. Mantenha o arquivo em local privado.");
     }else throw new Error("Uso: node community/manage.js admin USUARIO | backup CAMINHO_ABSOLUTO");

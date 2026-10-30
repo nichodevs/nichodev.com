@@ -9,15 +9,15 @@ O domínio principal usa Node.js 24, Express e a entrada protegida `scripts/star
 3. Baixe o artefato completo com ZIP, `SHA256SUMS` e `RELEASE.txt`. Confira commit, alvo e hash. A prévia do CI não substitui esse pacote. Não inclua banco, `.env`, rclone.conf, chaves ou `node_modules`.
 4. Registre a versão atual e preserve uma cópia para retorno. Com autorização para o domínio escolhido, envie o ZIP e publique como Express, Node.js 24, raiz e saída `.`, build `check`. Use a entrada protegida em produção e `scripts/preview-community.js` na homologação.
 5. Preserve todas as variáveis reais e a pasta privada do ambiente. A API de variáveis substitui o conjunto inteiro; valores mascarados não são credenciais utilizáveis. Não copie bancos nem contas de teste entre ambientes.
-6. Confira saúde, entrada, ferramentas, apresentação, privacidade e dados depois do reinício. Em produção, confira também o redirecionamento de `www` preservando caminho e consulta. Após o deploy, execute `node scripts/route-public-html.cjs` na versão publicada para encaminhar as páginas HTML pelo Node. O comando confere e guarda somente as cópias físicas idênticas, preserva as fontes e não toca no banco. Confira o nonce dos scripts e o redirecionamento de `www`, inclusive `/onda/`, conforme [PRODUCTION.md](community/PRODUCTION.md).
+6. Confira saúde, entrada, ferramentas, apresentação, privacidade e dados depois do reinício. Em produção, confira também o redirecionamento de `www` preservando caminho e consulta. Após o deploy, execute `node scripts/route-public-html.cjs` na versão publicada para encaminhar as páginas HTML pelo Node. O comando prepara os HTML fora da pasta estática interceptada pela hospedagem, verifica as cópias e preserva os originais em `server-pages/.originals/`, sem tocar no banco. Confira o nonce dos scripts e o redirecionamento de `www`, inclusive `/onda/`, conforme [PRODUCTION.md](community/PRODUCTION.md).
 7. Confira backup local, recibo externo e monitoramento. Cada publicação é explícita; preparar um pacote não envia arquivos à Hostinger.
 
 A [homologação](https://cornflowerblue-lapwing-604910.hostingersite.com/comunidade/) continua independente da [produção](https://nichodev.com/comunidade/). `.hostinger/site.json` aponta somente para a homologação. O procedimento de dados, convite administrativo, backup, restauração e retorno está em [community/PRODUCTION.md](community/PRODUCTION.md).
 
 ## Ao alterar arquivos públicos
 
-- Mantenha arquivos do site em `public/`. Suas URLs continuam sem esse prefixo: `public/voz.html` é servido em `/voz.html`.
-- Adicione páginas novas à lista `pages` de `scripts/validate-site.js` e atualize os metadados, sitemap e testes de navegação/SEO. Não inclua URLs de homologação no sitemap público.
+- Mantenha arquivos versionados do site em `public/`. Em produção, apenas os HTML e a pasta da onda são preparados em `server-pages/`, com originais preservados; os demais assets permanecem em `public/`. Suas URLs continuam sem esse prefixo: `public/voz.html` é servido em `/voz.html`.
+- Adicione páginas novas a `publicPages` de `community/app.js` e à lista `pages` de `scripts/validate-site.js` e atualize os metadados, sitemap e testes de navegação/SEO. Não inclua URLs de homologação no sitemap público.
 - Atualize os tokens `?v=` em conjunto ao alterar módulos compartilhados do MIXMASTER, usando a mesma URL para cada módulo.
 - O validador ainda confere a lista explícita de assets do workflow SFTP legado. Mantenha-a coerente ao criar ou renomear assets enquanto essa verificação existir; isso não reativa o envio.
 - Use o CI do PR e o workflow de pacote. Falhas guardam traces e capturas por sete dias; pacotes e prévias expiram conforme a retenção do artefato.
