@@ -1,8 +1,8 @@
 # Produção: entrada, publicação e operação
 
-Integrar este documento, a entrada e o workflow não publica a comunidade, não altera a Hostinger e não copia o banco. `server.js`, `npm start`, `.hostinger/site.json` e a entrada da homologação permanecem iguais. A aplicação pública continua estática até uma publicação expressamente autorizada.
+Este guia descreve a entrada pública e a operação dos dois ambientes. Integrar código não publica nem copia bancos: cada publicação Node.js exige o pacote validado e autorização para o domínio correto. `server.js` e `npm start` continuam como entrada estática local e alternativa de retorno; `.hostinger/site.json` permanece exclusivo da homologação.
 
-O bootstrap da homologação continua no mesmo caminho e com a configuração atual. Ele recusa as origens `nichodev.com` e `www.nichodev.com`: esses alvos exigem a nova entrada protegida, mesmo se a variável de liberação estiver definida.
+O bootstrap da homologação continua no mesmo caminho e usa configuração própria. Ele recusa as origens `nichodev.com` e `www.nichodev.com`: esses alvos exigem a nova entrada protegida, mesmo se a variável de liberação estiver definida.
 
 ## Pacote único e validado
 
@@ -25,8 +25,8 @@ O servidor exige uma pasta própria, mas não consegue identificar um banco de h
 ## Dados e administração separados
 
 - Homologação mantém seu domínio, sua pasta privada, suas contas, seus arquivos e suas variáveis atuais.
-- Produção terá pasta privada `700`, banco `600`, contas próprias e administrador cadastrado/confirmado no domínio público. Não promova automaticamente `teste123` nem contas técnicas.
-- Os backups atuais apontam à homologação e devem continuar assim. Antes de abrir produção, configurar agenda local e envio criptografado próprios, distinguindo as cópias dos ambientes. Fazer restauração isolada, incluindo paletas, criações e áudio; guardar o kit de recuperação fora da hospedagem.
+- Produção usa pasta privada `700`, banco `600`, contas próprias e administrador cadastrado/confirmado no domínio público. Não promova automaticamente `teste123` nem contas técnicas.
+- Cada ambiente usa agenda local e envio criptografado próprios, distinguindo as cópias. Fazer restauração isolada, incluindo os registros e arquivos existentes, e guardar o kit de recuperação fora da hospedagem.
 - Uma única instância/processo usa o SQLite. Confirmar RAM, disco e comportamento dos limites sob carga antes de liberar cadastros públicos.
 
 ## Sequência de ativação e retorno
@@ -38,7 +38,7 @@ O servidor exige uma pasta própria, mas não consegue identificar um banco de h
 5. Conferir site e ferramentas atuais, HTTPS, login/recuperação, presets, paletas em sessões distintas, privacidade das criações, administrador e persistência após reinício. Verificar backups e restauração antes da abertura pública.
 6. Em falha, fechar novos acessos à comunidade e restaurar a versão/entrada anterior. Preservar o banco novo e fazer backup antes de qualquer restauração de dados. Uma volta ao site estático não exige apagar o banco. Reativar SFTP somente depois de confirmar o retorno ao modelo estático; não restaurar automaticamente variáveis ou banco da homologação.
 
-Esta preparação não muda DNS, runtime, entrada, agendas ou variáveis reais. Cada alteração na hospedagem permanece para a etapa de ativação autorizada.
+Alterações nos arquivos do repositório não mudam DNS, runtime, entrada, agendas ou variáveis reais por si só. A configuração da hospedagem e a publicação seguem as ações explícitas acima.
 
 ## Lançamento e operação
 
@@ -53,3 +53,34 @@ Instale `scripts/monitor-community.cjs` na pasta privada de produção e agende 
 `node scripts/test-community-load.cjs` mede 96 consultas com concorrência oito e quatro tentativas simultâneas de login num banco descartável e socket privado. Confirma respostas válidas e limitação da derivação de senhas. Os tempos e RAM reportados são uma medição pontual, não uma garantia de capacidade sustentada. Execute também no plano real antes da abertura e acompanhe recursos após o lançamento.
 
 Depois de qualquer restauração, reaplique solicitações de exclusão pendentes antes de reabrir o serviço. A política e o canal de privacidade descrevem os limites de retenção e os contatos de revisão; não registre dados pessoais nos alertas operacionais.
+
+## Rotinas configuradas em 30/10/2026
+
+| Ambiente | Cópia local (UTC / Brasília) | R2 (UTC / Brasília) | Destino criptografado |
+| --- | --- | --- | --- |
+| Homologação | 03:00 / 00:00 | 03:10 / 00:10 | `backup:` (raiz) |
+| Produção | 03:20 / 00:20 | 03:30 / 00:30 | `backup:producao/` |
+
+A pasta privada de cada domínio fica fora de `public_html` e de `hbuilds/versions`. Produção começou com base vazia; a base de homologação não foi importada. O kit privado de recuperação existente também abre a pasta criptografada de produção; as instruções locais foram complementadas sem copiar credenciais para este repositório. A regra de retenção do bucket é de 30 dias, sujeita ao ciclo de expiração do provedor.
+
+## Encaminhar as páginas públicas pelo Node
+
+A Hostinger prioriza cópias físicas de HTML em `public_html`, inclusive antes das regras de redirecionamento das rotas Node.js. Após publicar um pacote que contém o renderizador público, execute na pasta `hbuilds/current/nodejs`:
+
+```sh
+/opt/alt/alt-nodejs24/root/bin/node scripts/route-public-html.cjs
+```
+
+O comando só aceita a versão publicada de nichodev.com. Confere todas as cópias HTML contra os arquivos do pacote antes de mover qualquer uma, guarda-as em uma pasta privada `community-private/html-routing-*` e preserva o HTML original no código da aplicação. Não abre nem modifica o banco. CSS, imagens e demais assets físicos continuam no servidor estático, exceto a pequena pasta da onda: ela também é guardada para não ocultar o index atendido pelo Node, após conferir seus arquivos contra o pacote. A execução é idempotente; uma cópia divergente interrompe o comando para análise, sem mover arquivos.
+
+Com isso, o redirecionamento fixo de `www` é aplicado antes de servir as páginas, preservando caminho e consulta. O renderizador reutiliza o nonce dos scripts das ferramentas integradas nas páginas públicas, sem acrescentar os controles da comunidade às ferramentas da raiz. Não remova cópias HTML antes de publicar esse renderizador: a política de scripts precisa ser aplicada aos scripts inline, inclusive tema e fallback de áudio.
+
+Confira `/`, `/voz.html`, `/guitarra.html`, `/mixmaster.html`, `/downloads.html` e `/onda/` no domínio principal, áudio e ausência de bloqueios de scripts; em `www`, confira o redirecionamento com caminho e consulta. Para retornar ao modelo estático, restaure as cópias a partir de `public/` da versão preservada, configure `server.js` e valide novamente. Não restaure a base da homologação. O deploy nativo repõe as cópias físicas, portanto execute e valide este passo a cada publicação de produção.
+
+## Registro da primeira ativação pública
+
+- Commit do pacote: `3845b8b32a10737614cc2e01cb81bc2c557f7bc1`.
+- Workflow do pacote: [41106286217](https://github.com/nichodevs/nichodev.com/actions/runs/41106286217).
+- Build publicado: `01a18e10-94bd-7113-ba7e-2b4d1f31ab94`.
+- SHA-256 do ZIP: `3cad22ae013b45650b8a8cc268720cf3f20e8130e7d14851d8ea2d62a1e03c29`.
+- Verificações de publicação, administração, backup e monitoramento: comunidade e ferramentas integradas acessíveis; nichodevadm confirmado como administrador; backup local e R2 com restauração isolada da conta aprovados; alerta de teste entregue e monitor externo aprovado. O encaminhamento dos HTML públicos é validado separadamente após cada publicação..

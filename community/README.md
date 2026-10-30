@@ -1,6 +1,6 @@
-# Comunidade: backend de homologação
+# Comunidade: backend e operação
 
-A comunidade usa Express já instalado, SQLite e criptografia nativa do Node.js. Não adiciona dependências. O site estático e seu servidor habitual continuam separados; esta aplicação **não é publicada pelo SFTP**.
+A comunidade usa Express já instalado, SQLite e criptografia nativa do Node.js. Não adiciona dependências. A entrada estática local continua disponível; site e comunidade na Hostinger usam o pacote Node.js completo. Esta aplicação **não é publicada pelo SFTP**.
 
 ## Rodar para homologar
 
@@ -54,11 +54,11 @@ O verificador copia `community-private/latest.sqlite` para uma pasta privada tem
 
 [Abrir a comunidade em homologação](https://cornflowerblue-lapwing-604910.hostingersite.com/comunidade/).
 
-A aplicação da comunidade é separada do nichodev.com. O alvo está registrado em [`.hostinger/site.json`](../.hostinger/site.json); esse arquivo aponta exclusivamente para a homologação Node.js. O site principal mantém seu fluxo próprio de publicação por SFTP.
+A homologação permanece separada da [comunidade pública](https://nichodev.com/comunidade/). O alvo registrado em [`.hostinger/site.json`](../.hostinger/site.json) continua apontando exclusivamente para a homologação. Não use esse alvo para publicar produção. Cada domínio tem variáveis, contas e pasta privada próprios. O SFTP antigo está desativado.
 
 A versão publicada é identificada pelo commit, hash e alvo no pacote validado (`RELEASE.txt` e `SHA256SUMS`) e pelo histórico de builds da aplicação. A homologação inclui paletas vinculadas às contas. Foram usados Express, Node.js 24, o bootstrap `scripts/preview-community.js` e `npm run check` antes da publicação. A entrega usa um ZIP dos arquivos versionados do GitHub, sem banco, credenciais ou `node_modules`. O deploy automático da comunidade a cada push não foi ativado.
 
-A preparação do domínio público está em [PRODUCTION.md](PRODUCTION.md). Ela não muda a homologação nem ativa a comunidade no nichodev.com.
+A configuração, publicação, administração inicial, backups e retorno do domínio público estão em [PRODUCTION.md](PRODUCTION.md). Produção usa `scripts/start-community-production.js`; a homologação mantém `scripts/preview-community.js`. Não copie bancos entre os ambientes.
 
 Os dados ficam em `/home/USUARIO/domains/DOMINIO/community-private`, fora de `public_html` e de `hbuilds/versions`, com diretório privado de permissão `700`. Cadastro, recuperação de senha, cookies seguros e autorização de áudio foram verificados online. A conta técnica, seu preset e os bytes do WAV permaneceram disponíveis após reiniciar a aplicação e após publicar novamente.
 
@@ -108,3 +108,9 @@ npm run test:e2e
 ```
 
 Os testes da API usam bancos isolados e verificam confirmação, senhas/chaves, revogação, privacidade, moderação, concorrência de edição, WAV, limites e persistência/backup. A interface é exercitada em Chromium, Firefox e WebKit, inclusive falha de envio, integração de presets, foco, upload e exemplo no editor. As credenciais dos testes são fictícias e os bancos são removidos ao final. O WebKit fornecido pelo Playwright para Windows não oferece áudio/Web Audio: somente os três cenários da prévia que precisam desses recursos são marcados como não executados nesse ambiente. No CI Linux, eles são obrigatórios, sem essa exceção. Os testes reproduzem a prioridade dos arquivos estáticos sobre o Node, mas não substituem a verificação da versão efetivamente publicada na Hostinger.
+
+## Privacidade e administração pública
+
+A [política de privacidade](https://nichodev.com/comunidade/privacy.html) e as [regras de publicação](https://nichodev.com/comunidade/rules.html) ficam no cadastro e no rodapé. Em configurações, o titular pode exportar seus dados e excluir a conta com senha e confirmação do usuário. O último administrador precisa de um sucessor antes de excluir a própria conta. Solicitações de privacidade e moderação usam development@nichodev.com.
+
+O primeiro administrador de produção é cadastrado pelo responsável com convite privado e confirmação da chave de recuperação. A conta não é importada da homologação. Depois da confirmação, remova as variáveis do convite para liberar cadastros comuns. Nunca registre senha, chave ou convite no Git ou nos logs.
