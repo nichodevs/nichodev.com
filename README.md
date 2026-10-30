@@ -64,11 +64,11 @@ No Linux, use `npx playwright install --with-deps chromium firefox webkit` para 
 - O Guitar FX LAB verifica o gate NS-2 e a preservação dos efeitos com `OfflineAudioContext`.
 - Os testes dos VST3 e os comandos CMake estão em [plugin/README.md](plugin/README.md).
 
-## Prévia da comunidade para homologação
+## Comunidade para homologação
 
 A interface e o backend real estão no [guia da comunidade](community/README.md). Execute `npm run preview:community` e abra `http://127.0.0.1:3200/comunidade/`. Contas, avaliações privadas, presets completos e prévias WAV são persistidos em SQLite na pasta privada `.data/community`; não são dados apenas da aba. O cadastro exige guardar a chave de recuperação antes de ativar a conta.
 
-A API tem testes próprios (`npm run test:community`) e a interface é validada em Chromium, Firefox e WebKit (`npm run test:preview`). Os arquivos da comunidade ficam fora de `public/` e não são enviados pelo SFTP. A hospedagem Node.js deve ser provisionada separadamente, com HTTPS e disco persistente, após autorização. A extração do sintetizador MIDI compartilhado mantém o exemplo e o MIXMASTER usando a mesma rotina.
+A API tem testes próprios (`npm run test:community`) e a interface é validada em Chromium, Firefox e WebKit (`npm run test:preview`). Os arquivos da comunidade ficam fora de `public/` e não são enviados pelo SFTP. A [homologação online](https://cornflowerblue-lapwing-604910.hostingersite.com/comunidade/) usa uma aplicação Node.js separada na Hostinger, com HTTPS e banco privado persistente. As contas e gravações locais não são migradas automaticamente; consulte o guia para operação e backup. A extração do sintetizador MIDI compartilhado mantém o exemplo e o MIXMASTER usando a mesma rotina.
 
 ## Organização
 
