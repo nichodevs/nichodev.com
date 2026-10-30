@@ -75,6 +75,8 @@ async function main() {
     else assert.equal(address.address,"127.0.0.1","O verificador deve escutar somente no loopback.");
     const origin="http://127.0.0.1"+(socketPath?"":":"+address.port);
     app.locals.origin=origin;db=app.locals.db;
+    // Only this disposable copy resets transient budgets; the backup was compared in full above.
+    db.exec("DELETE FROM limits; DELETE FROM security_leases");
     const request=(route,options={})=>new Promise((resolve,reject)=>{
       const target=socketPath?{socketPath}:{hostname:"127.0.0.1",port:address.port};
       const req=http.request({...target,path:route,method:options.method||"GET",headers:options.headers,timeout:10000},response=>{
@@ -97,6 +99,7 @@ async function main() {
       // Sessões descartáveis existem somente na cópia, sem alterar senhas recuperadas.
       const token=crypto.randomBytes(32).toString("base64url"),cookie="nichodev_local="+token;
       db.prepare("INSERT INTO sessions VALUES(?,?,?)").run(sha(token),user.id,Date.now()+60000);
+      db.prepare("INSERT INTO session_auth(token,authenticated) VALUES(?,?)").run(sha(token),Date.now());
       const headers={cookie};
       const session=await request("/api/community/session",{headers});
       assert.deepEqual(JSON.parse(session.body).user,{id:user.id,username:db.prepare("SELECT username FROM users WHERE id=?").get(user.id).username,admin:Boolean(user.admin)});
@@ -112,6 +115,7 @@ async function main() {
       }
       for(const row of db.prepare("SELECT id,audio FROM media WHERE owner=?").iterate(user.id)) {
         stage="audio";
+        db.exec("DELETE FROM limits");
         const response=await request("/api/community/media/"+encodeURIComponent(row.id),{headers});
         assert.equal(response.status,200);
         const bytes=response.body;

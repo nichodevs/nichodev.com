@@ -3,7 +3,7 @@ const {once}=require("node:events"),assert=require("node:assert/strict");
 const {createCommunityApp}=require("../community/app");
 (async()=>{
  const directory=fs.mkdtempSync(path.join(os.tmpdir(),"nichodev-load-"));fs.chmodSync(directory,0o700);
- const app=createCommunityApp({dbPath:path.join(directory,"isolated.sqlite"),origin:"http://isolated.test"});
+ const app=createCommunityApp({passwordCheck:async()=>{},dbPath:path.join(directory,"isolated.sqlite"),origin:"http://isolated.test"});
  const socket=process.platform==="win32"?null:path.join(directory,"load.sock"),server=socket?app.listen(socket):app.listen(0,"127.0.0.1");await once(server,"listening");
  let peak=process.memoryUsage().rss;const timer=setInterval(()=>{peak=Math.max(peak,process.memoryUsage().rss);},20);
  function call(endpoint,body){return new Promise((resolve,reject)=>{

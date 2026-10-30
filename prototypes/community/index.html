@@ -13,7 +13,7 @@
   <script src="/community/preset-format.js" defer></script>
   <script src="/community/palette-format.js" defer></script>
   <script src="palette.js?v=account-sync-1" defer></script>
-  <script src="preview.js?v=launch-20261030" defer></script>
+  <script src="preview.js?v=security-20261030" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">PULAR PARA O CONTEÚDO</a>
@@ -142,6 +142,7 @@
 
   <dialog id="detailDialog" aria-labelledby="detailTitle"><div class="dialog-heading"><div><p class="eyebrow" id="detailMeta"></p><h2 id="detailTitle"></h2></div><button class="close-button" type="button" data-close aria-label="Fechar criação">×</button></div><p id="detailDescription"></p><div class="button-row"><audio id="detailAudio" controls preload="metadata" hidden></audio><a id="applyPresetLink" class="button primary" href="/">ABRIR NA FERRAMENTA →</a><button id="downloadPreset" class="button outline" type="button">BAIXAR PRESET JSON</button><button class="button outline" type="button" data-action="remix-detail">CRIAR MINHA VERSÃO</button></div><p class="privacy-note" id="detailVisibility"></p><button class="text-link" type="button" data-action="share-detail">COMPARTILHAR PRÉVIA →</button><p id="shareStatus" role="status"></p></dialog>
 
+  <dialog id="adminReauthDialog" aria-labelledby="adminReauthTitle"><div class="dialog-heading"><h2 id="adminReauthTitle">CONFIRMAR ACESSO</h2><button class="close-button" type="button" data-close aria-label="Cancelar confirmação administrativa">×</button></div><p>Para proteger a administração, confirme sua senha a cada dez minutos.</p><form id="adminReauthForm"><label for="adminReauthPassword">SENHA ATUAL</label><input id="adminReauthPassword" type="password" minlength="15" maxlength="128" autocomplete="current-password" required><p id="adminReauthError" class="form-error" role="alert"></p><button class="button primary full" type="submit">CONFIRMAR →</button></form></dialog>
   <noscript><p>Ative JavaScript para acessar a comunidade.</p></noscript>
 </body>
 </html>

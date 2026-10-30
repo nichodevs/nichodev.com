@@ -17,7 +17,7 @@ async function openCommunity(options={}) {
   }
   let app, server, origin;
   async function start() {
-    app = createCommunityApp({ ...options,...(siteDir?{siteDir}:{}), dbPath, origin: "http://127.0.0.1" });
+    app = createCommunityApp({ passwordCheck:async()=>{},...options,...(siteDir?{siteDir}:{}), dbPath, origin: "http://127.0.0.1" });
     const gateway = express();
     // Match Hostinger: physical public files are served before the Node application.
     gateway.use(express.static(siteDir||path.resolve(__dirname,"../../public")));

@@ -84,3 +84,8 @@ Confira todas as páginas, áudio, scripts e o redirecionamento de `www` com cam
 - Build publicado: `01a18e10-94bd-7113-ba7e-2b4d1f31ab94`.
 - SHA-256 do ZIP: `3cad22ae013b45650b8a8cc268720cf3f20e8130e7d14851d8ea2d62a1e03c29`.
 - Verificações de publicação, administração, backup e monitoramento: comunidade e ferramentas integradas acessíveis; nichodevadm confirmado como administrador; backup local e R2 com restauração isolada da conta aprovados; alerta de teste entregue e monitor externo aprovado. O encaminhamento dos HTML públicos é validado separadamente após cada publicação..
+
+
+## Reforços de segurança — 30/10/2026
+
+No GitHub, grafo de dependências e Dependabot alerts habilitados. No R2 privado, Bucket Lock `community-backups-retention-30-days` habilitado em todo o bucket, com 30 dias, mantendo o lifecycle de 30 dias. Os reforços de código e as condições de publicação estão em [SECURITY.md](SECURITY.md); sua integração no GitHub não significa publicação automática na Hostinger.
