@@ -10,6 +10,22 @@ const { validateWav } = require("../app");
 
 async function fixture(t) { const f = await openCommunity(); t.after(() => f.close()); return f; }
 const post = body => ({ method: "POST", body });
+test("paleta é privada por conta, valida contraste e persiste entre sessões e reinícios",async t=>{
+  const f=await fixture(t),a=f.client(),b=f.client(),device=f.client(),guest=f.client();
+  const colors=require("../palette-format").presets.clara;
+  await account(a,"cores_a");await account(b,"cores_b");
+  assert.equal((await guest("/palette")).status,401);
+  assert.equal((await guest("/palette",{method:"PUT",body:{palette:colors}})).status,401);
+  assert.equal((await a("/palette")).data.palette,null);
+  for(const palette of [["red"],Array(5).fill("#ffffff"),[...colors.slice(0,4),"url(x)"]])assert.equal((await a("/palette",{method:"PUT",body:{palette}})).status,400);
+  assert.equal((await a("/palette",{method:"PUT",body:{palette:colors}})).status,200);
+  assert.equal((await b("/palette")).data.palette,null);
+  await device("/login",post({username:"cores_a",password:phrase}));
+  assert.deepEqual((await device("/palette")).data.palette,colors);
+  await f.restart();
+  assert.deepEqual((await device("/palette")).data.palette,colors);
+  assert.equal((await b("/palette")).data.palette,null);
+});
 const preset = (extra = {}) => ({ kind: "preset", tool: "guitarra", title: "Timbre de teste", description: "Descrição privada", visibility: "private", preset: initialPreset("guitarra"), ...extra });
 function wav(float = false) {
   const data = Buffer.alloc(float ? 48 : 46); data.write("RIFF");data.writeUInt32LE(data.length-8,4);data.write("WAVEfmt ",8);data.writeUInt32LE(16,16);data.writeUInt16LE(float?3:1,20);data.writeUInt16LE(1,22);data.writeUInt32LE(8000,24);data.writeUInt32LE(float?32000:16000,28);data.writeUInt16LE(float?4:2,32);data.writeUInt16LE(float?32:16,34);data.write("data",36);data.writeUInt32LE(float?4:2,40);return data;
