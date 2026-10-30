@@ -38,6 +38,31 @@ test.beforeEach(async({page})=>{
   await page.route("https://fonts.googleapis.com/**",r=>r.abort());await page.route("https://fonts.gstatic.com/**",r=>r.abort());
   await page.goto("/comunidade/");await expect(page.locator("#exampleCards .sound-card")).toHaveCount(3);
 });
+test("paleta acompanha a conta em outro navegador e não mistura contas nem preferência local",async({page,browser,community})=>{
+  await register(page,"cores_a");
+  await page.locator("#paletteChoice").selectOption("clara");
+  await expect(page.locator("#paletteStatus")).toHaveText("Cores salvas na sua conta.");
+  const other=await browser.newContext({baseURL:community.origin});
+  try{
+    const device=await other.newPage();await device.route("https://fonts.googleapis.com/**",r=>r.abort());
+    await device.goto("/comunidade/#estudio");await device.locator("#paletteChoice").selectOption("noite");
+    await login(device,"cores_a");await expect(device.locator("#paletteChoice")).toHaveValue("clara");
+    await device.locator("#palettePurple").fill("#35621c");
+    await device.getByRole("button",{name:"APLICAR CORES",exact:true}).click();
+    await expect(device.locator("#paletteStatus")).toHaveText("Cores salvas na sua conta.");
+    await page.reload();await expect(page.locator("#palettePurple")).toHaveValue("#35621c");
+    await device.getByRole("button",{name:"SAIR DA CONTA"}).click();
+    await device.getByRole("link",{name:"MEU ESTÚDIO",exact:true}).click();
+    await expect(device.locator("#paletteChoice")).toHaveValue("noite");
+    await register(device,"cores_b");await device.locator("#paletteChoice").selectOption("ambar");
+    await expect(device.locator("#paletteStatus")).toHaveText("Cores salvas na sua conta.");
+    await page.reload();await expect(page.locator("#paletteChoice")).toHaveValue("custom");
+    await page.route("**/api/community/palette",route=>route.request().method()==="PUT"?route.fulfill({status:503,json:{error:"Falha temporária"}}):route.continue());
+    await page.locator("#paletteChoice").selectOption("noite");
+    await expect(page.locator("#paletteStatus")).toContainText("não foram salvas na conta");
+    await page.reload();await expect(page.locator("#paletteChoice")).toHaveValue("custom");
+  }finally{await other.close();}
+});
 test("paletas prontas e personalizadas persistem, recusam baixo contraste e restauram o padrão",async({page})=>{
   await page.getByRole("link",{name:"MEU ESTÚDIO",exact:true}).click();
   for(const name of ["noite","ambar","clara"]){

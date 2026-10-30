@@ -5,6 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const {openStore,transaction} = require("./store");
 const {validatePreset} = require("./preset-format");
+const {valid:validPalette} = require("./palette-format");
 
 const scrypt = promisify(crypto.scrypt);
 const digest = value => crypto.createHash("sha256").update(String(value)).digest("hex");
@@ -106,6 +107,16 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   api.use(express.json({limit:"32kb",inflate:false}));
   api.use((req,res,next)=>{if(!["GET","HEAD"].includes(req.method)&&req.path!=="/media"&&(!req.body||typeof req.body!=="object"||Array.isArray(req.body)))return next(Object.assign(new Error("Envie os campos em JSON."),{status:400}));next();});
   api.get("/session",(req,res)=>res.json({user:safeUser(actor(req))}));
+  api.get("/palette",(req,res)=>{
+    const user=auth(req),record=get("SELECT colors FROM user_palettes WHERE user_id=?",user.id);
+    res.json({palette:record?JSON.parse(record.colors):null});
+  });
+  api.put("/palette",(req,res)=>{
+    const user=auth(req),colors=req.body?.palette;
+    if(!validPalette(colors))fail(400,"Escolha cinco cores válidas com contraste suficiente.");
+    run("INSERT INTO user_palettes(user_id,colors) VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET colors=excluded.colors",user.id,JSON.stringify(colors));
+    res.json({palette:colors});
+  });
   api.post("/register",async(req,res)=>{
     rate(req,"register",6,3600000);
     const name=username(req.body.username),pass=password(req.body.password);
@@ -273,6 +284,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   app.use("/api/community",api);
   app.get("/health",(req,res)=>res.json({status:"ok"}));
   app.get("/community/preset-format.js",(req,res)=>res.sendFile(path.join(__dirname,"preset-format.js")));
+  app.get("/community/palette-format.js",(req,res)=>res.sendFile(path.join(__dirname,"palette-format.js")));
   app.get("/community/tool-bridge.js",(req,res)=>res.sendFile(path.join(__dirname,"tool-bridge.js")));
   for(const file of ["voz.html","guitarra.html"]){
     app.get("/comunidade/ferramentas/"+file,(req,res,next)=>{

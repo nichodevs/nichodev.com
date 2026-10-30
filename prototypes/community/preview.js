@@ -66,6 +66,7 @@
   }
   async function refresh(){
     ({user}=await request("/session"));
+    await window.NichodevPalette.setUser(user);
     ({items}=await request("/creations"));
     if(user){const data=await request("/me");mine=data.items;favorites=new Set(data.favorites);}
     else{mine=[];favorites=new Set();}
