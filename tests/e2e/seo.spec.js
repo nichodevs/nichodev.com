@@ -53,7 +53,7 @@ test("sitemap e robots anunciam apenas as páginas canônicas", async ({ request
   }, xml);
   expect(parsed.errors).toBe(0);
   expect(parsed.namespace).toBe("http://www.sitemaps.org/schemas/sitemap/0.9");
-  expect(parsed.urls.sort()).toEqual(routes.map(route => origin + route).sort());
+  expect(parsed.urls.sort()).toEqual([...routes,"/comunidade/","/comunidade/privacy.html","/comunidade/rules.html"].map(route => origin + route).sort());
   const robots = await request.get("/robots.txt");
   expect(robots.ok()).toBeTruthy();
   expect(await robots.text()).toContain("Sitemap: " + origin + "/sitemap.xml");

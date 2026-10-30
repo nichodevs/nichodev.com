@@ -6,12 +6,12 @@ const express = require("express");
 const { createCommunityApp } = require("../../community/app");
 
 const phrase = "uma frase de teste privada";
-async function openCommunity() {
+async function openCommunity(options={}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "nichodev-community-test-"));
   const dbPath = path.join(directory, "test.sqlite");
   let app, server, origin;
   async function start() {
-    app = createCommunityApp({ dbPath, origin: "http://127.0.0.1" });
+    app = createCommunityApp({ ...options, dbPath, origin: "http://127.0.0.1" });
     const gateway = express();
     // Match Hostinger: physical public files are served before the Node application.
     gateway.use(express.static(path.resolve(__dirname, "../../public")));

@@ -1,13 +1,16 @@
 (() => {
   "use strict";
   const $=id=>document.getElementById(id),api="/api/community";
+  let bootstrapInvite=new URLSearchParams(location.hash.split("?")[1]||"").get("convite");
+  if(bootstrapInvite){try{sessionStorage.setItem("nichodev-bootstrap",bootstrapInvite);}catch{}history.replaceState(null,"","#inicio");}
+  else{try{bootstrapInvite=sessionStorage.getItem("nichodev-bootstrap");}catch{}}
   const names={voz:"VOZ WEB",guitarra:"GUITARRA WEB",mixmaster:"MIXMASTER",site:"SITE"};
   const experiences={bem:"Funcionou bem",dificuldade:"Tive dificuldade",problema:"Encontrei um problema"};
   let user=null,items=[],mine=[],favorites=new Set(),presetFilter="todos",galleryFilter="todos",pending=null,accountMode="login";
   let keyFlow="",keyValue="",keyUsername="",passwordMode="recover",draftPreset=null,editing=null,mediaId=null,detail=null,detailKey="",deleting=null,audioContext=null,audioTimer=null;
   const status=message=>{$("pageStatus").textContent=message;};
   async function request(path,{method="GET",body,raw}={}){
-    const response=await fetch(api+path,{method,credentials:"same-origin",headers:{"X-Nichodev-Client":"1",...(body?{"Content-Type":"application/json"}:{}),...(raw?{"Content-Type":"audio/wav"}:{})},...(body?{body:JSON.stringify(body)}:{}),...(raw?{body:raw}:{})});
+    const response=await fetch(api+path,{method,credentials:"same-origin",headers:{"X-Nichodev-Client":"1",...(path==="/register"&&bootstrapInvite?{"X-Nichodev-Bootstrap":bootstrapInvite}:{}),...(body?{"Content-Type":"application/json"}:{}),...(raw?{"Content-Type":"audio/wav"}:{})},...(body?{body:JSON.stringify(body)}:{}),...(raw?{body:raw}:{})});
     const data=await response.json().catch(()=>({}));
     if(!response.ok){const error=new Error(data.error||"Não foi possível concluir. Tente novamente.");error.status=response.status;throw error;}
     return data;
@@ -227,11 +230,19 @@
       if(accountMode==="register")showKey(data,"register");else await afterLogin();
     });
   });
+  $("deleteAccountForm").addEventListener("submit",event=>{
+    event.preventDefault();const form=event.currentTarget;
+    submit(form,"deleteAccountError",async()=>{
+      await request("/account",{method:"DELETE",body:{confirm:$("deleteAccountUser").value,password:$("deleteAccountPassword").value}});
+      form.reset();closeDialogs();await refresh();navigate("inicio");status("Sua conta e suas criações foram excluídas deste ambiente.");
+    }).finally(()=>{$("deleteAccountPassword").value="";});
+  });
+  $("deleteAccountDialog").addEventListener("close",()=>{$("deleteAccountPassword").value="";});
   $("keySaved").addEventListener("change",()=>{$("finishSignup").disabled=!$("keySaved").checked;});
   $("finishSignup").addEventListener("click",async()=>{
     const control=$("finishSignup");control.disabled=true;
     try{
-      if(keyFlow==="register"){await request("/register/confirm",{method:"POST",body:{saved:true}});keyValue="";keyFlow="";await afterLogin();}
+      if(keyFlow==="register"){await request("/register/confirm",{method:"POST",body:{saved:true}});keyValue="";keyFlow="";bootstrapInvite=null;try{sessionStorage.removeItem("nichodev-bootstrap");}catch{}await afterLogin();}
       else{const flow=keyFlow;keyValue="";keyFlow="";closeDialogs();if(flow==="recover")showAccount("login");else await refresh();}
     }catch(error){$("keyStatus").textContent=error.message;control.disabled=false;}
   });
@@ -292,6 +303,7 @@
       else if(action==="recover")showPassword("recover");
       else if(action==="settings"){if(!user)return;$("settingsUser").textContent="@"+user.username;openDialog("settingsDialog");}
       else if(action==="change-password")showPassword("change");
+      else if(action==="delete-account"){$("deleteAccountForm").reset();$("deleteAccountError").textContent="";openDialog("deleteAccountDialog");}
       else if(action==="rotate-key")showPassword("rotate");
       else if(action==="copy-key")await copy(keyValue,"keyStatus");
       else if(action==="download-key")download("nichodev-chave-recuperacao.txt","Usuário: "+keyUsername+"\nChave: "+keyValue+"\nGuarde fora do site. Quem tiver a chave poderá recuperar sua conta.\n","text/plain;charset=utf-8");
@@ -329,5 +341,5 @@
   window.addEventListener("hashchange",route);
   window.addEventListener("pagehide",stopExample);
   document.addEventListener("visibilitychange",()=>{if(document.hidden)stopExample();});
-  renderExamples();refresh().then(route).catch(error=>status("Não foi possível carregar a comunidade: "+error.message));
+  renderExamples();refresh().then(()=>{route();if(bootstrapInvite)showAccount("register");}).catch(error=>status("Não foi possível carregar a comunidade: "+error.message));
 })();

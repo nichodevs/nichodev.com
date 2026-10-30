@@ -49,13 +49,15 @@ async function backupOffsite(sitePath){
     db=new DatabaseSync(source,{readOnly:true,timeout:5000});
     await backup(db,snapshot);db.close();db=null;
     fs.chmodSync(snapshot,0o600);integrity(snapshot);
-    const remote="backup:"+filename;
+    const remote="backup:"+(path.basename(site)==="nichodev.com"?"producao/":"")+filename;
     await rclone(["copyto",snapshot,remote,"--immutable"]);
     await rclone(["copyto",remote,recovered]);
     fs.chmodSync(recovered,0o600);
     assert.equal(await hash(recovered),await hash(snapshot),"A cópia recuperada difere do backup enviado.");
     integrity(recovered);
-    return {status:"OFFSITE_BACKUP_OK",object:filename,bytes:fs.statSync(snapshot).size,encrypted:true,downloadVerified:true,integrity:true};
+    const result={status:"OFFSITE_BACKUP_OK",object:(path.basename(site)==="nichodev.com"?"producao/":"")+filename,bytes:fs.statSync(snapshot).size,encrypted:true,downloadVerified:true,integrity:true};
+    fs.writeFileSync(path.join(data,"offsite/last-success.json"),JSON.stringify({...result,site:path.basename(site),at:Date.now()}),{mode:0o600});
+    return result;
   }finally{
     if(db)db.close();
     assert.equal(path.dirname(fs.realpathSync(temporary)),data);

@@ -35,6 +35,9 @@ jobs:
       - name: Validar site e arquivos do deploy
         run: npm run check
 
+      - name: Medir carga isolada e limites de autenticação
+        run: node scripts/test-community-load.cjs
+
       - name: Instalar Chromium, Firefox e WebKit para os testes
         run: npx playwright install --with-deps chromium firefox webkit
 

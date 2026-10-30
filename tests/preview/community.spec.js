@@ -38,6 +38,15 @@ test.beforeEach(async({page})=>{
   await page.route("https://fonts.googleapis.com/**",r=>r.abort());await page.route("https://fonts.gstatic.com/**",r=>r.abort());
   await page.goto("/comunidade/");await expect(page.locator("#exampleCards .sound-card")).toHaveCount(3);
 });
+test("configurações permitem baixar dados e excluir conta somente com confirmação e senha",async({page})=>{
+  await register(page,"apagar");await page.getByRole("button",{name:"CONFIGURAÇÕES DA CONTA"}).click();
+  const data=JSON.parse((await downloadBytes(page,"#settingsDialog a[download]")).toString());expect(data.account.username).toBe("apagar");expect(data.account.password).toBeUndefined();
+  await page.getByRole("button",{name:"EXCLUIR MINHA CONTA",exact:true}).click();
+  await page.locator("#deleteAccountUser").fill("apagar");await page.locator("#deleteAccountPassword").fill(phrase+"errada");
+  await page.getByRole("button",{name:"EXCLUIR DEFINITIVAMENTE A CONTA"}).click();await expect(page.locator("#deleteAccountError")).toContainText("senha atual");
+  await page.locator("#deleteAccountPassword").fill(phrase);await page.getByRole("button",{name:"EXCLUIR DEFINITIVAMENTE A CONTA"}).click();
+  await expect(page.locator("#accountLabel")).toHaveText("ENTRAR / CRIAR CONTA");await expect(page.locator("#pageStatus")).toContainText("excluídas");
+});
 test("paleta acompanha a conta em outro navegador e não mistura contas nem preferência local",async({page,browser,community})=>{
   await register(page,"cores_a");
   await page.locator("#paletteChoice").selectOption("clara");
