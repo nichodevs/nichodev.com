@@ -14,7 +14,7 @@ As execuções compartilham o grupo `hostinger-production`: somente um envio pod
 
 ## Validações e envio
 
-O job de publicação depende de **Validar site**, chamado como workflow reutilizável no mesmo commit da execução. Ele instala as dependências do lockfile e executa `npm test`, `npm run check` e `npm run test:e2e`. O runner prepara uma saída de áudio virtual PulseAudio, e os cenários essenciais usam perfis temporários normais para permitir persistência de blobs no WebKit. O Playwright executa a suíte completa no Chromium e os cenários essenciais de navegação, importação, reprodução e armazenamento em Firefox/WebKit. Qualquer falha em um dos três motores impede o job SFTP, inclusive em execuções manuais e agendadas. Diagnósticos de falhas (traces e capturas) são guardados por sete dias nos artefatos do workflow. Os PRs usam esse mesmo workflow de validação; a publicação faz sua própria validação antes do envio, sem uma segunda execução independente por push.
+O job de publicação depende de **Validar site**, chamado como workflow reutilizável no mesmo commit da execução. Ele instala as dependências do lockfile e executa `npm test`, `npm run check`, `npm run test:community`, `npm run test:e2e` e `npm run test:preview`. O runner prepara uma saída de áudio virtual PulseAudio, e os cenários essenciais usam perfis temporários normais para permitir persistência de blobs no WebKit. O Playwright executa a suíte completa no Chromium e os cenários essenciais de navegação, importação, reprodução e armazenamento em Firefox/WebKit. Qualquer falha em um dos três motores impede o job SFTP, inclusive em execuções manuais e agendadas. Diagnósticos de falhas (traces e capturas) são guardados por sete dias nos artefatos do workflow. Os PRs usam esse mesmo workflow de validação; a publicação faz sua própria validação antes do envio, sem uma segunda execução independente por push.
 
 Após a validação, o job SFTP confere os secrets de conexão e envia uma lista explícita de arquivos de `public/` para a pasta pública do domínio. O prefixo `public/` existe apenas no repositório: `public/voz.html` é enviado como `voz.html`, preservando `/voz.html` e as demais URLs. Depois, faz requisições HTTP às páginas e assets publicados.
 
@@ -33,3 +33,7 @@ O envio e a lista de URLs verificadas estão em `deploy.yml`. A validação em `
 7. Rode `npm test`, `npm run check` e `npm run test:e2e` antes de integrar a alteração.
 
 O envio usa os secrets `HOSTINGER_HOST`, `HOSTINGER_USERNAME`, `HOSTINGER_PASSWORD` e `HOSTINGER_KNOWN_HOSTS`. Os bundles VST3 não são publicados na Hostinger; eles são anexados aos GitHub Releases.
+
+## Comunidade em homologação Node.js
+
+O backend e a interface da comunidade não integram os uploads SFTP. Consulte [community/README.md](community/README.md) para executar e preparar uma aplicação Node.js separada, com HTTPS, disco persistente privado, administrador e backup. A publicação dessa aplicação precisa de autorização própria. O sintetizador MIDI compartilhado em `public/js/mixmaster/midi-synth.js` é um asset do site estático e permanece incluído nos uploads e nas verificações HTTP.

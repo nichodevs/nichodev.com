@@ -8,3 +8,5 @@ dialog{width:min(620px,calc(100% - 32px));max-height:calc(100dvh - 40px);overflo
 
 h1,h2,h3,.brand{font-weight:700}.eyebrow,.card-kicker,.main-nav a,.text-link,.filters button,.account-tabs button{font-size:10px}.button,.account-button{font-size:10px}.compact{font-size:9px}.brand-sub{font-size:8px}.art-label{font-size:10px}form>label,form>div>label,dialog>label{font-size:10px}label span{font-size:9px}.choice-field legend{font-size:10px}.lab-display p,.dialog-heading .eyebrow{font-size:9px}
 @media(max-width:700px){.main-nav{gap:20px}.main-nav a{font-size:9px}.brand-sub{font-size:7px}.account-button{font-size:9px}}
+
+#detailAudio{width:100%;flex-basis:100%}#moderationList{display:grid;gap:18px}.sound-card h3{overflow-wrap:anywhere}

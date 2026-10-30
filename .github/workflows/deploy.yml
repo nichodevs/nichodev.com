@@ -102,6 +102,7 @@ jobs:
             put public/js/voz.js -o js/voz.js
             put public/js/guitarra.js -o js/guitarra.js
             put public/js/back-sound.js -o js/back-sound.js
+            put public/js/mixmaster/midi-synth.js -o js/mixmaster/midi-synth.js
             put public/js/mixmaster/project-model.js -o js/mixmaster/project-model.js
             put public/js/mixmaster/project-store.js -o js/mixmaster/project-store.js
             put public/js/mixmaster/project-backup.js -o js/mixmaster/project-backup.js
@@ -152,6 +153,7 @@ jobs:
             /js/guitarra.js
             /js/back-sound.js
             /js/mixmaster.js
+            /js/mixmaster/midi-synth.js
             /js/mixmaster/project-model.js
             /js/mixmaster/project-store.js
             /js/mixmaster/project-backup.js

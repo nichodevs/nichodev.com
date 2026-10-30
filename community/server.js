@@ -1,0 +1,20 @@
+const path=require("node:path");
+const {createCommunityApp}=require("./app");
+
+function start(){
+  const production=process.env.NODE_ENV==="production";
+  const port=Number(process.env.PORT||3200);
+  const origin=process.env.APP_ORIGIN||(!production?"http://127.0.0.1:"+port:"");
+  if(!origin||new URL(origin).origin!==origin||(production&&!origin.startsWith("https://")))throw new Error("Configure APP_ORIGIN com a origem HTTPS exata, sem barra final.");
+  if(production&&!process.env.COMMUNITY_DATA_DIR)throw new Error("Configure COMMUNITY_DATA_DIR para um diretório persistente fora dos arquivos públicos.");
+  const data=path.resolve(process.env.COMMUNITY_DATA_DIR||path.join(__dirname,"../.data/community"));
+  const publicRoots=[path.join(__dirname,"../public"),path.join(__dirname,"../prototypes/community")];
+  if(publicRoots.some(root=>{const relative=path.relative(root,data);return !relative||(!relative.startsWith("..")&&!path.isAbsolute(relative));}))throw new Error("O diretório de dados deve ficar fora das pastas públicas.");
+  const app=createCommunityApp({dbPath:path.join(data,"community.sqlite"),origin,secure:production,trustedProxy:process.env.TRUSTED_PROXY||false});
+  const server=app.listen(port,production?"0.0.0.0":"127.0.0.1",()=>console.log("Comunidade: "+origin+"/comunidade/"));
+  const stop=()=>server.close(()=>{app.locals.close();process.exit(0);});
+  process.once("SIGINT",stop);process.once("SIGTERM",stop);
+  return {app,server};
+}
+if(require.main===module)start();
+module.exports={start};

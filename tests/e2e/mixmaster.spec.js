@@ -267,11 +267,13 @@ test("união preserva picos acima de um após salvar e reabrir", async ({ page }
   const exported = JSON.parse((await downloadBytes(page, "#exportProjectButton")).toString("utf8"));
   const data = Buffer.from(exported.assets[0].dataBase64, "base64");
   expect(data.readUInt16LE(20)).toBe(3);
-  expect(data.readFloatLE(44 + Math.floor(data.readUInt32LE(24) * .25) * data.readUInt16LE(22) * 4)).toBeCloseTo(1.5, 4);
+  const savedSample = data.readFloatLE(44 + Math.floor(data.readUInt32LE(24) * .25) * data.readUInt16LE(22) * 4);
+  // Browser resampling can slightly change the source level; reopening must preserve the stored sample.
+  expect(savedSample).toBeCloseTo(1.5, 3);
   await savedProject(page);
   await page.reload();
   await expect(page.locator(".audio-clip")).toHaveCount(1);
-  await expect.poll(() => page.evaluate(() => window.decodedMixSamples.at(-1))).toBeCloseTo(1.5, 4);
+  await expect.poll(() => page.evaluate(() => window.decodedMixSamples.at(-1))).toBeCloseTo(savedSample, 6);
 });
 
 test("transporte para no fim e exportação ignora cursor além do projeto", async ({ page }) => {
@@ -371,6 +373,7 @@ test("limpeza preserva undo e outra aba e libera áudio sem referências", async
   await savedProject(page);
   expect(await storedAudioCount(page)).toBe(2);
   await other.close();
+  await expect.poll(() => page.evaluate(async () => (await navigator.locks.query()).held.filter(lock => lock.name.startsWith("nichodev-mixmaster-tab-")).length)).toBe(1);
   await page.locator(".audio-clip").click();
   await savedProject(page);
   await expect.poll(() => storedAudioCount(page)).toBe(1);

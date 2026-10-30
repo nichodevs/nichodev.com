@@ -66,15 +66,17 @@ No Linux, use `npx playwright install --with-deps chromium firefox webkit` para 
 
 ## Prévia da comunidade para homologação
 
-A interface demonstrativa de avaliações, exemplos, presets, contas e galeria está em [prototypes/community/README.md](prototypes/community/README.md). Execute `npm run preview:community` e abra `http://127.0.0.1:3100`. Use somente dados fictícios: não há envio real, autenticação, persistência no servidor ou publicação. O conteúdo desta prévia fica na memória da aba e desaparece ao recarregar.
+A interface e o backend real estão no [guia da comunidade](community/README.md). Execute `npm run preview:community` e abra `http://127.0.0.1:3200/comunidade/`. Contas, avaliações privadas, presets completos e prévias WAV são persistidos em SQLite na pasta privada `.data/community`; não são dados apenas da aba. O cadastro exige guardar a chave de recuperação antes de ativar a conta.
 
-A prévia tem testes próprios (`npm run test:preview`) em Chromium, Firefox e WebKit, incluindo a importação do exemplo no MIXMASTER. Seus arquivos ficam fora de `public/` e do deploy na Hostinger. A API e o armazenamento serão definidos após a homologação.
+A API tem testes próprios (`npm run test:community`) e a interface é validada em Chromium, Firefox e WebKit (`npm run test:preview`). Os arquivos da comunidade ficam fora de `public/` e não são enviados pelo SFTP. A hospedagem Node.js deve ser provisionada separadamente, com HTTPS e disco persistente, após autorização. A extração do sintetizador MIDI compartilhado mantém o exemplo e o MIXMASTER usando a mesma rotina.
 
 ## Organização
 
 - `public/`: arquivos do site, servidos pelas mesmas URLs públicas.
 - `public/js/`: áudio, edição e navegação do site.
 - `public/js/mixmaster/`: armazenamento, formato dos backups e regras de duração/notas compartilhadas do MIXMASTER.
+- `community/`: API, persistência, controle de acesso e administração da comunidade em homologação.
+- `prototypes/community/`: interface da comunidade servida pelo backend.
 - `public/assets/cursors/`: cursores retrô.
 - [public/onda/](public/onda/README.md): página da onda de gratidão.
 - [plugin/](plugin/README.md): JUCE/CMake, dois VST3, testes e notas de release.

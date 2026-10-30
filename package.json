@@ -10,7 +10,9 @@
     "test:e2e": "playwright test",
     "test": "node --test tests/validate-site.test.js",
     "preview:community": "node scripts/preview-community.js",
-    "test:preview": "playwright test --config=playwright.preview.config.js"
+    "test:preview": "playwright test --config=playwright.preview.config.js",
+    "test:community": "node --test community/tests/*.test.js",
+    "start:community": "node community/server.js"
   },
   "dependencies": {
     "express": "^5.1.0"

@@ -1,7 +1,8 @@
 "use strict";
 (async () => {
   const [
-    { PITCHES, FREQUENCIES, durationOf, clipEnd },
+    { PITCHES, durationOf, clipEnd },
+    { scheduleMidiNotes },
     {
       blobs, temporaryAudio, openDB, storeBlob, loadBlob, readProjectMetadata, persistProject,
       getStoredAudioKeys, deleteStoredAudioKeys, storeBackupAudio, clearProjectStorage
@@ -9,6 +10,7 @@
     { createProjectBackup, validateProjectBackup }
   ] = await Promise.all([
     import("./mixmaster/project-model.js?v=1"),
+    import("./mixmaster/midi-synth.js?v=1"),
     import("./mixmaster/project-store.js?v=1"),
     import("./mixmaster/project-backup.js?v=1")
   ]);
@@ -659,12 +661,7 @@
   function scheduleMidi(ctx, track, clip, when, offset = 0, destination) {
     const output = destination || routeNodes.get(track.id)?.volume;
     if (!output) return;
-    const stepDuration = 60 / state.bpm / 4;
-    for (const note of clip.notes || []) {
-      const at = clip.start + note.step * stepDuration;
-      if (at < offset) continue;
-      const osc = ctx.createOscillator(), gain = ctx.createGain(); osc.type = "square"; osc.frequency.value = FREQUENCIES[note.pitch] || 440; gain.gain.setValueAtTime(0, when + at - offset); gain.gain.linearRampToValueAtTime((note.velocity ?? .7) * .25, when + at - offset + .012); gain.gain.setValueAtTime((note.velocity ?? .7) * .25, when + at - offset + stepDuration * .75); gain.gain.linearRampToValueAtTime(0, when + at - offset + stepDuration * .95); osc.connect(gain); gain.connect(output); osc.start(when + at - offset); osc.stop(when + at - offset + stepDuration); if (ctx === audioContext) activeSources.push({ source: osc, gain, trackId: track.id, clipId: clip.id });
-    }
+    scheduleMidiNotes(ctx, clip, state.bpm, when, offset, output, (source, gain) => { if (ctx === audioContext) activeSources.push({ source, gain, trackId: track.id, clipId: clip.id }); });
   }
   async function play() {
     try {
