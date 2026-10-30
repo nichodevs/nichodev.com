@@ -51,6 +51,27 @@ test("exemplos abrem ferramentas integradas, preservando tema, recursos e âncor
   await expect(page.locator('a[href="/comunidade/ferramentas/guitarra.html"]')).toHaveCount(1);
   expect(await page.locator('link[href^="/voz.css"]').evaluate(link=>Boolean(link.sheet))).toBe(true);
 });
+test("ferramentas integradas importam áudio e reproduzem com a política de segurança",async({page,browserName})=>{
+  test.skip(browserName==="webkit"&&process.platform==="win32","O WebKit do Playwright para Windows não oferece áudio; o CI executa este cenário no Linux.");
+  await page.addInitScript(()=>{
+    window.policyViolations=[];
+    document.addEventListener("securitypolicyviolation",event=>window.policyViolations.push(event.violatedDirective));
+  });
+  await page.goto("/comunidade/ferramentas/voz.html");
+  await page.locator(".audio-panel > summary").click();
+  await page.locator("#audioFile").setInputFiles({name:"voz.wav",mimeType:"audio/wav",buffer:wav(4,440)});
+  await page.locator("#effectPreviewBtn").click();
+  await expect(page.locator("#previewStatus")).toContainText("Reproduzindo com efeitos");
+  await page.locator("#stopPreviewBtn").click();
+  expect(await page.evaluate(()=>window.policyViolations)).toEqual([]);
+  await page.goto("/comunidade/ferramentas/guitarra.html");
+  await page.locator("#audioFile").setInputFiles({name:"guitarra.wav",mimeType:"audio/wav",buffer:wav(4,440)});
+  await page.locator("#playFile").click();
+  await expect(page.locator("#inputStatus")).toContainText("Reproduzindo com pedais");
+  await expect.poll(()=>page.locator("#audioSource").evaluate(audio=>audio.currentTime)).toBeGreaterThan(.1);
+  await page.locator("#stopFile").click();
+  expect(await page.evaluate(()=>window.policyViolations)).toEqual([]);
+});
 for(const width of [360,768,1280])test("navegação e avaliação cabem em "+width,async({page})=>{
   const errors=[];page.on("pageerror",e=>errors.push(e.message));await page.setViewportSize({width,height:900});
   for(const name of ["TIMBRES","GALERIA","MEU ESTÚDIO","EXPLORAR"]){await page.getByRole("link",{name,exact:true}).click();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
