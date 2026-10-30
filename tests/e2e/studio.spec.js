@@ -101,6 +101,12 @@ test("servidor entrega o site pela raiz e mantém arquivos de desenvolvimento fo
   }
   expect((await (await request.get("/health")).json()).status).toBe("ok");
 });
+test("acesso à comunidade aparece somente quando o backend público está ativo",async({page})=>{
+  await page.route("**/api/community/session",route=>route.fulfill({json:{user:null,publicRelease:false}}));
+  await page.goto("/");await expect(page.locator("#communityAccess")).toBeHidden();
+  await page.unroute("**/api/community/session");await page.route("**/api/community/session",route=>route.fulfill({json:{user:null,publicRelease:true}}));
+  await page.reload();await expect(page.getByRole("link",{name:"Abrir comunidade de áudio"})).toHaveAttribute("href","/comunidade/");
+});
 
 test.describe("downloads VST3 sem JavaScript", () => {
   test.use({ javaScriptEnabled: false });

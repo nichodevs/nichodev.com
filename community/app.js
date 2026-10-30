@@ -39,11 +39,11 @@ function validateWav(buffer) {
   if(format.code===3)for(let at=dataStart;at<dataStart+data;at+=4)if(!Number.isFinite(buffer.readFloatLE(at)))fail(400,"O áudio contém amostras inválidas.");
 }
 
-function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__dirname,"../prototypes/community"),siteDir=path.join(__dirname,"../public"),trustedProxy=false}) {
+function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__dirname,"../prototypes/community"),siteDir=path.join(__dirname,"../public"),trustedProxy=false,publicRelease=false,bootstrapToken="",bootstrapUser="",probeToken=""}) {
   const db=openStore(dbPath),app=express(),rateSecret=crypto.randomBytes(32);
   let hashing=0;
   const cookieName=secure?"__Host-nichodev":"nichodev_local";
-  app.disable("x-powered-by");if(trustedProxy)app.set("trust proxy",trustedProxy);
+  app.disable("x-powered-by");if(trustedProxy)app.set("trust proxy",trustedProxy==="unix"?((address,index)=>address===undefined&&index===0):trustedProxy);
   app.locals.origin=origin;
   const now=()=>Date.now();
   const get=(sql,...params)=>db.prepare(sql).get(...params);
@@ -92,7 +92,9 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   const safeUser=user=>user?{id:user.id,username:user.username,admin:Boolean(user.admin)}:null;
   const api=express.Router();
   app.use((req,res,next)=>{
-    res.set({"X-Robots-Tag":"noindex, nofollow","X-Content-Type-Options":"nosniff","Referrer-Policy":"same-origin","Cache-Control":"no-store","Content-Security-Policy":"default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"});
+    if(publicRelease&&req.hostname==="www.nichodev.com")return res.redirect(308,"https://nichodev.com/"+req.originalUrl.replace(/^\/+/,""));
+    if(!publicRelease||!["/","/index.html","/voz.html","/guitarra.html","/mixmaster.html","/downloads.html","/onda/","/comunidade","/comunidade/","/comunidade/privacy.html","/comunidade/rules.html","/sitemap.xml","/robots.txt"].includes(req.path))res.set("X-Robots-Tag","noindex, nofollow");
+    res.set({"X-Content-Type-Options":"nosniff","Referrer-Policy":"same-origin","Cache-Control":"no-store","Content-Security-Policy":"default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"});
     next();
   });
   api.use((req,res,next)=>{
@@ -106,7 +108,31 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   });
   api.use(express.json({limit:"32kb",inflate:false}));
   api.use((req,res,next)=>{if(!["GET","HEAD"].includes(req.method)&&req.path!=="/media"&&(!req.body||typeof req.body!=="object"||Array.isArray(req.body)))return next(Object.assign(new Error("Envie os campos em JSON."),{status:400}));next();});
-  api.get("/session",(req,res)=>res.json({user:safeUser(actor(req))}));
+  api.get("/session",(req,res)=>res.json({user:safeUser(actor(req)),publicRelease}));
+  api.get("/operations/proxy",(req,res)=>{
+    if(!probeToken||!crypto.timingSafeEqual(Buffer.from(digest(req.get("X-Nichodev-Probe")||""),"hex"),Buffer.from(digest(probeToken),"hex")))fail(404,"Recurso não encontrado.");
+    res.json({socketAddress:req.socket.remoteAddress??null,forwarded:req.get("x-forwarded-for")||null,selectedIP:req.ip??null});
+  });
+  api.get("/account/export",(req,res)=>{
+    const user=auth(req);rate(req,"export",5,3600000);
+    const record=get("SELECT username,created FROM users WHERE id=?",user.id);
+    const palette=get("SELECT colors FROM user_palettes WHERE user_id=?",user.id);
+    res.attachment("nichodev-meus-dados.json").json({account:record,palette:palette?JSON.parse(palette.colors):null,creations:all("SELECT c.*,u.username FROM creations c JOIN users u ON u.id=c.owner WHERE c.owner=?",user.id).map(item),favorites:all("SELECT creation_id FROM favorites WHERE user_id=?",user.id).map(row=>row.creation_id),audio:all("SELECT id FROM media WHERE owner=?",user.id).map(row=>({id:row.id,url:app.locals.origin+"/api/community/media/"+row.id})),audioNote:"Os links de áudio exigem sua sessão ativa; baixe os WAV antes de excluir a conta."});
+  });
+  api.delete("/account",async(req,res)=>{
+    const user=auth(req);rate(req,"delete-account",5,3600000);
+    if(req.body.confirm!==user.username)fail(400,"Digite seu usuário para confirmar a exclusão.");
+    const record=get("SELECT password FROM users WHERE id=?",user.id);
+    if(!await verify(password(req.body.password),record.password))fail(400,"A senha atual não confere.");
+    transaction(db,()=>{
+      if(get("SELECT password FROM users WHERE id=?",user.id)?.password!==record.password)fail(409,"A conta mudou. Entre novamente.");
+      if(user.admin&&!get("SELECT id FROM users WHERE admin=1 AND active=1 AND id<>?",user.id))fail(409,"Designe outro administrador antes de excluir esta conta.");
+      run("DELETE FROM favorites WHERE creation_id IN (SELECT id FROM creations WHERE owner=?)",user.id);
+      run("DELETE FROM creations WHERE owner=?",user.id);run("DELETE FROM media WHERE owner=?",user.id);
+      run("DELETE FROM users WHERE id=?",user.id);
+    });
+    res.clearCookie(cookieName,cookieOptions);res.status(204).end();
+  });
   api.get("/palette",(req,res)=>{
     const user=auth(req),record=get("SELECT colors FROM user_palettes WHERE user_id=?",user.id);
     res.json({palette:record?JSON.parse(record.colors):null});
@@ -120,9 +146,11 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   api.post("/register",async(req,res)=>{
     rate(req,"register",6,3600000);
     const name=username(req.body.username),pass=password(req.body.password);
+    if(bootstrapToken&&(name!==bootstrapUser||!crypto.timingSafeEqual(Buffer.from(digest(req.get("X-Nichodev-Bootstrap")||""),"hex"),Buffer.from(digest(bootstrapToken),"hex"))))fail(403,"Os cadastros estão temporariamente restritos à configuração da administração.");
     if(["nichodev","sistema"].includes(name)||get("SELECT id FROM users WHERE username=?",name))fail(409,"Esse usuário não está disponível.");
     const passHash=await hash(pass),key=random(),confirmation=random(),id=uuid();
-    try{run("INSERT INTO users(id,username,password,recovery,confirmation,confirmation_expiry,created) VALUES(?,?,?,?,?,?,?)",id,name,passHash,digest(key),digest(confirmation),now()+1800000,now());}
+    const invitedAdmin=Boolean(bootstrapToken&&name===bootstrapUser&&!get("SELECT id FROM users WHERE admin=1 AND active=1"));
+    try{run("INSERT INTO users(id,username,password,recovery,confirmation,confirmation_expiry,created,admin) VALUES(?,?,?,?,?,?,?,?)",id,name,passHash,digest(key),digest(confirmation),now()+1800000,now(),invitedAdmin?1:0);}
     catch(error){if(error.code?.startsWith("ERR_SQLITE"))fail(409,"Esse usuário não está disponível.");throw error;}
     res.cookie(cookieName+"_pending",confirmation,{...cookieOptions,maxAge:1800000});
     res.status(201).json({recoveryKey:key,username:name});
@@ -282,7 +310,21 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
     res.status(204).end();
   });
   app.use("/api/community",api);
-  app.get("/health",(req,res)=>res.json({status:"ok"}));
+  app.get(["/comunidade","/comunidade/"],(req,res,next)=>{
+    fs.readFile(path.join(publicDir,"index.html"),"utf8",(error,html)=>{
+      if(error)return next(error);
+      if(publicRelease){
+        html=html.replace('<meta name="robots" content="noindex,nofollow">','<meta name="robots" content="index,follow"><link rel="canonical" href="https://nichodev.com/comunidade/">')
+          .replace("Comunidade — homologação · nichodev.com","Comunidade de áudio · nichodev.com")
+          .replace("<strong>HOMOLOGAÇÃO</strong>","<strong>COMUNIDADE</strong>")
+          .replace("Homologação com backend · dados salvos neste ambiente · conteúdo público depende de moderação.","Crie, compartilhe e experimente · publicações públicas passam por moderação.")
+          .replace("Seus dados são salvos neste ambiente de homologação.","Seus dados são salvos na comunidade nichodev.com.");
+        res.removeHeader("X-Robots-Tag");
+      }
+      res.type("html").send(html);
+    });
+  });
+  app.get("/health",(req,res)=>{get("SELECT 1");res.json({status:"ok"});});
   app.get("/community/preset-format.js",(req,res)=>res.sendFile(path.join(__dirname,"preset-format.js")));
   app.get("/community/palette-format.js",(req,res)=>res.sendFile(path.join(__dirname,"palette-format.js")));
   app.get("/community/tool-bridge.js",(req,res)=>res.sendFile(path.join(__dirname,"tool-bridge.js")));

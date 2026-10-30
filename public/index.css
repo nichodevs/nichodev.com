@@ -5,6 +5,7 @@
   --line: #fff;
   color-scheme: dark;
 }
+.home-tool[hidden]{display:none}
 
 body {
       min-height: 100vh;

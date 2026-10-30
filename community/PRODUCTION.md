@@ -1,4 +1,4 @@
-# Preparação de produção — ainda não ativada
+# Produção: entrada, publicação e operação
 
 Integrar este documento, a entrada e o workflow não publica a comunidade, não altera a Hostinger e não copia o banco. `server.js`, `npm start`, `.hostinger/site.json` e a entrada da homologação permanecem iguais. A aplicação pública continua estática até uma publicação expressamente autorizada.
 
@@ -17,7 +17,8 @@ Na Hostinger, quando autorizado: Node.js **24**, Express, raiz `.`, saída `.`, 
 - `COMMUNITY_PUBLIC_RELEASE=enabled` e `NODE_ENV=production`.
 - `APP_ORIGIN=https://nichodev.com`, sem barra final.
 - `COMMUNITY_DATA_DIR=/home/USUARIO/domains/nichodev.com/community-private`, usando o diretório real do usuário da hospedagem. A entrada rejeita outros caminhos e um diretório que seja atalho para os dados da homologação.
-- `TRUSTED_PROXY` com IPs/CIDRs explicitamente verificados do proxy da Hostinger. Não usar `true`, contagem de saltos presumida ou redes universais. Esta revisão não identificou os endereços confiáveis; isso continua sendo uma pendência de infraestrutura.
+- `TRUSTED_PROXY` com IPs/CIDRs explicitamente verificados do proxy da Hostinger. Não usar `true`, contagem de saltos presumida ou redes universais. A origem do tráfego deve ser conferida no transporte real antes de liberar o ambiente.
+- Quando a integração LiteSpeed usa socket Unix, `TRUSTED_PROXY=unix` só é aceito na entrada pública com `LSNODE_SOCKET` do domínio nichodev.com. Confere-se em homologação se a cadeia encaminhada resiste a um `X-Forwarded-For` falso antes de ativar produção. O modo só confia no primeiro salto sem endereço TCP; conexões TCP diretas não recebem confiança.
 
 O servidor exige uma pasta própria, mas não consegue identificar um banco de homologação copiado manualmente para ela: **não copie o SQLite da homologação**. Produção começa com banco novo e vazio, criado na primeira inicialização autorizada. Se houver dados reais que devam ser migrados, faça outro plano explícito de migração, com backup e conferência. Não sincronize bancos SQLite entre ambientes.
 
@@ -38,3 +39,17 @@ O servidor exige uma pasta própria, mas não consegue identificar um banco de h
 6. Em falha, fechar novos acessos à comunidade e restaurar a versão/entrada anterior. Preservar o banco novo e fazer backup antes de qualquer restauração de dados. Uma volta ao site estático não exige apagar o banco. Reativar SFTP somente depois de confirmar o retorno ao modelo estático; não restaurar automaticamente variáveis ou banco da homologação.
 
 Esta preparação não muda DNS, runtime, entrada, agendas ou variáveis reais. Cada alteração na hospedagem permanece para a etapa de ativação autorizada.
+
+## Lançamento e operação
+
+A autorização de lançamento deve preceder a configuração real. A base de produção é nova; não importa usuários, áudios, paletas ou contas técnicas da homologação. Para o primeiro administrador, configure `COMMUNITY_BOOTSTRAP_USER=nichodevadm` e um `COMMUNITY_BOOTSTRAP_TOKEN` aleatório privado. Só esse usuário, com convite correto no cabeçalho, consegue se cadastrar. A conta convidada recebe a função administrativa, mas permanece sem acesso até confirmar que guardou a chave de recuperação. Sem administrador ativo, a entrada pública exige esse convite. Após o cadastro confirmado, remova ambas as variáveis para liberar cadastros normais. Nunca registre o token em logs, no Git ou no chat; abra o convite privado no navegador do responsável. O diagnóstico `COMMUNITY_PROXY_PROBE_TOKEN` também é temporário: sem ele, a rota operacional responde 404.
+
+O site público mostra o acesso à comunidade somente quando a API informa `publicRelease=true`. A interface de produção remove os avisos de homologação e permite indexar a página inicial e os documentos públicos; APIs e ferramentas integradas continuam com `noindex`. Privacidade e regras ficam acessíveis no cadastro e no rodapé. Exclusão exige senha e usuário, remove dados associados e sessões e protege o último administrador. A exportação não inclui hashes, senhas ou chaves; os links de áudio exigem login.
+
+O backup externo de produção usa `backup:producao/` dentro do remote criptografado já configurado. A homologação preserva seu destino anterior. O mesmo kit de recuperação consegue listar a pasta com `rclone lsf backup:producao/` e baixar com `rclone copyto backup:producao/ARQUIVO copia.sqlite`. A pasta continua criptografada no R2 e a regra de retenção do bucket se aplica às duas áreas. Após upload, download e integridade aprovados, a rotina grava `offsite/last-success.json`; ele não contém credenciais.
+
+Instale `scripts/monitor-community.cjs` na pasta privada de produção e agende a cada cinco minutos. Ele verifica resposta, leitura do banco, espaço livre e confirmação de backup local/externo em até 36 horas. Envia falha, lembrete no máximo horário e recuperação a `development@nichodev.com` pelo transporte PHP da hospedagem. Teste com `--test-alert` e confirme recebimento. Esse monitor não consegue alertar se a hospedagem inteira estiver fora do ar. O workflow **Verificar comunidade pública** complementa a conferência por fora a cada 15 minutos: habilite `COMMUNITY_PRODUCTION_MONITOR_ENABLED=true` somente após a troca. Falhas desse workflow usam as notificações configuradas na conta GitHub; não se deve prometer entrega por e-mail sem conferir essas preferências. Desative o monitor externo durante um retorno intencional ao site estático.
+
+`node scripts/test-community-load.cjs` mede 96 consultas com concorrência oito e quatro tentativas simultâneas de login num banco descartável e socket privado. Confirma respostas válidas e limitação da derivação de senhas. Os tempos e RAM reportados são uma medição pontual, não uma garantia de capacidade sustentada. Execute também no plano real antes da abertura e acompanhe recursos após o lançamento.
+
+Depois de qualquer restauração, reaplique solicitações de exclusão pendentes antes de reabrir o serviço. A política e o canal de privacidade descrevem os limites de retenção e os contatos de revisão; não registre dados pessoais nos alertas operacionais.

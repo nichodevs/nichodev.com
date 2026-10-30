@@ -56,7 +56,7 @@ O verificador copia `community-private/latest.sqlite` para uma pasta privada tem
 
 A aplicação da comunidade é separada do nichodev.com. O alvo está registrado em [`.hostinger/site.json`](../.hostinger/site.json); esse arquivo aponta exclusivamente para a homologação Node.js. O site principal mantém seu fluxo próprio de publicação por SFTP.
 
-Na última publicação conferida em 30/10/2026, o código da homologação corresponde ao commit `bc293f06446d16bed0623c6986f8e2a267bc4daa`, incluindo paletas vinculadas às contas. Foram usados Express, Node.js 24, o bootstrap `scripts/preview-community.js` e `npm run check` antes da publicação. A entrega usa um ZIP dos arquivos versionados do GitHub, sem banco, credenciais ou `node_modules`. O deploy automático da comunidade a cada push não foi ativado.
+A versão publicada é identificada pelo commit, hash e alvo no pacote validado (`RELEASE.txt` e `SHA256SUMS`) e pelo histórico de builds da aplicação. A homologação inclui paletas vinculadas às contas. Foram usados Express, Node.js 24, o bootstrap `scripts/preview-community.js` e `npm run check` antes da publicação. A entrega usa um ZIP dos arquivos versionados do GitHub, sem banco, credenciais ou `node_modules`. O deploy automático da comunidade a cada push não foi ativado.
 
 A preparação do domínio público está em [PRODUCTION.md](PRODUCTION.md). Ela não muda a homologação nem ativa a comunidade no nichodev.com.
 

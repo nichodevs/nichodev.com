@@ -26,6 +26,8 @@ test("preparar produção valida configuração sem criar ou copiar dados",t=>{
   const {home,data,env}=fixture(t);
   assert.deepEqual(productionConfig(env,home),{origin:"https://nichodev.com",data});
   assert.equal(fs.existsSync(data),false);
+  assert.doesNotThrow(()=>productionConfig({...env,TRUSTED_PROXY:"unix",LSNODE_SOCKET:"/usr/local/lsws/extapp-sock/nichodev.com:_.sock"},home));
+  assert.throws(()=>productionConfig({...env,TRUSTED_PROXY:"unix",LSNODE_SOCKET:"/outro/socket"},home));
   for(const changes of [{COMMUNITY_PUBLIC_RELEASE:""},{NODE_ENV:"development"},{APP_ORIGIN:"https://www.nichodev.com"},{TRUSTED_PROXY:""},{TRUSTED_PROXY:"true"},{TRUSTED_PROXY:"0.0.0.0/0"},{TRUSTED_PROXY:"127.0.0.1/33"}])assert.throws(()=>productionConfig({...env,...changes},home));
 });
 test("produção rejeita banco de homologação, pasta pública e atalhos para outros dados",t=>{
