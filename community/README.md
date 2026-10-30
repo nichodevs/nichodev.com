@@ -46,7 +46,7 @@ Para ensaiar a recuperação na Hostinger, sem substituir o banco ativo, use Nod
 node scripts/test-restore.cjs /home/USUARIO/domains/DOMINIO
 ```
 
-O verificador copia `community-private/latest.sqlite` para uma pasta privada temporária, confere integridade, referências e todos os registros e bytes de áudio, e inicia o código já publicado em `hbuilds/current/nodejs` somente em `127.0.0.1`, numa porta livre. Testa leitura, escrita descartável e permissões na cópia, preserva o backup original e remove a cópia ao encerrar. O log contém somente totais e resultados, sem senhas, chaves, comentários ou áudios. O teste não troca o banco ativo nem exige uma publicação do site; execute com espaço livre para duas cópias adicionais do backup.
+O verificador copia `community-private/latest.sqlite` para uma pasta privada temporária, confere integridade, referências e todos os registros e bytes de áudio, e inicia o código já publicado em `hbuilds/current/nodejs` por socket Unix em um diretório privado de permissão `700`; no Windows, usa `127.0.0.1` numa porta livre. Testa leitura, escrita descartável e permissões na cópia, preserva o backup original e remove a cópia ao encerrar. O log contém somente totais e resultados, sem senhas, chaves, comentários ou áudios. O teste não troca o banco ativo nem exige uma publicação do site; execute com espaço livre para duas cópias adicionais do backup.
 
 ## Homologação online na Hostinger
 

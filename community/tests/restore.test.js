@@ -25,6 +25,7 @@ test("restaura uma cópia privada, lê áudio pela aplicação e rejeita backup 
     const {stdout}=await execute(process.execPath,[path.resolve(__dirname,"../../scripts/test-restore.cjs"),site]);
     const result=JSON.parse(stdout.trim());
     assert.equal(result.status,"ok");assert.equal(result.accounts,2);assert.equal(result.audio,1);assert.equal(result.creations,1);assert.equal(result.isolatedCopyRemoved,true);
+    assert.equal(result.localOnly,true);assert.equal(result.transport,process.platform==="win32"?"tcp-loopback":"private-unix-socket");
     assert.deepEqual(fs.readFileSync(backup),before);
     assert.deepEqual(fs.readdirSync(privateDir).filter(name=>name.startsWith("restore-check-")),[]);
     fs.writeFileSync(backup,"arquivo corrompido");
