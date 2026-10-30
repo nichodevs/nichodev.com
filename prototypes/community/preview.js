@@ -117,7 +117,7 @@
     return requireAccount(()=>openPublish("preset",null,draft));
   }
   function presetUrl(item,key=""){
-    return "/"+item.tool+".html?communityPreset="+encodeURIComponent(item.id)+(key?"&key="+encodeURIComponent(key):"");
+    return "/comunidade/ferramentas/"+item.tool+".html?communityPreset="+encodeURIComponent(item.id)+(key?"&key="+encodeURIComponent(key):"");
   }
   function showDetail(item,key=""){
     detail=item;detailKey=key;$("detailTitle").textContent=item.title;$("detailMeta").textContent=names[item.tool]+" / @"+item.author;
@@ -208,7 +208,7 @@
       const article=document.createElement("article");article.className="sound-card";
       const heading=document.createElement("h3");heading.textContent=title;const paragraph=document.createElement("p");paragraph.textContent=description;
       if(tool==="mixmaster"){const action=button("EXPERIMENTAR →","example",null,true);article.append(heading,paragraph,action);}
-      else{const link=document.createElement("a");link.className="button outline compact";link.href="/"+tool+".html";link.textContent="ABRIR FERRAMENTA →";article.append(heading,paragraph,link);}
+      else{const link=document.createElement("a");link.className="button outline compact";link.href="/comunidade/ferramentas/"+tool+".html";link.textContent="ABRIR FERRAMENTA →";article.append(heading,paragraph,link);}
       root.append(article);
     }
   }

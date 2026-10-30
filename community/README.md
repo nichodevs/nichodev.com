@@ -13,6 +13,8 @@ npm run preview:community
 
 Abra http://127.0.0.1:3200/comunidade/. O endereço `/` abre o site e suas ferramentas. Os dados ficam em `.data/community/community.sqlite`, fora das pastas servidas e ignorados pelo Git. Reiniciar o servidor preserva os dados. Encerrar o processo torna a prévia local indisponível; não apague a pasta enquanto precisar dos dados de homologação.
 
+Para capturar e aplicar timbres, abra as ferramentas pelos exemplos ou pelo botão **ABRIR NA FERRAMENTA** da comunidade: elas usam `/comunidade/ferramentas/voz.html` e `/comunidade/ferramentas/guitarra.html`. As URLs públicas `/voz.html` e `/guitarra.html` continuam estáticas, sem a ponte da comunidade. Na Hostinger, arquivos físicos são servidos antes do Node; por isso a integração precisa dessas rotas próprias. O teste local reproduz essa ordem de entrega.
+
 ## O que é real nesta entrega
 
 - **Avaliações:** envio anônimo opcional, comentário e e-mail opcionais, confirmação somente depois de gravar no banco. Somente administradores consultam e classificam as avaliações; retenção de 90 dias.
@@ -103,4 +105,4 @@ npm run test:preview
 npm run test:e2e
 ```
 
-Os testes da API usam bancos isolados e verificam confirmação, senhas/chaves, revogação, privacidade, moderação, concorrência de edição, WAV, limites e persistência/backup. A interface é exercitada em Chromium, Firefox e WebKit, inclusive falha de envio, integração de presets, foco, upload e exemplo no editor. As credenciais dos testes são fictícias e os bancos são removidos ao final. O WebKit fornecido pelo Playwright para Windows não oferece áudio/Web Audio: somente os dois cenários novos que precisam desses recursos são marcados como não executados nesse ambiente. No CI Linux, eles são obrigatórios, sem essa exceção. Os testes não validam os recursos e o proxy de uma instalação Hostinger ainda não provisionada.
+Os testes da API usam bancos isolados e verificam confirmação, senhas/chaves, revogação, privacidade, moderação, concorrência de edição, WAV, limites e persistência/backup. A interface é exercitada em Chromium, Firefox e WebKit, inclusive falha de envio, integração de presets, foco, upload e exemplo no editor. As credenciais dos testes são fictícias e os bancos são removidos ao final. O WebKit fornecido pelo Playwright para Windows não oferece áudio/Web Audio: somente os três cenários da prévia que precisam desses recursos são marcados como não executados nesse ambiente. No CI Linux, eles são obrigatórios, sem essa exceção. Os testes reproduzem a prioridade dos arquivos estáticos sobre o Node, mas não substituem a verificação da versão efetivamente publicada na Hostinger.

@@ -1,6 +1,6 @@
 "use strict";
 
-document.querySelectorAll('a[href="index.html"]').forEach((link) => {
+document.querySelectorAll('a[href="index.html"], a[href="/index.html"]').forEach((link) => {
   link.addEventListener("click", (event) => {
     if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     event.preventDefault();

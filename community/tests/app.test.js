@@ -15,6 +15,30 @@ function wav(float = false) {
   const data = Buffer.alloc(float ? 48 : 46); data.write("RIFF");data.writeUInt32LE(data.length-8,4);data.write("WAVEfmt ",8);data.writeUInt32LE(16,16);data.writeUInt16LE(float?3:1,20);data.writeUInt16LE(1,22);data.writeUInt32LE(8000,24);data.writeUInt32LE(float?32000:16000,28);data.writeUInt16LE(float?4:2,32);data.writeUInt16LE(float?32:16,34);data.write("data",36);data.writeUInt32LE(float?4:2,40);return data;
 }
 
+test("ferramentas da comunidade passam pelo Node mesmo com arquivos estáticos prioritários", async t => {
+  const f=await fixture(t);
+  for(const tool of ["voz","guitarra"]){
+    const response=await fetch(f.origin+"/comunidade/ferramentas/"+tool+".html");
+    assert.equal(response.status,200);
+    const html=await response.text(),csp=response.headers.get("content-security-policy");
+    assert.match(html,/src="\/community\/tool-bridge.js"/);
+    assert.match(html,/href="\/style.css/);
+    assert.match(html,new RegExp('src="/js/'+tool+'\\.js'));
+    assert.match(html,/href="#/);
+    assert.match(html,/href="\/comunidade\/ferramentas\//);
+    assert.match(csp,/base-uri 'none'/);
+    assert.doesNotMatch(csp.split("script-src ")[1].split(";")[0],/unsafe-inline/);
+    const nonce=csp.match(/'nonce-([^']+)'/)[1];
+    for(const script of html.matchAll(/<script\b[^>]*>/g)){
+      if(!script[0].includes('src="/community/'))assert.ok(script[0].includes('nonce="'+nonce+'"'));
+    }
+    assert.match(response.headers.get("x-robots-tag"),/noindex/);
+    const root=await fetch(f.origin+"/"+tool+".html");
+    assert.equal(root.status,200);assert.doesNotMatch(await root.text(),/community\/tool-bridge/);
+  }
+  assert.equal((await fetch(f.origin+"/comunidade/ferramentas/inexistente.html")).status,404);
+});
+
 test("cadastro só ativa a conta após confirmar a chave, com hashes e cookie privado", async t => {
   const f = await fixture(t), call = f.client();
   let response = await call("/register", post({username:"Pessoa_123",password:phrase}));

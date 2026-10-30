@@ -2,6 +2,8 @@
 
 O site é publicado na Hostinger pelo workflow [Publicar site na Hostinger](.github/workflows/deploy.yml). Este documento descreve quando ele roda e o que revisar ao adicionar arquivos ao site.
 
+Em 30/10/2026 foi removido o deploy Git direto da Hostinger para `nichodev.com`: ele acompanhava `main` sem aguardar o CI e concorria com o SFTP. O site existente mantém `server.js` e seus dados; somente o gatilho direto foi removido. O SFTP abaixo é o fluxo de publicação do site. Não reative o deploy Git em paralelo. O backend da comunidade continua exclusivo da homologação, sem mudança de domínio, entrada ou banco em produção.
+
 ## Quando o deploy roda
 
 - **Push para `main`:** quando a alteração inclui arquivos de `public/**` ou o próprio `.github/workflows/deploy.yml`. Arquivos Markdown são excluídos desse gatilho.
@@ -35,5 +37,7 @@ O envio e a lista de URLs verificadas estão em `deploy.yml`. A validação em `
 O envio usa os secrets `HOSTINGER_HOST`, `HOSTINGER_USERNAME`, `HOSTINGER_PASSWORD` e `HOSTINGER_KNOWN_HOSTS`. Os bundles VST3 não são publicados na Hostinger; eles são anexados aos GitHub Releases.
 
 ## Comunidade em homologação Node.js
+
+As ferramentas integradas usam `/comunidade/ferramentas/voz.html` e `/comunidade/ferramentas/guitarra.html`. Essas rotas só existem no backend: a Hostinger prioriza arquivos físicos de `public/` e não executa a injeção do backend em `/voz.html` ou `/guitarra.html`. Os testes reproduzem essa prioridade. As páginas integradas reutilizam os templates públicos, ajustam os caminhos dos recursos e autorizam os scripts inline existentes por nonce, mantendo a política de segurança. O site público permanece sem os controles da comunidade.
 
 A [homologação online da comunidade](https://cornflowerblue-lapwing-604910.hostingersite.com/comunidade/) usa uma aplicação Node.js separada. O alvo de `.hostinger/site.json` pertence a essa aplicação, enquanto o nichodev.com continua com o fluxo SFTP. O backend e a interface da comunidade não integram os uploads SFTP. Consulte [community/README.md](community/README.md) para executar e preparar uma aplicação Node.js separada, com HTTPS, disco persistente privado, administrador e backup. A publicação dessa aplicação precisa de autorização própria. O sintetizador MIDI compartilhado em `public/js/mixmaster/midi-synth.js` é um asset do site estático e permanece incluído nos uploads e nas verificações HTTP.
