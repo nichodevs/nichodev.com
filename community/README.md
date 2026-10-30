@@ -40,6 +40,14 @@ Para a configuração local padrão, a pasta é `.data/community` na raiz. No Li
 
 O backup usa a API nativa do SQLite, preservando consistência com o banco aberto. Mantenha backups fora das pastas públicas, com acesso restrito, e nunca os envie como artefatos do CI. Para restaurar, pare o processo e substitua a pasta de dados por uma pasta contendo somente o backup renomeado `community.sqlite`; não misture arquivos WAL/SHM antigos. Guarde a pasta anterior até verificar a restauração.
 
+Para ensaiar a recuperação na Hostinger, sem substituir o banco ativo, use Node.js 24 e informe a pasta do site:
+
+```sh
+node scripts/test-restore.cjs /home/USUARIO/domains/DOMINIO
+```
+
+O verificador copia `community-private/latest.sqlite` para uma pasta privada temporária, confere integridade, referências e todos os registros e bytes de áudio, e inicia o código já publicado em `hbuilds/current/nodejs` somente em `127.0.0.1`, numa porta livre. Testa leitura, escrita descartável e permissões na cópia, preserva o backup original e remove a cópia ao encerrar. O log contém somente totais e resultados, sem senhas, chaves, comentários ou áudios. O teste não troca o banco ativo nem exige uma publicação do site; execute com espaço livre para duas cópias adicionais do backup.
+
 ## Homologação online na Hostinger
 
 [Abrir a comunidade em homologação](https://cornflowerblue-lapwing-604910.hostingersite.com/comunidade/).
