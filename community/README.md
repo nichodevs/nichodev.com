@@ -62,6 +62,20 @@ O backup consistente `latest.sqlite` fica na mesma pasta privada. O primeiro arq
 
 As contas da prévia local e da hospedagem são separadas. Para atualizar a homologação, use um commit validado, mantenha as variáveis e o diretório privado existentes, publique na mesma aplicação e confira novamente os dados. Não substitua a pasta de dados pelo conteúdo do pacote.
 
+## Cópia externa criptografada no R2
+
+O comando `scripts/backup-offsite.cjs` cria um snapshot consistente com o banco ativo aberto somente para leitura, envia pelo remote `crypt` do rclone e baixa a cópia para comparar SHA-256, integridade e referências do SQLite. Cada envio recebe um nome único; falha no envio ou na conferência encerra com erro, sem declarar sucesso. As cópias locais temporárias são removidas ao finalizar.
+
+Na pasta privada da Hostinger, instale o rclone oficial e verificado em `community-private/offsite/rclone`, o comando em `community-private/offsite/backup-offsite.cjs` e a configuração em `community-private/offsite/rclone.conf`, com diretório `700` e configuração `600`. O arquivo precisa definir o remote `r2` (S3, provider Cloudflare, endpoint HTTPS da conta) e o remote `backup` (tipo `crypt`, `remote = r2:nichodev-community-backups`, nomes criptografados no modo `standard`). Use uma credencial de objetos restrita a esse bucket; `no_check_bucket = true` evita exigir permissão administrativa. A configuração contém as chaves: não inclua o arquivo no GitHub, em artefatos do CI ou no pacote público.
+
+```sh
+/opt/alt/alt-nodejs24/root/bin/node /home/USUARIO/domains/DOMINIO/community-private/offsite/backup-offsite.cjs domains/DOMINIO
+```
+
+A agenda planejada é **03:10 UTC / 00:10 de Brasília**, depois do backup local. O bucket dedicado deve permanecer privado, na classe Standard, com expiração de objetos após 30 dias. O script não exclui objetos remotos nem modifica a agenda local; a retenção é administrada pelo R2. Configure a agenda somente após um envio real aprovado e uma recuperação isolada de um arquivo baixado do R2.
+
+Guarde uma cópia do `rclone.conf` em um local privado fora da Hostinger: a senha e o salt do remote `crypt` são necessários para recuperar os dados. A representação obscura dessas chaves no arquivo não é uma proteção suficiente para publicá-lo. Para recuperar, instale o rclone, use esse arquivo com `--config`, liste os arquivos com `rclone lsf backup:` e baixe o escolhido com `rclone copyto backup:NOME backup.sqlite`. Faça primeiro o ensaio isolado descrito acima; não substitua o banco ativo sem parar a aplicação e preservar a pasta anterior.
+
 ## Preparar outra instalação Node.js
 
 Preparar uma aplicação Node.js separada requer autorização para a publicação e acesso ao painel de hospedagem. Nenhuma configuração da Hostinger é alterada ao executar estes comandos localmente.
