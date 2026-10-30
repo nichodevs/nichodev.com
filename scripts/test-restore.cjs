@@ -5,6 +5,7 @@ const os = require("node:os");
 const path = require("node:path");
 const {DatabaseSync} = require("node:sqlite");
 let stage="paths";
+const checks={};
 
 const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
 const quote = name => '"'+name.replaceAll('"','""')+'"';
@@ -56,18 +57,24 @@ async function main() {
     db=new DatabaseSync(restored);
     const expected=inspect(reference);
     assert.deepEqual(inspect(db),expected,"Os registros ou bytes de áudio diferem do backup.");
+    checks.integrityAndRecords=true;
     reference.close();reference=null;db.close();db=null;
 
     stage="application-start";
     const {createCommunityApp,validateWav}=require(path.join(site,"hbuilds/current/nodejs/community/app.js"));
     app=createCommunityApp({dbPath:restored,origin:"http://127.0.0.1"});
     server=await new Promise((resolve,reject)=>{const listener=app.listen(0,"127.0.0.1",()=>resolve(listener));listener.once("error",reject);});
-    const origin="http://127.0.0.1:"+server.address().port;
+    const address=server.address();
+    assert.equal(address.address,"127.0.0.1","O verificador deve escutar somente no loopback.");
+    checks.loopbackPort=address.port;
+    const origin="http://127.0.0.1:"+address.port;
     app.locals.origin=origin;db=app.locals.db;
     const request=(route,options={})=>fetch(origin+route,{...options,signal:AbortSignal.timeout(10000)});
-    stage="application-routes";
+    stage="health-route";
     assert.equal((await request("/health")).status,200);
+    stage="interface-route";
     assert.equal((await request("/comunidade/")).status,200);
+    stage="anonymous-permissions";
     assert.equal((await request("/api/community/admin/feedback")).status,401);
     let verifiedMedia=0,verifiedCreations=0;
     const users=db.prepare("SELECT id,admin FROM users WHERE active=1").all();
@@ -112,9 +119,11 @@ async function main() {
     if(db)db.close();if(reference)reference.close();
     assert.equal(path.dirname(fs.realpathSync(dir)),privateDir);
     fs.rmSync(dir,{recursive:true,force:true});
+    checks.isolatedCopyRemoved=!fs.existsSync(dir);
     assert.equal(await fileSha(source),originalHash,"O arquivo de backup mudou durante o teste.");
+    checks.backupUnchanged=true;
     stage=previousStage;
   }
   console.log(JSON.stringify({...result,backupUnchanged:true,isolatedCopyRemoved:!fs.existsSync(dir)}));
 }
-main().catch(error=>{const code=/^[A-Z0-9_]+$/.test(error.code||"")?error.code:"ERROR";console.error("RESTORE_CHECK_FAILED stage="+stage+" code="+code);process.exitCode=1;});
+main().catch(error=>{const value=error.code||error.cause?.code||"ERROR",code=/^[A-Z0-9_]+$/.test(value)?value:"ERROR";console.error("RESTORE_CHECK_FAILED "+JSON.stringify({stage,code,...checks}));process.exitCode=1;});
