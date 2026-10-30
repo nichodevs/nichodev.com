@@ -29,6 +29,9 @@ jobs:
       - name: Testar o validador de módulos e publicação
         run: npm test
 
+      - name: Testar contas, privacidade e persistência da comunidade
+        run: npm run test:community
+
       - name: Validar site e arquivos do deploy
         run: npm run check
 
@@ -63,5 +66,11 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: nichodev-community-preview
-          path: prototypes/community/
+          path: |
+            prototypes/community/
+            community/
+            public/
+            package.json
+            package-lock.json
+            scripts/preview-community.js
           retention-days: 14
