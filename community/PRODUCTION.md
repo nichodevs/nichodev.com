@@ -2,6 +2,8 @@
 
 Integrar este documento, a entrada e o workflow não publica a comunidade, não altera a Hostinger e não copia o banco. `server.js`, `npm start`, `.hostinger/site.json` e a entrada da homologação permanecem iguais. A aplicação pública continua estática até uma publicação expressamente autorizada.
 
+O bootstrap da homologação continua no mesmo caminho e com a configuração atual. Ele recusa as origens `nichodev.com` e `www.nichodev.com`: esses alvos exigem a nova entrada protegida, mesmo se a variável de liberação estiver definida.
+
 ## Pacote único e validado
 
 Execute **Preparar pacote da comunidade** (`community-package.yml`) manualmente na `main`, escolhendo `homologacao`. O workflow executa o CI completo do mesmo commit e gera ZIP, SHA-256 e `RELEASE.txt`. Não envia arquivos à hospedagem. O ZIP contém apenas arquivos versionados; o verificador bloqueia caminhos e formatos comuns de bancos, dados locais e credenciais. Isso não substitui revisar os arquivos versionados para evitar segredos em outros formatos. Confira o hash antes de enviar. O artefato da prévia do CI não substitui este pacote completo.

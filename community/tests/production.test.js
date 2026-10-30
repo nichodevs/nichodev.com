@@ -44,3 +44,11 @@ test("entrada de produção fecha antes de abrir o servidor ou inicializar o ban
   assert.notEqual(result.status,0);assert.match(result.stderr,/não foi liberada explicitamente/);
   assert.equal(fs.existsSync(data),false);
 });
+test("entrada de homologação não contorna a liberação do domínio público",t=>{
+  const {data}=fixture(t);
+  for(const host of ["nichodev.com","www.nichodev.com"]){
+    const result=spawnSync(process.execPath,[path.resolve(__dirname,"../server.js")],{env:{...process.env,NODE_ENV:"production",APP_ORIGIN:"https://"+host,COMMUNITY_DATA_DIR:data,COMMUNITY_PUBLIC_RELEASE:"enabled"},encoding:"utf8",timeout:10000,windowsHide:true});
+    assert.notEqual(result.status,0);assert.match(result.stderr,/entrada de produção protegida/);
+    assert.equal(fs.existsSync(data),false);
+  }
+});

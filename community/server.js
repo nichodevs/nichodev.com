@@ -7,6 +7,7 @@ function start({publicRelease=false}={}){
   const port=Number(process.env.PORT||3200);
   const origin=release?.origin||process.env.APP_ORIGIN||(!production?"http://127.0.0.1:"+port:"");
   if(!origin||new URL(origin).origin!==origin||(production&&!origin.startsWith("https://")))throw new Error("Configure APP_ORIGIN com a origem HTTPS exata, sem barra final.");
+  if(!publicRelease&&["nichodev.com","www.nichodev.com"].includes(new URL(origin).hostname))throw new Error("Use a entrada de produção protegida para o domínio público.");
   if(production&&!process.env.COMMUNITY_DATA_DIR)throw new Error("Configure COMMUNITY_DATA_DIR para um diretório persistente fora dos arquivos públicos.");
   const data=release?.data||path.resolve(process.env.COMMUNITY_DATA_DIR||path.join(__dirname,"../.data/community"));
   const publicRoots=[path.join(__dirname,"../public"),path.join(__dirname,"../prototypes/community")];
