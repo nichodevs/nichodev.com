@@ -13,11 +13,10 @@ function productionConfig(env=process.env,home=os.homedir()){
   if(!data||!path.isAbsolute(data)||path.resolve(data)!==expected)throw new Error("Use a pasta privada própria de nichodev.com, separada da homologação.");
   if(fs.existsSync(data)&&fs.realpathSync(data)!==expected)throw new Error("A pasta de produção não pode apontar para outro diretório.");
   const proxies=(env.TRUSTED_PROXY||"").split(",").map(value=>value.trim());
-  const unix=env.TRUSTED_PROXY==="unix"&&String(env.LSNODE_SOCKET||"").startsWith("/usr/local/lsws/extapp-sock/nichodev.com:");
-  if(!unix&&!proxies.every(value=>{
+  if(!proxies.every(value=>{
     const [ip,prefix,...extra]=value.split("/"),version=isIP(ip);
     return version&&!extra.length&&(prefix===undefined||(/^\d+$/.test(prefix)&&Number(prefix)>0&&Number(prefix)<=(version===4?32:128)));
-  }))throw new Error("Configure TRUSTED_PROXY com IPs/CIDRs verificados ou unix no socket Hostinger do domínio.");
+  }))throw new Error("Configure TRUSTED_PROXY com IPs/CIDRs verificados.");
   return {origin:env.APP_ORIGIN,data};
 }
 module.exports={productionConfig};
