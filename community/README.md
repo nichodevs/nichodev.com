@@ -40,11 +40,25 @@ Para a configuração local padrão, a pasta é `.data/community` na raiz. No Li
 
 O backup usa a API nativa do SQLite, preservando consistência com o banco aberto. Mantenha backups fora das pastas públicas, com acesso restrito, e nunca os envie como artefatos do CI. Para restaurar, pare o processo e substitua a pasta de dados por uma pasta contendo somente o backup renomeado `community.sqlite`; não misture arquivos WAL/SHM antigos. Guarde a pasta anterior até verificar a restauração.
 
-## Homologação hospedada na Hostinger
+## Homologação online na Hostinger
+
+[Abrir a comunidade em homologação](https://cornflowerblue-lapwing-604910.hostingersite.com/comunidade/).
+
+A aplicação da comunidade é separada do nichodev.com. O alvo está registrado em [`.hostinger/site.json`](../.hostinger/site.json); esse arquivo aponta exclusivamente para a homologação Node.js. O site principal mantém seu fluxo próprio de publicação por SFTP.
+
+O código publicado corresponde ao commit `729687b79d77860f21b8051eede09f87b7794c79`. Foram usados Express, Node.js 24, o bootstrap `scripts/preview-community.js` e `npm run check` antes da publicação. A entrega usa um ZIP dos arquivos versionados do GitHub, sem banco, credenciais ou `node_modules`. O deploy automático da comunidade a cada push não foi ativado.
+
+Os dados ficam em `/home/USUARIO/domains/DOMINIO/community-private`, fora de `public_html` e de `hbuilds/versions`, com diretório privado de permissão `700`. Cadastro, recuperação de senha, cookies seguros e autorização de áudio foram verificados online. A conta técnica, seu preset e os bytes do WAV permaneceram disponíveis após reiniciar a aplicação e após publicar novamente.
+
+O backup consistente `latest.sqlite` fica na mesma pasta privada. O primeiro arquivo passou no `PRAGMA quick_check`, e o comando já disponível em `community/manage.js` está agendado para **03:00 UTC / 00:00 de Brasília, diariamente**. Ele mantém a última cópia no mesmo plano: não substitui retenção de versões nem uma cópia externa. A promoção de administrador é uma execução pontual do CLI, nunca uma concessão recorrente. A chave SSH temporária usada na configuração foi revogada após o uso.
+
+As contas da prévia local e da hospedagem são separadas. Para atualizar a homologação, use um commit validado, mantenha as variáveis e o diretório privado existentes, publique na mesma aplicação e confira novamente os dados. Não substitua a pasta de dados pelo conteúdo do pacote.
+
+## Preparar outra instalação Node.js
 
 Preparar uma aplicação Node.js separada requer autorização para a publicação e acesso ao painel de hospedagem. Nenhuma configuração da Hostinger é alterada ao executar estes comandos localmente.
 
-- Entrada: `community/server.js`; instalação: `npm ci --omit=dev`; comando: `npm run start:community`.
+- Entrada usada na Hostinger: `scripts/preview-community.js`; instalação: `npm ci --omit=dev`; comando: `npm run start:community`.
 - `NODE_ENV=production`.
 - `APP_ORIGIN=https://comunidade-homologacao.seu-dominio` com a origem exata, sem barra final. A proteção de origem depende dessa configuração.
 - `COMMUNITY_DATA_DIR` obrigatório: caminho absoluto persistente e privado, fora de `public/`, `prototypes/community/` e da pasta substituída em cada deploy. Confirmar com o provedor que ela sobrevive a reinícios e novas publicações.
