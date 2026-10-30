@@ -114,3 +114,8 @@ Os testes da API usam bancos isolados e verificam confirmação, senhas/chaves, 
 A [política de privacidade](https://nichodev.com/comunidade/privacy.html) e as [regras de publicação](https://nichodev.com/comunidade/rules.html) ficam no cadastro e no rodapé. Em configurações, o titular pode exportar seus dados e excluir a conta com senha e confirmação do usuário. O último administrador precisa de um sucessor antes de excluir a própria conta. Solicitações de privacidade e moderação usam development@nichodev.com.
 
 O primeiro administrador de produção é cadastrado pelo responsável com convite privado e confirmação da chave de recuperação. A conta não é importada da homologação. Depois da confirmação, remova as variáveis do convite para liberar cadastros comuns. Nunca registre senha, chave ou convite no Git ou nos logs.
+
+
+## Segurança e proteção contra abuso
+
+Consulte [SECURITY.md](SECURITY.md) para os limites persistentes entre workers/reinícios, orçamento de autenticação, limites de leitura de áudio, HEAD/Range, consulta de novas senhas por prefixo de hash e confirmação administrativa a cada dez minutos. O código mantém as contas existentes e não exige migração para Supabase. Cadastros e trocas de senha exigem acesso ao serviço Pwned Passwords; login existente não depende dele.

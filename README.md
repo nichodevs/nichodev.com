@@ -99,3 +99,6 @@ Produção e [homologação](https://cornflowerblue-lapwing-604910.hostingersite
 **VST3:** o workflow [Compilar plugin de áudio](.github/workflows/plugin.yml) compila e testa Windows/Linux em PRs e pushes para `main` que alterem `plugin/**` ou o próprio workflow; arquivos Markdown são excluídos dos gatilhos. Na `main`, os dois builds aprovados permitem publicar a versão declarada no CMake; um release já publicado é preservado. Mudanças apenas documentais mantêm as versões dos binários.
 
 Os ZIPs dos releases são os downloads permanentes. Os artefatos das Actions expiram após 14 dias. Veja o [processo de release](plugin/RELEASING.md), o [guia do Deluxe 65](plugin/DELUXE_65.md) e o [diagnóstico em DAWs](plugin/TROUBLESHOOTING.md).
+
+
+Os limites compartilhados, consultas de senhas comprometidas, proteção administrativa e retenção de backups estão descritos em [community/SECURITY.md](community/SECURITY.md).

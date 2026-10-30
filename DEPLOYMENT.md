@@ -31,3 +31,8 @@ O workflow `deploy.yml` continua versionado para referência e eventual retorno 
 Uma volta à entrada estática `server.js` não exige apagar a base da comunidade. Faça backup, preserve o diretório privado, confira a versão e valide `/health`, ferramentas e ausência de novos cadastros. A agenda de backup permanece separada da entrada web. Nunca restaure automaticamente o banco da homologação em produção.
 
 Os VST3 seguem seu [processo de release](plugin/RELEASING.md): os ZIPs são anexados ao GitHub Releases, sem envio à Hostinger.
+
+
+## Atualizações de segurança da comunidade
+
+Antes de publicar alterações de autenticação, siga [community/SECURITY.md](community/SECURITY.md): backup, homologação, consulta externa de novas senhas, schema adicional e teste de retorno. Publique interface e backend juntos. Confira HSTS nas páginas/APIs HTTPS e HEAD/Range na mídia; não teste exaustão em produção.

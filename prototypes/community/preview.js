@@ -9,14 +9,33 @@
   let user=null,items=[],mine=[],favorites=new Set(),presetFilter="todos",galleryFilter="todos",pending=null,accountMode="login";
   let keyFlow="",keyValue="",keyUsername="",passwordMode="recover",draftPreset=null,editing=null,mediaId=null,detail=null,detailKey="",deleting=null,audioContext=null,audioTimer=null;
   const status=message=>{$("pageStatus").textContent=message;};
-  async function request(path,{method="GET",body,raw}={}){
+  async function request(path,{method="GET",body,raw}={},reauthenticated=false){
     const response=await fetch(api+path,{method,credentials:"same-origin",headers:{"X-Nichodev-Client":"1",...(path==="/register"&&bootstrapInvite?{"X-Nichodev-Bootstrap":bootstrapInvite}:{}),...(body?{"Content-Type":"application/json"}:{}),...(raw?{"Content-Type":"audio/wav"}:{})},...(body?{body:JSON.stringify(body)}:{}),...(raw?{body:raw}:{})});
     const data=await response.json().catch(()=>({}));
+    if(data.code==="ADMIN_REAUTH_REQUIRED"&&!reauthenticated){await confirmAdminPassword();return request(path,{method,body,raw},true);}
     if(!response.ok){const error=new Error(data.error||"Não foi possível concluir. Tente novamente.");error.status=response.status;throw error;}
     return data;
   }
   const closeDialogs=()=>document.querySelectorAll("dialog[open]").forEach(dialog=>dialog.close());
   const openDialog=id=>{closeDialogs();$(id).showModal();};
+  let adminConfirmation=null,confirmAdmin=null,cancelAdmin=null;
+  function confirmAdminPassword(){
+    if(adminConfirmation)return adminConfirmation;
+    adminConfirmation=new Promise((resolve,reject)=>{confirmAdmin=resolve;cancelAdmin=reject;});
+    $("adminReauthForm").reset();$("adminReauthError").textContent="";openDialog("adminReauthDialog");
+    return adminConfirmation.finally(()=>{adminConfirmation=null;confirmAdmin=null;cancelAdmin=null;});
+  }
+  $("adminReauthForm").addEventListener("submit",event=>{
+    event.preventDefault();const form=event.currentTarget;
+    submit(form,"adminReauthError",async()=>{
+      await request("/admin/reauth",{method:"POST",body:{current:$("adminReauthPassword").value}});
+      confirmAdmin();cancelAdmin=null;$("adminReauthDialog").close();
+    }).finally(()=>{$("adminReauthPassword").value="";});
+  });
+  $("adminReauthDialog").addEventListener("close",()=>{
+    $("adminReauthPassword").value="";
+    if(cancelAdmin){cancelAdmin(new Error("Confirmação da administração cancelada."));navigate("estudio");}
+  });
   function navigate(view){history.pushState(null,"","#"+view);route();}
   function download(filename,value,type="application/json"){
     const url=URL.createObjectURL(new Blob([value],{type})),link=document.createElement("a");link.href=url;link.download=filename;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);

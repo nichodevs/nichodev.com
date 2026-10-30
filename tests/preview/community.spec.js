@@ -203,6 +203,14 @@ test("painel real exige admin e preserva foco ao classificar avaliação",async(
   const select=page.locator("#feedbackList select");await select.focus();await select.selectOption("analise");await expect(select).toBeEnabled();await expect(select).toBeFocused();expect(community.app.locals.db.prepare("SELECT status FROM feedback").get().status).toBe("analise");
 });
 
+test("admin confirma senha recente e pode cancelar sem liberar o painel",async({page,community})=>{
+  const call=community.client();await account(call,"admin_recente");community.app.locals.db.exec("UPDATE users SET admin=1");await login(page,"admin_recente");community.app.locals.db.exec("UPDATE session_auth SET authenticated=0");
+  await page.locator("#adminLink").click();await expect(page.locator("#adminReauthDialog")).toBeVisible();
+  await page.locator("#adminReauthPassword").fill(phrase+"errada");await page.locator('#adminReauthForm button[type="submit"]').click();await expect(page.locator("#adminReauthError")).toContainText("não confere");await expect(page.locator("#adminReauthPassword")).toHaveValue("");
+  await page.getByRole("button",{name:"Cancelar confirmação administrativa"}).click();await expect(page.locator("#adminReauthDialog")).not.toBeVisible();expect(community.app.locals.db.prepare("SELECT MAX(authenticated) AS authenticated FROM session_auth").get().authenticated).toBe(0);
+  await page.locator("#adminLink").click();await expect(page.locator("#adminReauthDialog")).toBeVisible();await page.locator("#adminReauthPassword").fill(phrase);await page.locator('#adminReauthForm button[type="submit"]').click();await expect(page.locator("#adminReauthDialog")).not.toBeVisible();await expect(page.locator("#adminReauthPassword")).toHaveValue("");expect(community.app.locals.db.prepare("SELECT MAX(authenticated) AS authenticated FROM session_auth").get().authenticated).toBeGreaterThan(0);
+});
+
 test("exemplo baixado usa andamento e síntese reais e importa no MIXMASTER",async({page,context,community,browserName})=>{
   test.skip(browserName==="webkit"&&process.platform==="win32","O WebKit do Playwright para Windows não oferece Web Audio; o CI executa este cenário no Linux.");
   await page.locator('#exampleCards [data-action=example]').click();const buffer=await downloadBytes(page,"#downloadExample"),file=JSON.parse(buffer);expect(file.project.bpm).toBe(120);expect(file.assets).toEqual([]);

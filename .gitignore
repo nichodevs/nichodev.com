@@ -4,6 +4,19 @@ test-results/
 build/
 
 .data/
+.env
+.env.*
+*.pem
+*.key
+id_ed25519*
+id_rsa*
+rclone.conf
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
 
 /server-pages/
 /.server-pages-*/
