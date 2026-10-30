@@ -1,6 +1,7 @@
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
+const http = require("node:http");
 const os = require("node:os");
 const path = require("node:path");
 const {DatabaseSync} = require("node:sqlite");
@@ -46,7 +47,7 @@ async function main() {
   const dir=fs.mkdtempSync(path.join(privateDir,"restore-check-"));
   fs.chmodSync(dir,0o700);
   const snapshot=path.join(dir,"snapshot.sqlite"),restored=path.join(dir,"community.sqlite");
-  let reference,db,app,server,result;
+  let reference,db,app,server,socketDir,result;
   try {
     stage="copy";
     fs.copyFileSync(source,snapshot);fs.chmodSync(snapshot,0o600);
@@ -63,13 +64,25 @@ async function main() {
     stage="application-start";
     const {createCommunityApp,validateWav}=require(path.join(site,"hbuilds/current/nodejs/community/app.js"));
     app=createCommunityApp({dbPath:restored,origin:"http://127.0.0.1"});
-    server=await new Promise((resolve,reject)=>{const listener=app.listen(0,"127.0.0.1",()=>resolve(listener));listener.once("error",reject);});
+    if(process.platform!=="win32"){
+      socketDir=fs.mkdtempSync(path.join(os.tmpdir(),"nichodev-restore-socket-"));fs.chmodSync(socketDir,0o700);
+    }
+    const socketPath=socketDir?path.join(socketDir,"http.sock"):null;
+    const listenArgs=socketPath?[socketPath]:[0,"127.0.0.1"];
+    server=await new Promise((resolve,reject)=>{const listener=app.listen(...listenArgs,()=>resolve(listener));listener.once("error",reject);});
     const address=server.address();
-    assert.equal(address.address,"127.0.0.1","O verificador deve escutar somente no loopback.");
-    checks.loopbackPort=address.port;
-    const origin="http://127.0.0.1:"+address.port;
+    if(socketPath){assert.equal(address,socketPath);fs.chmodSync(socketPath,0o600);}
+    else assert.equal(address.address,"127.0.0.1","O verificador deve escutar somente no loopback.");
+    const origin="http://127.0.0.1"+(socketPath?"":":"+address.port);
     app.locals.origin=origin;db=app.locals.db;
-    const request=(route,options={})=>fetch(origin+route,{...options,signal:AbortSignal.timeout(10000)});
+    const request=(route,options={})=>new Promise((resolve,reject)=>{
+      const target=socketPath?{socketPath}:{hostname:"127.0.0.1",port:address.port};
+      const req=http.request({...target,path:route,method:options.method||"GET",headers:options.headers,timeout:10000},response=>{
+        const chunks=[];response.on("data",chunk=>chunks.push(chunk));response.on("error",reject);
+        response.on("end",()=>resolve({status:response.statusCode,body:Buffer.concat(chunks)}));
+      });
+      req.on("error",reject);req.on("timeout",()=>req.destroy(new Error("Local request timed out")));req.end(options.body);
+    });
     stage="health-route";
     assert.equal((await request("/health")).status,200);
     stage="interface-route";
@@ -86,14 +99,14 @@ async function main() {
       db.prepare("INSERT INTO sessions VALUES(?,?,?)").run(sha(token),user.id,Date.now()+60000);
       const headers={cookie};
       const session=await request("/api/community/session",{headers});
-      assert.deepEqual((await session.json()).user,{id:user.id,username:db.prepare("SELECT username FROM users WHERE id=?").get(user.id).username,admin:Boolean(user.admin)});
+      assert.deepEqual(JSON.parse(session.body).user,{id:user.id,username:db.prepare("SELECT username FROM users WHERE id=?").get(user.id).username,admin:Boolean(user.admin)});
       assert.equal((await request("/api/community/me",{headers})).status,200);
       assert.equal((await request("/api/community/admin/feedback",{headers})).status,user.admin?200:403);
       for(const row of db.prepare("SELECT id,preset,visibility FROM creations WHERE owner=?").all(user.id)) {
         stage="creations";
         const response=await request("/api/community/creations/"+encodeURIComponent(row.id),{headers});
         assert.equal(response.status,200);
-        assert.deepEqual((await response.json()).item.preset,row.preset?JSON.parse(row.preset):null);
+        assert.deepEqual(JSON.parse(response.body).item.preset,row.preset?JSON.parse(row.preset):null);
         if(row.visibility==="private")assert.equal((await request("/api/community/creations/"+encodeURIComponent(row.id))).status,404);
         verifiedCreations++;
       }
@@ -101,7 +114,7 @@ async function main() {
         stage="audio";
         const response=await request("/api/community/media/"+encodeURIComponent(row.id),{headers});
         assert.equal(response.status,200);
-        const bytes=Buffer.from(await response.arrayBuffer());
+        const bytes=response.body;
         validateWav(bytes);assert.equal(sha(bytes),sha(row.audio));verifiedMedia++;
         if(!db.prepare("SELECT id FROM creations WHERE media_id=? AND visibility='public' AND status='approved'").get(row.id))assert.equal((await request("/api/community/media/"+encodeURIComponent(row.id))).status,404);
       }
@@ -109,14 +122,15 @@ async function main() {
     stage="disposable-write";
     const written=await request("/api/community/feedback",{method:"POST",headers:{"content-type":"application/json",origin,"x-nichodev-client":"1"},body:JSON.stringify({tool:"site",experience:"bem",comment:"Teste descartável de restauração"})});
     assert.equal(written.status,201);
-    const id=(await written.json()).id;
+    const id=JSON.parse(written.body).id;
     assert.ok(db.prepare("SELECT id FROM feedback WHERE id=?").get(id));
-    result={status:"ok",counts:expected.counts,accounts:users.length,creations:verifiedCreations,audio:verifiedMedia,integrity:true,foreignKeys:true,allRowsAndAudioIdentical:true,applicationReadWrite:true,privateAccess:true,loopbackOnly:true};
+    result={status:"ok",counts:expected.counts,accounts:users.length,creations:verifiedCreations,audio:verifiedMedia,integrity:true,foreignKeys:true,allRowsAndAudioIdentical:true,applicationReadWrite:true,privateAccess:true,localOnly:true,transport:socketPath?"private-unix-socket":"tcp-loopback"};
   } finally {
     const previousStage=stage;stage="cleanup";
     if(server)await new Promise(resolve=>server.close(resolve));
     if(app){app.locals.close();db=null;}
     if(db)db.close();if(reference)reference.close();
+    if(socketDir){assert.equal(path.dirname(fs.realpathSync(socketDir)),fs.realpathSync(os.tmpdir()));fs.rmSync(socketDir,{recursive:true,force:true});}
     assert.equal(path.dirname(fs.realpathSync(dir)),privateDir);
     fs.rmSync(dir,{recursive:true,force:true});
     checks.isolatedCopyRemoved=!fs.existsSync(dir);
