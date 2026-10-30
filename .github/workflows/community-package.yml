@@ -1,0 +1,64 @@
+name: Preparar pacote da comunidade
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Ambiente do pacote (não publica na Hostinger)
+        required: true
+        type: choice
+        options:
+          - homologacao
+          - producao
+
+permissions:
+  contents: read
+
+concurrency:
+  group: community-package-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: Exigir main e liberação para preparar produção
+        env:
+          REF: ${{ github.ref }}
+          TARGET: ${{ inputs.target }}
+          ENABLED: ${{ vars.COMMUNITY_PRODUCTION_RELEASES_ENABLED }}
+        run: node scripts/check-community-package.cjs
+
+  validate:
+    needs: guard
+    uses: ./.github/workflows/validate.yml
+
+  package:
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      - name: Empacotar somente o commit validado, sem dados privados
+        env:
+          TARGET: ${{ inputs.target }}
+          REF: ${{ github.ref }}
+          ENABLED: ${{ vars.COMMUNITY_PRODUCTION_RELEASES_ENABLED }}
+        run: |
+          node scripts/check-community-package.cjs --files
+          mkdir -p package
+          NAME="community-${TARGET}_$(date -u +%Y%m%d_%H%M%S).zip"
+          git archive --format=zip -o "package/$NAME" HEAD
+          (cd package && sha256sum "$NAME" > SHA256SUMS)
+          printf 'commit=%s\ntarget=%s\npublished=false\n' "$GITHUB_SHA" "$TARGET" > package/RELEASE.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: community-${{ inputs.target }}-${{ github.sha }}
+          path: package/
+          retention-days: 14

@@ -1,13 +1,15 @@
 const path=require("node:path");
 const {createCommunityApp}=require("./app");
 
-function start(){
+function start({publicRelease=false}={}){
+  const release=publicRelease?require("./production-config").productionConfig():null;
   const production=process.env.NODE_ENV==="production";
   const port=Number(process.env.PORT||3200);
-  const origin=process.env.APP_ORIGIN||(!production?"http://127.0.0.1:"+port:"");
+  const origin=release?.origin||process.env.APP_ORIGIN||(!production?"http://127.0.0.1:"+port:"");
   if(!origin||new URL(origin).origin!==origin||(production&&!origin.startsWith("https://")))throw new Error("Configure APP_ORIGIN com a origem HTTPS exata, sem barra final.");
+  if(!publicRelease&&["nichodev.com","www.nichodev.com"].includes(new URL(origin).hostname))throw new Error("Use a entrada de produção protegida para o domínio público.");
   if(production&&!process.env.COMMUNITY_DATA_DIR)throw new Error("Configure COMMUNITY_DATA_DIR para um diretório persistente fora dos arquivos públicos.");
-  const data=path.resolve(process.env.COMMUNITY_DATA_DIR||path.join(__dirname,"../.data/community"));
+  const data=release?.data||path.resolve(process.env.COMMUNITY_DATA_DIR||path.join(__dirname,"../.data/community"));
   const publicRoots=[path.join(__dirname,"../public"),path.join(__dirname,"../prototypes/community")];
   if(publicRoots.some(root=>{const relative=path.relative(root,data);return !relative||(!relative.startsWith("..")&&!path.isAbsolute(relative));}))throw new Error("O diretório de dados deve ficar fora das pastas públicas.");
   const app=createCommunityApp({dbPath:path.join(data,"community.sqlite"),origin,secure:production,trustedProxy:process.env.TRUSTED_PROXY||false});
