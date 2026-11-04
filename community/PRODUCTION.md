@@ -91,6 +91,6 @@ Confira todas as páginas, áudio, scripts e o redirecionamento de `www` com cam
 No GitHub, grafo de dependências e Dependabot alerts habilitados. No R2 privado, Bucket Lock `community-backups-retention-30-days` habilitado em todo o bucket, com 30 dias, mantendo o lifecycle de 30 dias. Os reforços de código e as condições de publicação estão em [SECURITY.md](SECURITY.md); sua integração no GitHub não significa publicação automática na Hostinger.
 
 
-## Central administrativa (em preparação)
+## Central administrativa publicada
 
-Consulte [ADMIN.md](ADMIN.md) para módulos, papéis, MFA obrigatório, migração, métricas, recibos operacionais e riscos de retorno. Interface e backend devem ser publicados juntos; esta alteração não publica na Hostinger. O código antigo não aplica suspensão, papéis ou MFA: não retornar a ele com a comunidade aberta.
+Consulte [ADMIN.md](ADMIN.md) para módulos, papéis, MFA obrigatório, migração, métricas, recibos operacionais e riscos de retorno. Interface e backend foram publicados juntos em 04/11/2026, na homologação e depois em produção. O registro dos builds, backups e validações está em [ADMIN.md](ADMIN.md#publicação-verificada-em-04112026). Novas alterações continuam exigindo publicação explícita. O código antigo não aplica suspensão, papéis ou MFA: não retornar a ele com a comunidade aberta.
