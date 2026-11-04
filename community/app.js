@@ -47,11 +47,12 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   const cookieName=secure?"__Host-nichodev":"nichodev_local";
   app.disable("x-powered-by");if(trustedProxy)app.set("trust proxy",trustedProxy);
   app.locals.origin=origin;
+  let measure=(req,res,next)=>next();app.use("/api/community",(req,res,next)=>measure(req,res,next));
   const now=()=>Date.now();
   const get=(sql,...params)=>db.prepare(sql).get(...params);
   const all=(sql,...params)=>db.prepare(sql).all(...params);
   const run=(sql,...params)=>db.prepare(sql).run(...params);
-  const clean=()=>{const time=now();run("DELETE FROM sessions WHERE expires<?",time);run("DELETE FROM users WHERE active=0 AND confirmation_expiry<?",time);run("DELETE FROM limits WHERE expires<?",time);run("DELETE FROM feedback WHERE created<?",time-90*86400000);run("DELETE FROM media WHERE created<? AND id NOT IN (SELECT media_id FROM creations WHERE media_id IS NOT NULL)",time-86400000);};
+  const clean=()=>{const time=now();run("DELETE FROM sessions WHERE expires<?",time);run("DELETE FROM users WHERE active=0 AND confirmation_expiry<?",time);run("DELETE FROM limits WHERE expires<?",time);run("DELETE FROM feedback WHERE created<?",time-90*86400000);run("DELETE FROM daily_activity WHERE day<?",new Date(time-90*86400000).toISOString().slice(0,10));run("DELETE FROM preset_usage WHERE day<?",new Date(time-90*86400000).toISOString().slice(0,10));run("DELETE FROM notices WHERE created<?",time-90*86400000);run("DELETE FROM admin_audit WHERE created<?",time-365*86400000);run("DELETE FROM moderation WHERE created<?",time-365*86400000);run("DELETE FROM reports WHERE created<?",time-180*86400000);run("DELETE FROM recovery_requests WHERE created<?",time-30*86400000);run("UPDATE recovery_requests SET status='expired' WHERE status IN ('pending','approved') AND expires<=?",time);run("DELETE FROM media WHERE created<? AND id NOT IN (SELECT media_id FROM creations WHERE media_id IS NOT NULL)",time-86400000);};
   clean();
   const timer=setInterval(()=>{try{clean();}catch{console.error("Não foi possível executar a limpeza periódica da comunidade.");}},600000);timer.unref();
   app.locals.close=()=>{clearInterval(timer);db.close();};
@@ -92,15 +93,15 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   }
   function actor(req){
     const token=cookies(req)[cookieName];
-    return token?get("SELECT u.id,u.username,u.admin,a.authenticated FROM users u JOIN sessions s ON s.user_id=u.id LEFT JOIN session_auth a ON a.token=s.token WHERE s.token=? AND s.expires>? AND u.active=1",digest(token),now()):null;
+    return token?get("SELECT u.id,u.username,u.admin,a.authenticated FROM users u JOIN sessions s ON s.user_id=u.id LEFT JOIN session_auth a ON a.token=s.token WHERE s.token=? AND s.expires>? AND u.active=1 AND NOT EXISTS(SELECT 1 FROM user_controls x WHERE x.user_id=u.id AND x.suspended=1)",digest(token),now()):null;
   }
-  function auth(req){const user=actor(req);if(!user)fail(401,"Entre na sua conta para continuar.");return user;}
-  function admin(req){
+  function auth(req){const user=actor(req);if(!user)fail(401,"Entre na sua conta para continuar.");ops.touch(user);return user;}
+  function passwordAdmin(req){
     const user=auth(req);if(!user.admin)fail(403,"Acesso restrito à administração.");
     if(!user.authenticated||now()-user.authenticated>=10*60000)throw Object.assign(new Error("Confirme sua senha para continuar na administração."),{status:403,code:"ADMIN_REAUTH_REQUIRED"});
     return user;
   }
-  const safeUser=user=>user?{id:user.id,username:user.username,admin:Boolean(user.admin)}:null;
+  const safeUser=user=>user?{id:user.id,username:user.username,admin:Boolean(user.admin),role:ops.role(user)}:null;
   const api=express.Router();
   app.use((req,res,next)=>{
     if(secure)res.set("Strict-Transport-Security","max-age=31536000");
@@ -120,7 +121,9 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   });
   api.use(express.json({limit:"32kb",inflate:false}));
   api.use((req,res,next)=>{if(!["GET","HEAD"].includes(req.method)&&req.path!=="/media"&&(!req.body||typeof req.body!=="object"||Array.isArray(req.body)))return next(Object.assign(new Error("Envie os campos em JSON."),{status:400}));next();});
-  api.get("/session",(req,res)=>res.json({user:safeUser(actor(req)),publicRelease}));
+  const ops=require("./admin").installAdmin({api,app,db,dbPath,auth,actor,passwordAdmin,rate,now,get,all,run,fail,text,select,digest,random,uuid,cookies,cookieName,verify,password,newPassword,hash,item,creation,visible,guard});
+  measure=ops.measure;
+  api.get("/session",(req,res)=>{const user=actor(req);ops.touch(user);res.json({user:safeUser(user),publicRelease});});
   api.get("/operations/proxy",(req,res)=>{
     if(!probeToken||!crypto.timingSafeEqual(Buffer.from(digest(req.get("X-Nichodev-Probe")||""),"hex"),Buffer.from(digest(probeToken),"hex")))fail(404,"Recurso não encontrado.");
     res.json({socketAddress:req.socket.remoteAddress??null,forwarded:req.get("x-forwarded-for")||null,selectedIP:req.ip??null});
@@ -129,7 +132,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
     const user=auth(req);rate(req,"export",5,3600000);
     const record=get("SELECT username,created FROM users WHERE id=?",user.id);
     const palette=get("SELECT colors FROM user_palettes WHERE user_id=?",user.id);
-    res.attachment("nichodev-meus-dados.json").json({account:record,palette:palette?JSON.parse(palette.colors):null,creations:all("SELECT c.*,u.username FROM creations c JOIN users u ON u.id=c.owner WHERE c.owner=?",user.id).map(item),favorites:all("SELECT creation_id FROM favorites WHERE user_id=?",user.id).map(row=>row.creation_id),audio:all("SELECT id FROM media WHERE owner=?",user.id).map(row=>({id:row.id,url:app.locals.origin+"/api/community/media/"+row.id})),audioNote:"Os links de áudio exigem sua sessão ativa; baixe os WAV antes de excluir a conta."});
+    res.attachment("nichodev-meus-dados.json").json({account:record,controls:ops.controls(user.id),activity:all("SELECT day FROM daily_activity WHERE user_id=? ORDER BY day",user.id),notifications:all("SELECT message,created FROM notices WHERE user_id=? ORDER BY id",user.id),moderation:all("SELECT decision,reason,created FROM moderation WHERE owner=? ORDER BY id",user.id),reports:all("SELECT creation_id,reason,status,created FROM reports WHERE reporter=? ORDER BY id",user.id),recoveryRequests:all("SELECT id,status,reason,created,expires FROM recovery_requests WHERE user_id=? ORDER BY created",user.id),palette:palette?JSON.parse(palette.colors):null,creations:all("SELECT c.*,u.username FROM creations c JOIN users u ON u.id=c.owner WHERE c.owner=?",user.id).map(item),favorites:all("SELECT creation_id FROM favorites WHERE user_id=?",user.id).map(row=>row.creation_id),audio:all("SELECT id FROM media WHERE owner=?",user.id).map(row=>({id:row.id,url:app.locals.origin+"/api/community/media/"+row.id})),audioNote:"Os links de áudio exigem sua sessão ativa; baixe os WAV antes de excluir a conta."});
   });
   api.delete("/account",async(req,res)=>{
     const user=auth(req);rate(req,"delete-account",5,3600000);
@@ -137,8 +140,8 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
     const record=get("SELECT password FROM users WHERE id=?",user.id);
     if(!await verify(password(req.body.password),record.password))fail(400,"A senha atual não confere.");
     transaction(db,()=>{
-      if(get("SELECT password FROM users WHERE id=?",user.id)?.password!==record.password)fail(409,"A conta mudou. Entre novamente.");
-      if(user.admin&&!get("SELECT id FROM users WHERE admin=1 AND active=1 AND id<>?",user.id))fail(409,"Designe outro administrador antes de excluir esta conta.");
+      auth(req);if(get("SELECT password FROM users WHERE id=?",user.id)?.password!==record.password)fail(409,"A conta mudou. Entre novamente.");
+      if((ops.role(user)==="owner"&&!get("SELECT u.id FROM users u JOIN user_controls x ON x.user_id=u.id WHERE x.role='owner' AND u.active=1 AND x.suspended=0 AND u.id<>?",user.id))||(user.admin&&!get("SELECT id FROM users WHERE admin=1 AND active=1 AND id<>?",user.id)))fail(409,"Designe outro administrador antes de excluir esta conta.");
       run("DELETE FROM favorites WHERE creation_id IN (SELECT id FROM creations WHERE owner=?)",user.id);
       run("DELETE FROM creations WHERE owner=?",user.id);run("DELETE FROM media WHERE owner=?",user.id);
       run("DELETE FROM users WHERE id=?",user.id);
@@ -157,6 +160,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   });
   api.post("/register",async(req,res)=>{
     rate(req,"register",6,3600000);
+    if(!ops.settings().value.registrationsOpen)fail(503,"Os cadastros estão temporariamente fechados.");
     const name=username(req.body.username),pass=password(req.body.password);
     if(bootstrapToken&&(name!==bootstrapUser||!crypto.timingSafeEqual(Buffer.from(digest(req.get("X-Nichodev-Bootstrap")||""),"hex"),Buffer.from(digest(bootstrapToken),"hex"))))fail(403,"Os cadastros estão temporariamente restritos à configuração da administração.");
     if(["nichodev","sistema"].includes(name)||get("SELECT id FROM users WHERE username=?",name))fail(409,"Esse usuário não está disponível.");
@@ -164,6 +168,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
     const invitedAdmin=Boolean(bootstrapToken&&name===bootstrapUser&&!get("SELECT id FROM users WHERE admin=1 AND active=1"));
     try{run("INSERT INTO users(id,username,password,recovery,confirmation,confirmation_expiry,created,admin) VALUES(?,?,?,?,?,?,?,?)",id,name,passHash,digest(key),digest(confirmation),now()+1800000,now(),invitedAdmin?1:0);}
     catch(error){if(error.code?.startsWith("ERR_SQLITE"))fail(409,"Esse usuário não está disponível.");throw error;}
+    if(invitedAdmin)run("INSERT INTO user_controls(user_id,role) VALUES(?,?)",id,"owner");
     res.cookie(cookieName+"_pending",confirmation,{...cookieOptions,maxAge:1800000});
     res.status(201).json({recoveryKey:key,username:name});
   });
@@ -179,11 +184,11 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   });
   api.post("/login",async(req,res)=>{
     rate(req,"login",15);
-    const name=username(req.body.username),pass=password(req.body.password),user=get("SELECT * FROM users WHERE username=? AND active=1",name);
+    const name=username(req.body.username),pass=password(req.body.password),user=get("SELECT * FROM users WHERE username=? AND active=1 AND NOT EXISTS(SELECT 1 FROM user_controls x WHERE x.user_id=users.id AND x.suspended=1)",name);
     guard.consume(["account",name,"login"],30,60000);
     const valid=await verify(pass,user?.password||("0".repeat(32)+":"+"0".repeat(128)));
-    if(!user||!valid)fail(401,"Usuário ou senha inválidos.");
-    transaction(db,()=>{if(get("SELECT password FROM users WHERE id=? AND active=1",user.id)?.password!==user.password)fail(401,"Usuário ou senha inválidos.");const old=cookies(req)[cookieName];if(old)run("DELETE FROM sessions WHERE token=?",digest(old));setSession(res,user.id);});
+    if(!user||!valid||ops.controls(user.id).suspended)fail(401,"Usuário ou senha inválidos.");
+    transaction(db,()=>{if(ops.controls(user.id).suspended||get("SELECT password FROM users WHERE id=? AND active=1",user.id)?.password!==user.password)fail(401,"Usuário ou senha inválidos.");const old=cookies(req)[cookieName];if(old)run("DELETE FROM sessions WHERE token=?",digest(old));setSession(res,user.id);});
     res.json({user:safeUser(user)});
   });
   api.post("/logout",(req,res)=>{
@@ -193,12 +198,12 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   api.post("/recover",async(req,res)=>{
     rate(req,"recover",8);
     const name=username(req.body.username),key=text(req.body.recoveryKey,100),pass=password(req.body.password);
-    const user=get("SELECT * FROM users WHERE username=? AND active=1",name);
+    const user=get("SELECT * FROM users WHERE username=? AND active=1 AND NOT EXISTS(SELECT 1 FROM user_controls x WHERE x.user_id=users.id AND x.suspended=1)",name);
     guard.consume(["account",name,"recover"],10,60000);
-    if(!user||digest(key)!==user.recovery)fail(400,"Confira o usuário e a chave de recuperação.");
+    if(!user||ops.controls(user.id).suspended||digest(key)!==user.recovery)fail(400,"Confira o usuário e a chave de recuperação.");
     const passHash=await hash(await newPassword(pass)),nextKey=random();
     transaction(db,()=>{
-      const result=run("UPDATE users SET password=?,recovery=? WHERE id=? AND recovery=?",passHash,digest(nextKey),user.id,user.recovery);
+      const result=run("UPDATE users SET password=?,recovery=? WHERE id=? AND recovery=? AND NOT EXISTS(SELECT 1 FROM user_controls WHERE user_id=users.id AND suspended=1)",passHash,digest(nextKey),user.id,user.recovery);
       if(result.changes!==1)fail(400,"Confira o usuário e a chave de recuperação.");
       run("DELETE FROM sessions WHERE user_id=?",user.id);
     });
@@ -209,14 +214,14 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
     const current=password(req.body.current),record=get("SELECT password FROM users WHERE id=?",user.id);
     if(!await verify(current,record.password))fail(400,"A senha atual não confere.");
     const passHash=await hash(await newPassword(password(req.body.password)));
-    transaction(db,()=>{const result=run("UPDATE users SET password=? WHERE id=? AND password=?",passHash,user.id,record.password);if(result.changes!==1)fail(409,"A conta mudou. Entre novamente.");run("DELETE FROM sessions WHERE user_id=?",user.id);});
+    transaction(db,()=>{auth(req);const result=run("UPDATE users SET password=? WHERE id=? AND password=?",passHash,user.id,record.password);if(result.changes!==1)fail(409,"A conta mudou. Entre novamente.");run("DELETE FROM sessions WHERE user_id=?",user.id);});
     res.clearCookie(cookieName,cookieOptions);res.status(204).end();
   });
   api.post("/recovery-key",async(req,res)=>{
     const user=auth(req);rate(req,"key",8);
     const record=get("SELECT password,recovery FROM users WHERE id=?",user.id);
     if(!await verify(password(req.body.current),record.password))fail(400,"A senha atual não confere.");
-    const key=random();
+    auth(req);const key=random();
     const result=run("UPDATE users SET recovery=? WHERE id=? AND password=? AND recovery=?",digest(key),user.id,record.password,record.recovery);
     if(result.changes!==1)fail(409,"A conta mudou. Entre novamente.");
     res.json({recoveryKey:key,username:user.username});
@@ -243,15 +248,8 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
     const id=uuid();run("INSERT INTO feedback(id,tool,experience,comment,contact,created) VALUES(?,?,?,?,?,?)",id,tool,experience,comment,contact,now());
     res.status(201).json({id});
   });
-  api.get("/admin/feedback",(req,res)=>{admin(req);res.json({items:all("SELECT * FROM feedback ORDER BY created DESC LIMIT 100")});});
-  api.patch("/admin/feedback/:id",(req,res)=>{
-    admin(req);const state=select(req.body.status,["recebido","analise","concluido"]);
-    if(!run("UPDATE feedback SET status=? WHERE id=?",state,req.params.id).changes)fail(404,"Avaliação não encontrada.");
-    res.status(204).end();
-  });
-
   function creation(id){const row=get("SELECT c.*,u.username FROM creations c JOIN users u ON u.id=c.owner WHERE c.id=?",id);if(!row)fail(404,"Criação não encontrada.");return row;}
-  function mayRead(row,req){const user=actor(req);return user?.id===row.owner||Boolean(user?.admin)||(row.visibility==="public"&&row.status==="approved")||(row.visibility==="unlisted"&&row.share_hash&&digest(String(req.query.key||""))===row.share_hash);}
+  function mayRead(row,req){const user=actor(req);return user?.id===row.owner||(row.visibility==="public"&&row.status==="approved")||(row.visibility==="unlisted"&&row.share_hash&&digest(String(req.query.key||""))===row.share_hash)||(user?.admin&&Boolean(ops.admin(req,row.visibility==="public"?"moderate":"users")));}
   function visible(row,req){if(!mayRead(row,req))fail(404,"Criação não encontrada.");return row;}
   function item(row){return {id:row.id,title:row.title,description:row.description,tool:row.tool,kind:row.kind,author:row.username,owner:row.owner,visibility:row.visibility,status:row.status,version:row.version,preset:row.preset?JSON.parse(row.preset):null,mediaId:row.media_id,created:row.created};}
   api.get("/creations",(req,res)=>{
@@ -276,15 +274,15 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   }
   api.post("/creations",(req,res)=>{
     const user=auth(req);rate(req,"create",30,3600000);
-    if(get("SELECT COUNT(*) AS n FROM creations WHERE owner=?",user.id).n>=100)fail(400,"Limite de 100 criações. Exclua uma criação antes de adicionar outra.");
-    const value=fields(req.body,user.id),id=uuid();
+    if(get("SELECT COUNT(*) AS n FROM creations WHERE owner=?",user.id).n>=ops.settings().value.creationLimit)fail(400,"Limite de criações atingido. Exclua uma criação antes de adicionar outra.");
+    const value=fields(req.body,user.id),id=uuid();ops.publish(user,value.visibility);
     run("INSERT INTO creations(id,owner,kind,tool,title,description,visibility,preset,media_id,created) VALUES(?,?,?,?,?,?,?,?,?,?)",id,user.id,value.kind,value.tool,value.title,value.description,value.visibility,value.preset,value.mediaId,now());
     res.status(201).json({item:item(creation(id))});
   });
   api.patch("/creations/:id",(req,res)=>{
     const user=auth(req),current=creation(req.params.id);if(current.owner!==user.id)fail(403,"Esta criação pertence a outra conta.");
     if(req.body.version!==current.version)fail(409,"Esta criação foi alterada em outra aba. Reabra antes de editar.");
-    const value=fields({...item(current),...req.body},user.id);
+    const value=fields({...item(current),...req.body},user.id);ops.publish(user,value.visibility);
     transaction(db,()=>{
       run("UPDATE creations SET kind=?,tool=?,title=?,description=?,visibility=?,preset=?,media_id=?,status='pending',share_hash=NULL,version=version+1 WHERE id=?",value.kind,value.tool,value.title,value.description,value.visibility,value.preset,value.mediaId,current.id);
       if(current.media_id&&current.media_id!==value.mediaId)run("DELETE FROM media WHERE id=? AND id NOT IN (SELECT media_id FROM creations WHERE media_id IS NOT NULL)",current.media_id);
@@ -314,10 +312,11 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   });
   api.post("/media",(req,res,next)=>{try{auth(req);rate(req,"media",20,3600000);next();}catch(error){next(error);}},express.raw({type:"audio/wav",limit:"10mb",inflate:false}),(req,res)=>{
     const user=auth(req);validateWav(req.body);
+    if(req.body.length>ops.settings().value.uploadMB*1048576)fail(413,"Arquivo acima do limite configurado.");
     transaction(db,()=>{
       const used=get("SELECT COALESCE(SUM(length(audio)),0) AS n FROM media WHERE owner=?",user.id).n;
-      if(get("SELECT COALESCE(SUM(length(audio)),0) AS n FROM media").n+req.body.length>500*1024*1024)fail(503,"O armazenamento de áudio está temporariamente cheio.");
-      if(used+req.body.length>50*1024*1024)fail(413,"Sua conta atingiu 50 MB de áudio.");
+      if(get("SELECT COALESCE(SUM(length(audio)),0) AS n FROM media").n+req.body.length>ops.settings().value.totalAudioMB*1048576)fail(503,"O armazenamento de áudio está temporariamente cheio.");
+      if(used+req.body.length>ops.settings().value.accountAudioMB*1048576)fail(413,"Sua conta atingiu o limite de áudio.");
       const id=uuid();run("INSERT INTO media VALUES(?,?,?,?)",id,user.id,req.body,now());res.status(201).json({id});
     });
   });
@@ -343,14 +342,6 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
       if(range.partial)res.status(206).set("Content-Range","bytes "+range.start+"-"+range.end+"/"+media.size);
       res.set("Content-Length",String(length)).end(Buffer.from(audio.buffer,audio.byteOffset,audio.byteLength));
     }catch(error){done();throw error;}
-  });
-  api.get("/admin/creations",(req,res)=>{
-    admin(req);res.json({items:all("SELECT c.*,u.username FROM creations c JOIN users u ON u.id=c.owner WHERE c.visibility='public' AND c.status='pending' ORDER BY c.created LIMIT 100").map(item)});
-  });
-  api.patch("/admin/creations/:id",(req,res)=>{
-    admin(req);const state=select(req.body.status,["approved","hidden"]);
-    if(!run("UPDATE creations SET status=?,version=version+1 WHERE id=?",state,req.params.id).changes)fail(404,"Criação não encontrada.");
-    res.status(204).end();
   });
   app.use("/api/community",api);
   app.get(["/comunidade","/comunidade/"],(req,res,next)=>{
@@ -404,8 +395,11 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   app.use((error,req,res,next)=>{
     if(res.headersSent)return next(error);
     const status=error.status||500;
+    if(status!==429&&req.path.startsWith('/api/community/admin/')&&!["GET","HEAD"].includes(req.method)){
+      try{const user=actor(req);if(user?.admin)ops.audit(user,'failed.'+(req.route?.path||'admin'),String(req.params?.id||'admin'),'Solicitação recusada ('+status+')','failed');}catch{}
+    }
     if(status===429||error.retryAfter)res.set("Retry-After",String(error.retryAfter||600));
-    res.status(status).json({...((error.code==="ADMIN_REAUTH_REQUIRED")?{code:error.code}:{}),error:status===500?"Não foi possível concluir. Seus dados não foram confirmados; tente novamente.":status===413?"Arquivo ou solicitação acima do limite permitido.":error.message});
+    res.status(status).json({...((String(error.code||"").startsWith("ADMIN_"))?{code:error.code}:{}),error:status===500?"Não foi possível concluir. Seus dados não foram confirmados; tente novamente.":status===413?"Arquivo ou solicitação acima do limite permitido.":error.message});
   });
   return app;
 }

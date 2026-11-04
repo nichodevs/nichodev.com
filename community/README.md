@@ -119,3 +119,8 @@ O primeiro administrador de produção é cadastrado pelo responsável com convi
 ## Segurança e proteção contra abuso
 
 Consulte [SECURITY.md](SECURITY.md) para os limites persistentes entre workers/reinícios, orçamento de autenticação, limites de leitura de áudio, HEAD/Range, consulta de novas senhas por prefixo de hash e confirmação administrativa a cada dez minutos. O código mantém as contas existentes e não exige migração para Supabase. Cadastros e trocas de senha exigem acesso ao serviço Pwned Passwords; login existente não depende dele.
+
+
+## Central administrativa (em preparação)
+
+Consulte [ADMIN.md](ADMIN.md) para módulos, papéis, MFA obrigatório, migração, métricas, recibos operacionais e riscos de retorno. Interface e backend devem ser publicados juntos; esta alteração não publica na Hostinger. O código antigo não aplica suspensão, papéis ou MFA: não retornar a ele com a comunidade aberta.

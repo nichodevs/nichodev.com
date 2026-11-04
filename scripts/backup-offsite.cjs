@@ -20,7 +20,7 @@ function integrity(filename){
   }finally{db.close();}
 }
 
-async function backupOffsite(sitePath){
+async function performBackup(sitePath){
   assert.ok(sitePath,"Informe a pasta do site.");
   const site=fs.realpathSync(path.resolve(os.homedir(),sitePath));
   const data=fs.realpathSync(path.join(site,"community-private"));
@@ -57,6 +57,7 @@ async function backupOffsite(sitePath){
     integrity(recovered);
     const result={status:"OFFSITE_BACKUP_OK",object:(path.basename(site)==="nichodev.com"?"producao/":"")+filename,bytes:fs.statSync(snapshot).size,encrypted:true,downloadVerified:true,integrity:true};
     fs.writeFileSync(path.join(data,"offsite/last-success.json"),JSON.stringify({...result,site:path.basename(site),at:Date.now()}),{mode:0o600});
+    require("../community/operation-receipt").writeReceipt(data,"offsite/status.json",{ok:true,integrity:true});
     return result;
   }finally{
     if(db)db.close();
@@ -65,6 +66,12 @@ async function backupOffsite(sitePath){
   }
 }
 
+async function backupOffsite(sitePath){
+  try{return await performBackup(sitePath);}catch(error){
+    try{if(sitePath){const site=fs.realpathSync(path.resolve(os.homedir(),sitePath)),data=fs.realpathSync(path.join(site,"community-private"));require("../community/operation-receipt").writeReceipt(data,"offsite/status.json",{ok:false,integrity:false});}}catch{}
+    throw error;
+  }
+}
 module.exports={backupOffsite};
 if(require.main===module)backupOffsite(process.argv[2]).then(result=>console.log(JSON.stringify(result))).catch(()=>{
   console.error("OFFSITE_BACKUP_FAILED: envio ou verificação não concluído; consulte a configuração privada sem publicar credenciais.");process.exitCode=1;

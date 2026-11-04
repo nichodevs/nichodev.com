@@ -53,3 +53,8 @@ O backend HTTPS envia HSTS por um ano, sem includeSubDomains/preload. HTML e API
 `npm run test:community` inclui os testes de persistência/reinício, quatro processos concorrentes, reservas, IP/conta, cota global, recuperação, falha de consulta externa, autorização de mídia, HEAD/Range, HSTS e sessão administrativa. `npm run test:preview` cobre a confirmação/cancelamento administrativo em Chromium, Firefox e WebKit. Esses testes não substituem monitoramento nem teste prolongado no plano real.
 
 Referências: [Pwned Passwords](https://haveibeenpwned.com/API/v3#PwnedPasswords), [R2 Bucket Lock](https://developers.cloudflare.com/r2/buckets/bucket-locks/), [OWASP Authentication](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html).
+
+
+## Central administrativa (em preparação)
+
+Consulte [ADMIN.md](ADMIN.md) para módulos, papéis, MFA obrigatório, migração, métricas, recibos operacionais e riscos de retorno. Interface e backend devem ser publicados juntos; esta alteração não publica na Hostinger. O código antigo não aplica suspensão, papéis ou MFA: não retornar a ele com a comunidade aberta.

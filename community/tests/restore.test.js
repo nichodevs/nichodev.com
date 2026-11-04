@@ -26,11 +26,11 @@ test("restaura uma cópia privada, lê áudio pela aplicação e rejeita backup 
     const result=JSON.parse(stdout.trim());
     assert.equal(result.status,"ok");assert.equal(result.accounts,2);assert.equal(result.audio,1);assert.equal(result.creations,1);assert.equal(result.isolatedCopyRemoved,true);
     assert.equal(result.localOnly,true);assert.equal(result.transport,process.platform==="win32"?"tcp-loopback":"private-unix-socket");
-    assert.deepEqual(fs.readFileSync(backup),before);
+    assert.deepEqual(fs.readFileSync(backup),before);assert.equal(JSON.parse(fs.readFileSync(path.join(privateDir,"restore-status.json"))).ok,true);
     assert.deepEqual(fs.readdirSync(privateDir).filter(name=>name.startsWith("restore-check-")),[]);
     fs.writeFileSync(backup,"arquivo corrompido");
     await assert.rejects(execute(process.execPath,[path.resolve(__dirname,"../../scripts/test-restore.cjs"),site]),error=>error.code===1&&error.stderr.includes("RESTORE_CHECK_FAILED"));
-    assert.deepEqual(fs.readdirSync(privateDir).filter(name=>name.startsWith("restore-check-")),[]);
+    assert.deepEqual(fs.readdirSync(privateDir).filter(name=>name.startsWith("restore-check-")),[]);assert.equal(JSON.parse(fs.readFileSync(path.join(privateDir,"restore-status.json"))).ok,false);
   } finally {
     assert.equal(path.dirname(path.resolve(site)),path.resolve(os.tmpdir()));
     fs.rmSync(site,{recursive:true,force:true});

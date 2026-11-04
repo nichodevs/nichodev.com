@@ -1,3 +1,4 @@
+const {staffFixture}=require('../../tests/helpers/admin');
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const crypto = require("node:crypto");
@@ -116,7 +117,7 @@ test("avaliações são persistentes e privadas; somente admin altera a situaç�
   assert.equal(result.status,201);
   assert.equal((await guest("/admin/feedback")).status,401);
   assert.equal((await admin("/admin/feedback")).status,403);
-  f.app.locals.db.exec("UPDATE users SET admin=1");
+  staffFixture(f,"responsavel");
   assert.equal((await admin("/admin/feedback")).data.items[0].id,result.data.id);
   assert.equal((await admin("/admin/feedback/"+result.data.id,{method:"PATCH",body:{status:"analise"}})).status,204);
   await f.restart();
@@ -139,13 +140,13 @@ test("criações privadas têm dono; edições e exclusões recusam versões ant
 });
 
 test("galeria exige moderação e editar retira aprovação; links não listados são revogáveis", async t => {
-  const f=await fixture(t),owner=f.client(),mod=f.client(),guest=f.client();await account(owner,"artista");await account(mod,"moderador");f.app.locals.db.exec("UPDATE users SET admin=1 WHERE username='moderador'");
+  const f=await fixture(t),owner=f.client(),mod=f.client(),guest=f.client();await account(owner,"artista");await account(mod,"moderador");staffFixture(f,"moderador");
   const {item}= (await owner("/creations",post(preset({visibility:"public"})))).data;
   assert.equal((await guest("/creations")).data.items.length,0);
   assert.equal((await guest("/creations/"+item.id)).status,404);
   assert.equal((await owner("/creations/"+item.id+"/share",post({}))).status,400);
   assert.equal((await mod("/admin/creations")).data.items.length,1);
-  assert.equal((await mod("/admin/creations/"+item.id,{method:"PATCH",body:{status:"approved"}})).status,204);
+  assert.equal((await mod("/admin/creations/"+item.id,{method:"PATCH",body:{status:"approved",reason:"Publicação verificada",version:item.version}})).status,204);
   assert.equal((await guest("/creations")).data.items.length,1);
   const updated=await owner("/creations/"+item.id,{method:"PATCH",body:{version:2,visibility:"unlisted"}});assert.equal(updated.status,200);
   const one=await owner("/creations/"+item.id+"/share",post({})),key1=new URLSearchParams(one.data.url.split("?")[1]).get("key");

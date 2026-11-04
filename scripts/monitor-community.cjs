@@ -4,8 +4,15 @@ const {execFileSync}=require("node:child_process");
 
 async function inspect({data,origin,now=Date.now()}){
   const errors=[];
+  const begin=performance.now();
   try{const response=await fetch(origin+"/health",{signal:AbortSignal.timeout(10000)});if(!response.ok||(await response.json()).status!=="ok")errors.push("A aplicação não respondeu saudável.");}catch{errors.push("A aplicação não respondeu no prazo.");}
-  try{const db=new DatabaseSync(path.join(data,"community.sqlite"),{readOnly:true});try{db.prepare("SELECT COUNT(*) FROM users").get();}finally{db.close();}}catch{errors.push("O banco não pôde ser lido.");}
+  if(performance.now()-begin>1000)errors.push("A aplicação respondeu em mais de um segundo.");
+  try{const db=new DatabaseSync(path.join(data,"community.sqlite"),{readOnly:true});try{
+    db.prepare("SELECT COUNT(*) FROM users").get();
+    const used=db.prepare("SELECT COALESCE(SUM(length(audio)),0) n FROM media").get().n;
+    const row=db.prepare("SELECT value FROM community_settings WHERE id=1").get(),max=row?JSON.parse(row.value).totalAudioMB:500;
+    if(used>max*1048576*.8)errors.push("O armazenamento de áudio passou de 80% da cota.");
+  }finally{db.close();}}catch{errors.push("O banco não pôde ser lido.");}
   for(const [file,label]of [["latest.sqlite","Backup local"],["offsite/last-success.json","Backup externo verificado"]]){
     try{
       let stamp;
@@ -21,6 +28,18 @@ async function inspect({data,origin,now=Date.now()}){
     }catch{errors.push(label+" não tem confirmação disponível.");}
   }
   try{const disk=fs.statfsSync(data);if(disk.bavail/disk.blocks<.1)errors.push("Menos de 10% de espaço livre no disco.");}catch{errors.push("Não foi possível conferir o espaço livre.");}
+  try{
+    const file=path.join(data,"server-health.json");if(fs.statSync(file).size<32768){
+      const health=JSON.parse(fs.readFileSync(file,"utf8"));
+      if(Number.isFinite(health.checkedAt)&&now-health.checkedAt<=5*60000&&health.checkedAt<=now+60000){
+        if(health.memoryBytes>512*1048576)errors.push("A memória do backend passou de 512 MiB.");
+        if(health.p95Ms>1000)errors.push("A API apresentou p95 acima de um segundo.");
+      }
+    }
+  }catch{}
+  for(const file of ["backup-status.json","offsite/status.json","restore-status.json"]){
+    try{const record=JSON.parse(fs.readFileSync(path.join(data,file),"utf8"));if(record.ok===false)errors.push("Falha registrada em "+file+".");}catch{}
+  }
   return {ok:errors.length===0,errors,checkedAt:now};
 }
 function sendMail(subject,body){

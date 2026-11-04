@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="preview.css">
+  <link rel="stylesheet" href="preview.css"><link rel="stylesheet" href="admin.css"><script src="admin.js" defer></script>
   <script src="/community/preset-format.js" defer></script>
   <script src="/community/palette-format.js" defer></script>
   <script src="palette.js?v=account-sync-1" defer></script>
@@ -29,7 +29,7 @@
       <a href="#galeria" data-view-link="galeria">GALERIA</a>
       <a href="#estudio" data-view-link="estudio">MEU ESTÚDIO</a>
     </nav>
-    <main id="main">
+    <main id="main"><p id="communityMessage" class="admin-alert" hidden></p><p id="communityRules" class="admin-muted" hidden></p>
       <section class="view" data-view="inicio">
         <div class="hero">
           <div class="hero-copy"><p class="eyebrow">SEU PRÓXIMO SOM COMEÇA AQUI</p><h1>CRIE.<br>EXPERIMENTE.<br><span>COMPARTILHE.</span></h1><p class="body-copy">Um lugar para encontrar timbres, testar ideias e dar o próximo passo na sua música.</p><div class="button-row"><a class="button primary" href="#timbres">EXPLORAR TIMBRES <span aria-hidden="true">↗</span></a><a class="text-link" href="#exemplos">COMEÇAR COM UM EXEMPLO →</a></div></div>
@@ -70,12 +70,10 @@
           <p id="paletteStatus" role="status" aria-live="polite"></p>
         </form>
         <div id="studioGuest" class="empty-state"><span aria-hidden="true">▣</span><h2>UM LUGAR PARA SUAS CRIAÇÕES</h2><p>Presets favoritos, cópias dos timbres e prévias que você escolheu compartilhar.</p><button class="button primary" type="button" data-action="account">ENTRAR NA MINHA CONTA</button></div>
-        <div id="studioMember" hidden><div class="studio-actions"><button class="button outline compact" type="button" data-action="settings">CONFIGURAÇÕES DA CONTA</button><button class="text-link" type="button" data-action="logout">SAIR DA CONTA</button></div><h2 class="subheading">MEUS FAVORITOS</h2><div class="card-grid" id="favoriteCards"></div><h2 class="subheading">MEUS TIMBRES</h2><div class="card-grid" id="savedCards"></div><h2 class="subheading">MINHAS PRÉVIAS</h2><div class="card-grid" id="myPublications"></div></div>
+        <div id="studioMember" hidden><h2 class="subheading">NOTIFICAÇÕES</h2><div id="memberNotices"></div><div class="studio-actions"><button class="button outline compact" type="button" data-action="settings">CONFIGURAÇÕES DA CONTA</button><button class="text-link" type="button" data-action="logout">SAIR DA CONTA</button></div><h2 class="subheading">MEUS FAVORITOS</h2><div class="card-grid" id="favoriteCards"></div><h2 class="subheading">MEUS TIMBRES</h2><div class="card-grid" id="savedCards"></div><h2 class="subheading">MINHAS PRÉVIAS</h2><div class="card-grid" id="myPublications"></div></div>
       </section>
       <section class="view" data-view="painel" hidden>
-        <div class="page-heading"><p class="eyebrow">ÁREA RESTRITA À ADMINISTRAÇÃO</p><h1>AVALIAÇÕES RECEBIDAS</h1><p>Avaliações privadas e publicações aguardando moderação.</p></div>
-        <label class="inline-label" for="feedbackFilter">SITUAÇÃO <select id="feedbackFilter"><option value="todos">Todas</option><option value="recebido">Recebido</option><option value="analise">Em análise</option><option value="concluido">Concluído</option></select></label>
-        <div id="feedbackList"></div><h2 class="subheading">PUBLICAÇÕES AGUARDANDO MODERAÇÃO</h2><div id="moderationList"></div>
+        <div id="adminRoot"></div>
       </section>
       <p id="pageStatus" class="page-status" role="status" aria-live="polite"></p>
     </main>
@@ -126,7 +124,7 @@
 
   <dialog id="passwordDialog" aria-labelledby="passwordTitle">
     <div class="dialog-heading"><div><p class="eyebrow">MINHA CONTA</p><h2 id="passwordTitle">RECUPERAR SENHA</h2></div><button class="close-button" type="button" data-close aria-label="Fechar alteração de senha">×</button></div>
-    <form id="passwordForm"><p id="passwordIntro" class="form-intro"></p><label for="passwordUser">USUÁRIO</label><input id="passwordUser" type="text" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" value="" required autocomplete="off">
+    <button id="assistedRecovery" class="text-link" type="button">RECUPERAÇÃO ASSISTIDA</button><form id="passwordForm"><p id="passwordIntro" class="form-intro"></p><label for="passwordUser">USUÁRIO</label><input id="passwordUser" type="text" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" value="" required autocomplete="off">
       <label for="passwordProof" id="passwordProofLabel">CHAVE DE RECUPERAÇÃO</label><input id="passwordProof" type="text" required autocomplete="off">
       <label for="newPassword">NOVA SENHA</label><input id="newPassword" type="password" minlength="15" maxlength="128" required autocomplete="off"><label for="newPasswordConfirm">CONFIRMAR NOVA SENHA</label><input id="newPasswordConfirm" type="password" minlength="15" maxlength="128" required autocomplete="off">
       <p id="passwordError" class="form-error" role="alert"></p><button class="button primary full" type="submit">CONFIRMAR ALTERAÇÃO →</button>
@@ -140,7 +138,7 @@
 
   <dialog id="deleteDialog" aria-labelledby="deleteTitle"><h2 id="deleteTitle">EXCLUIR CRIAÇÃO?</h2><p>A criação e seu áudio sem outras referências serão removidos deste ambiente. Essa ação não pode ser desfeita.</p><div class="button-row"><button class="button outline" type="button" data-close>CANCELAR</button><button id="confirmDelete" class="button primary" type="button">EXCLUIR DEFINITIVAMENTE</button></div><p id="deleteError" role="alert"></p></dialog>
 
-  <dialog id="detailDialog" aria-labelledby="detailTitle"><div class="dialog-heading"><div><p class="eyebrow" id="detailMeta"></p><h2 id="detailTitle"></h2></div><button class="close-button" type="button" data-close aria-label="Fechar criação">×</button></div><p id="detailDescription"></p><div class="button-row"><audio id="detailAudio" controls preload="metadata" hidden></audio><a id="applyPresetLink" class="button primary" href="/">ABRIR NA FERRAMENTA →</a><button id="downloadPreset" class="button outline" type="button">BAIXAR PRESET JSON</button><button class="button outline" type="button" data-action="remix-detail">CRIAR MINHA VERSÃO</button></div><p class="privacy-note" id="detailVisibility"></p><button class="text-link" type="button" data-action="share-detail">COMPARTILHAR PRÉVIA →</button><p id="shareStatus" role="status"></p></dialog>
+  <dialog id="detailDialog" aria-labelledby="detailTitle"><div class="dialog-heading"><div><p class="eyebrow" id="detailMeta"></p><h2 id="detailTitle"></h2></div><button class="close-button" type="button" data-close aria-label="Fechar criação">×</button></div><p id="detailDescription"></p><div class="button-row"><audio id="detailAudio" controls preload="metadata" hidden></audio><a id="applyPresetLink" class="button primary" href="/">ABRIR NA FERRAMENTA →</a><button id="downloadPreset" class="button outline" type="button">BAIXAR PRESET JSON</button><button class="button outline" type="button" data-action="remix-detail">CRIAR MINHA VERSÃO</button></div><p class="privacy-note" id="detailVisibility"></p><button class="text-link" type="button" data-action="share-detail">COMPARTILHAR PRÉVIA →</button><button id="reportCreation" class="text-link" type="button">DENUNCIAR PUBLICAÇÃO</button><p id="shareStatus" role="status"></p></dialog>
 
   <dialog id="adminReauthDialog" aria-labelledby="adminReauthTitle"><div class="dialog-heading"><h2 id="adminReauthTitle">CONFIRMAR ACESSO</h2><button class="close-button" type="button" data-close aria-label="Cancelar confirmação administrativa">×</button></div><p>Para proteger a administração, confirme sua senha a cada dez minutos.</p><form id="adminReauthForm"><label for="adminReauthPassword">SENHA ATUAL</label><input id="adminReauthPassword" type="password" minlength="15" maxlength="128" autocomplete="current-password" required><p id="adminReauthError" class="form-error" role="alert"></p><button class="button primary full" type="submit">CONFIRMAR →</button></form></dialog>
   <noscript><p>Ative JavaScript para acessar a comunidade.</p></noscript>
