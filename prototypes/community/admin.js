@@ -5,7 +5,7 @@
   const bytes=value=>value===null?'Indisponível':(value/1048576).toLocaleString('pt-BR',{maximumFractionDigits:1})+' MiB';
   const button=(label,action,id='')=>`<button type="button" class="text-link" data-admin-action="${action}" data-id="${escape(id)}">${escape(label)}</button>`;
   let request,root,current='stats',access,page=1,query='',state='pending',busy=false;
-  const modules=[['stats','VISÃO GERAL','stats'],['users','USUÁRIOS','users'],['recovery','RECUPERAÇÃO','recovery'],['moderate','MODERAÇÃO','moderate'],['backups','BACKUPS','operations'],['health','SERVIDOR','operations'],['settings','CONFIGURAÇÕES','settings'],['audit','AUDITORIA','audit'],['feedback','AVALIAÇÕES','feedback']];
+  const modules=[['stats','VISÃO GERAL','stats'],['users','USUÁRIOS','users'],['recovery','RECUPERAÇÃO','recovery'],['moderate','MODERAÇÃO','moderate'],['chars','NICO//CHAR','moderate'],['comments','COMENTÁRIOS','moderate'],['backups','BACKUPS','operations'],['health','SERVIDOR','operations'],['settings','CONFIGURAÇÕES','settings'],['audit','AUDITORIA','audit'],['feedback','AVALIAÇÕES','feedback']];
   function dialog(title,html,action){
     return new Promise((resolve,reject)=>{
       const d=document.createElement('dialog');d.setAttribute('aria-labelledby','adminDialogTitle');
@@ -54,7 +54,7 @@
       }else if(current==='users'){
         const d=await request(listURL('/admin/users?q='+encodeURIComponent(query)+'&status='+state));
         html=`<form class="admin-toolbar" id="adminSearch"><label>BUSCAR USUÁRIO<input name="q" maxlength="24" value="${escape(query)}" placeholder="Começa com…"></label><label>STATUS<select name="status">${[['all','Todos'],['active','Ativos'],['suspended','Suspensos'],['pending','Cadastro não confirmado']].map(([v,l])=>`<option value="${v}" ${v===state?'selected':''}>${l}</option>`).join('')}</select></label><button class="button outline compact" type="submit">BUSCAR</button></form>`;
-        html+=table(['Conta / papel','Cadastro / atividade','Criações','Situação','Ações'],d.items.map(u=>[escape('@'+u.username)+'<br><small>'+escape(u.role)+'</small>',escape(date(u.created))+'<br><small>'+escape(date(u.last_seen))+'</small>',u.creations,escape(u.suspended?'Suspensa':u.active?'Ativa':'Não confirmada')+(u.publish_until>Date.now()?'<br>Publicação bloqueada':''),button('GERENCIAR','user',u.id)+button('HISTÓRICO','user-history',u.id)]),'Atividade recente arredondada para a hora. Busca por prefixo.')+pager(d);
+        html+=table(['Conta / papel','Cadastro / atividade','Criações','Situação','Ações'],d.items.map(u=>[escape('@'+u.username)+'<br><small>'+escape(u.role)+'</small>',escape(date(u.created))+'<br><small>'+escape(date(u.last_seen))+'</small>',u.creations,escape(u.suspended?'Suspensa':u.active?'Ativa':'Não confirmada')+(u.publish_until>Date.now()?'<br>Publicação bloqueada':''),button('GERENCIAR','user',u.id)+button('HISTÓRICO','user-history',u.id)+(access.permissions.includes('roles')?button('RECOMPENSA CHAR','char-reward',u.id):'')]),'Atividade recente arredondada para a hora. Busca por prefixo.')+pager(d);
         host.users=d.items;
       }else if(current==='moderate'){
         const d=await request(listURL('/admin/creations?status='+state));
@@ -62,6 +62,14 @@
         html+=table(['Publicação','Autor / ocorrências','Data','Decisão'],d.items.map(x=>[escape(x.title)+'<br>'+escape(x.description),escape(x.author)+'<br>'+x.priorDecisions+' decisões de ocultação',escape(date(x.created)),button('REVISAR','moderate',x.id)+button('HISTÓRICO','creation-history',x.id)]))+pager(d);host.items=d.items;
       }else if(current==='reports'){
         const d=await request(listURL('/admin/reports?status='+state));html=`<div class="admin-toolbar">${[['pending','PENDENTES'],['reviewed','REVISADAS'],['dismissed','DESCARTADAS']].map(([v,l])=>`<button class="button outline compact" type="button" data-admin-action="report-filter" data-id="${v}">${l}</button>`).join('')}${button('VOLTAR À FILA','module','moderate')}</div>`+table(['Criação','Motivo','Data','Ação'],d.items.map(x=>[escape(x.title)+'<br>'+escape(x.creation_id),escape(x.reason),escape(date(x.created)),button('REVISAR DENÚNCIA','report',x.id)]))+pager(d);
+      }else if(current==='comments'){
+        const d=await request(listURL('/admin/comments?status='+state));host.comments=d.items;
+        html='<div class="admin-toolbar">'+[['pending','PENDENTES'],['approved','APROVADOS'],['hidden','OCULTOS']].map(([v,l])=>button(l,'comment-filter',v)).join('')+'</div>'+table(['Comentário','Autor / publicação','Data','Ação'],d.items.map(x=>[escape(x.body),escape(x.username)+'<br>'+escape(x.title),escape(date(x.created)),button('REVISAR COMENTÁRIO','comment-review',x.id)]))+pager(d);
+      }else if(current==='chars'){
+        const d=await request(listURL('/admin/chars?status='+state));host.chars=d.items;
+        html='<div class="admin-toolbar">'+[['pending','EM REVISÃO'],['ready','PUBLICÁVEIS'],['hidden','OCULTOS']].map(([v,l])=>button(l,'char-filter',v)).join('')+button('DENÚNCIAS DE CHARS','char-reports')+'</div>'+table(['Personagem','Conta / versão','Situação','Ações'],d.items.map(x=>['<canvas data-char-preview="'+escape(x.id)+'" width="128" height="128" style="width:96px;height:96px;image-rendering:pixelated"></canvas>',escape(x.username)+'<br>v'+x.revision,escape(x.status)+'<br>'+escape(x.reason),button('REVISAR CHAR','char-review',x.id)]))+pager(d);
+      }else if(current==='charreports'){
+        const d=await request(listURL('/admin/char-reports'));html=button('VOLTAR AOS CHARS','module','chars')+table(['Conta','Motivo','Data','Ação'],d.items.map(x=>[escape(x.username),escape(x.reason),escape(date(x.created)),button('REVISAR CHAR','char-review',x.user_id)]))+pager(d);
       }else if(current==='recovery'){
         const d=await request(listURL('/admin/recovery'));html='<p class="admin-alert">Somente solicitações com chave de recuperação verificada. A administração não recebe a chave, o token nem a nova senha. Sem prova previamente cadastrada, a conta não é liberada.</p>'+table(['Conta','Prova / situação','Validade','Ação'],d.items.map(x=>[escape(x.username),'Chave verificada<br>'+escape(x.status),escape(date(x.expires)),x.status==='pending'&&x.expires>Date.now()?button('REVISAR','recovery',x.id):escape(x.reason)]))+pager(d);
       }else if(current==='backups'){
@@ -78,7 +86,7 @@
       }else if(current==='feedback'){
         const d=await request(listURL('/admin/feedback?status='+state));html='<label class="inline-label" for="feedbackFilter">SITUAÇÃO <select id="feedbackFilter">'+[['all','Todas'],['recebido','Recebido'],['analise','Em análise'],['concluido','Concluído']].map(([v,l])=>`<option value="${v}" ${v===state?'selected':''}>${l}</option>`).join('')+'</select></label><div id="feedbackList">'+table(['Ferramenta / data','Comentário privado','Contato','Situação'],d.items.map(x=>[escape(x.tool)+'<br>'+escape(date(x.created)),escape(x.comment),escape(x.contact),`<select data-feedback="${escape(x.id)}" data-current="${escape(x.status)}" aria-label="Situação da avaliação">${[['recebido','Recebido'],['analise','Em análise'],['concluido','Concluído']].map(([v,l])=>`<option value="${v}" ${v===x.status?'selected':''}>${l}</option>`).join('')}</select>`]))+'</div>'+pager(d);
       }
-      host.innerHTML=html;root.querySelector('#adminTitle').textContent=modules.find(m=>m[0]===current)?.[1]||'DENÚNCIAS';root.querySelectorAll('[data-module]').forEach(b=>b.setAttribute('aria-current',b.dataset.module===(current==='reports'?'moderate':current)?'page':'false'));root.querySelector('#adminMessage').textContent='Atualizado em '+new Date().toLocaleTimeString('pt-BR');
+      host.innerHTML=html;if(current==='chars')host.querySelectorAll('[data-char-preview]').forEach(canvas=>{const x=host.chars.find(x=>x.id===canvas.dataset.charPreview);window.NicoCharArt.paint(canvas,x.design);});root.querySelector('#adminTitle').textContent=modules.find(m=>m[0]===current)?.[1]||'DENÚNCIAS';root.querySelectorAll('[data-module]').forEach(b=>b.setAttribute('aria-current',b.dataset.module===(current==='reports'?'moderate':current)?'page':'false'));root.querySelector('#adminMessage').textContent='Atualizado em '+new Date().toLocaleTimeString('pt-BR');
     }catch(error){root.querySelector('#adminMessage').textContent=error.message;throw error;}finally{host.setAttribute('aria-busy','false');}
   }
   async function history(path,title){
@@ -91,6 +99,9 @@
     if(action==='prev')page--;else if(action==='next')page++;
     else if(action==='module'){current=id;page=1;state=id==='users'||id==='feedback'?'all':'pending';}
     else if(action==='queue'){if(id==='reports'){current='reports';state='pending';}else state=id;page=1;}
+    else if(action==='comment-filter'){current='comments';state=id;page=1;}
+    else if(action==='char-filter'){current='chars';state=id;page=1;}
+    else if(action==='char-reports'){current='charreports';page=1;}
     else if(action==='report-filter'){state=id;page=1;}
     else if(action==='user-history'){await history('/admin/users/'+id+'/history','HISTÓRICO DA CONTA');return;}
     else if(action==='creation-history'){await history('/admin/creations/'+id+'/history','HISTÓRICO DA PUBLICAÇÃO');return;}
@@ -101,6 +112,12 @@
       });
     }else if(action==='moderate'){
       const x=host.items.find(x=>x.id===id);await dialog('REVISAR PUBLICAÇÃO',`<h3>${escape(x.title)}</h3><p>${escape(x.description)}</p>${x.mediaId?`<audio controls preload="none" src="/api/community/media/${encodeURIComponent(x.mediaId)}"></audio>`:''}<p>Autor: ${escape(x.author)}. Decisões de ocultação anteriores: ${x.priorDecisions}.</p>`+choice('status','DECISÃO',[['approved','Aprovar'],['hidden','Ocultar'],['pending','Reabrir revisão']])+why(),data=>request('/admin/creations/'+id,{method:'PATCH',body:{...Object.fromEntries(data),version:x.version}}));
+    }else if(action==='comment-review'){
+      const x=host.comments.find(x=>String(x.id)===id);await dialog('REVISAR COMENTÁRIO','<p>'+escape(x.body)+'</p>'+choice('status','DECISÃO',[['approved','Aprovar'],['hidden','Ocultar'],['pending','Reabrir revisão']])+why(),data=>request('/admin/comments/'+id,{method:'PATCH',body:{...Object.fromEntries(data),revision:x.revision}}));
+    }else if(action==='char-review'){
+      const x=await request('/admin/chars/'+id);const pending=dialog('REVISAR NICO//CHAR','<p>@'+escape(x.username)+' · '+escape(x.design.name)+'</p><canvas id="adm-char-review" width="256" height="256" style="width:256px;max-width:100%;image-rendering:pixelated"></canvas>'+choice('status','DECISÃO',[['ready','Aprovar'],['hidden','Ocultar'],['pending','Reabrir revisão']])+why(),data=>request('/admin/chars/'+id,{method:'PATCH',body:{...Object.fromEntries(data),revision:x.revision}}));window.NicoCharArt.paint(document.getElementById('adm-char-review'),x.design);await pending;
+    }else if(action==='char-reward'){
+      await dialog('CONCEDER COSMÉTICO',choice('badge','EVENTO REAL',[['halloween','Halloween'],['natal','Natal retrô'],['aniversario','Aniversário NICHODEVS'],['desafio','Desafio concluído']])+why(),data=>request('/admin/chars/'+id+'/reward',{method:'POST',body:Object.fromEntries(data)}));
     }else if(action==='report'){
       await dialog('REVISAR DENÚNCIA','<p>Classificar a denúncia não altera a publicação. Abra a fila de publicações para decidir sobre o conteúdo.</p>'+choice('status','RESULTADO',[['reviewed','Revisada'],['dismissed','Descartada']])+why(),data=>request('/admin/reports/'+id,{method:'PATCH',body:Object.fromEntries(data)}));
     }else if(action==='recovery'){

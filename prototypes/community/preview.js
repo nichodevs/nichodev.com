@@ -58,7 +58,7 @@
     const root=document.createElement("article");root.className="sound-card";
     const kicker=document.createElement("p");kicker.className="card-kicker";kicker.textContent=names[item.tool];
     const title=document.createElement("h3");title.textContent=item.title;
-    const author=document.createElement("p");author.className="card-author";author.textContent="@"+item.author;
+    const author=window.NicoCharUI.identity(item.author,item.char);
     const description=document.createElement("p");description.className="card-description";description.textContent=item.description;
     const state=document.createElement("p");state.className="section-note";state.textContent=item.visibility==="private"?"Privado":item.visibility==="unlisted"?"Não listado":item.status==="approved"?"Público":item.status==="hidden"?"Oculto pela moderação":"Aguardando moderação";
     const actions=document.createElement("div");actions.className="card-actions";
@@ -76,6 +76,7 @@
   const lookup=id=>[...mine,...items].find(item=>item.id===id);
   function render(){
     const focused=document.activeElement,focusAction=focused?.dataset.action,focusId=focused?.dataset.id;
+    window.NicoCharUI.studio($("nicoStudio"));
     fill("presetCards",items.filter(item=>item.kind==="preset"&&(presetFilter==="todos"||item.tool===presetFilter)),"Ainda não há timbres públicos aprovados. Capture um timbre na ferramenta para começar.");
     fill("galleryCards",items.filter(item=>galleryFilter==="todos"||(galleryFilter==="musica"?item.kind==="audio":item.kind==="preset")),"Nenhuma publicação aprovada nesta categoria.");
     $("accountLabel").textContent=user?"@"+user.username:"ENTRAR / CRIAR CONTA";
@@ -91,6 +92,7 @@
   async function refresh(){
     ({user}=await request("/session"));
     await window.NichodevPalette.setUser(user);
+    await window.NicoCharUI.setUser(request,user,refresh);
     ({items}=await request("/creations"));
     if(user){const data=await request("/me");mine=data.items;favorites=new Set(data.favorites);}
     else{mine=[];favorites=new Set();}
@@ -148,7 +150,7 @@
   }
   function showDetail(item,key=""){
     detail=item;detailKey=key;$("detailTitle").textContent=item.title;$("detailMeta").textContent=names[item.tool]+" / @"+item.author;
-    $("detailDescription").textContent=item.description;
+    $("detailDescription").textContent=item.description;$("detailAuthor").replaceChildren(window.NicoCharUI.identity(item.author,item.char));
     $("applyPresetLink").hidden=!item.preset;$("downloadPreset").hidden=!item.preset;
     if(item.preset)$("applyPresetLink").href=presetUrl(item,key);
     $("detailAudio").hidden=!item.mediaId;$("detailAudio").removeAttribute("src");
@@ -157,22 +159,30 @@
     document.querySelector('[data-action="remix-detail"]').hidden=!item.preset;
     document.querySelector('[data-action="share-detail"]').hidden=!(item.owner===user?.id||item.visibility==="public");
     $("reportCreation").hidden=!user||item.visibility!=="public"||item.owner===user.id;
-    $("shareStatus").textContent="";openDialog("detailDialog");
+    $("shareStatus").textContent="";openDialog("detailDialog");window.NicoCharUI.comments($("nicoComments"),item).catch(e=>{$("nicoComments").textContent=e.message;});
   }
   async function loadAdmin(){await window.NichodevAdmin.mount($("adminRoot"),request,user);}
   async function route(){
     const hash=location.hash.slice(1)||"inicio";if(hash==="main"||hash==="exemplos")return;
-    closeDialogs();stopExample();
-    const view=hash.startsWith("criacao/")?"galeria":hash==="novo-timbre"?"timbres":["inicio","timbres","galeria","estudio","painel"].includes(hash)?hash:"inicio";
+    if(hash!=="char"&&!window.NicoCharUI.canLeave()){history.replaceState(null,"","#char");return;}
+    window.NicoCharUI.stop();closeDialogs();stopExample();
+    const view=hash.startsWith("perfil/")?"perfil":hash.startsWith("criacao/")?"galeria":hash==="novo-timbre"?"timbres":["inicio","timbres","galeria","estudio","painel","char","membros"].includes(hash)?hash:"inicio";
     document.querySelectorAll("[data-view]").forEach(element=>{element.hidden=element.dataset.view!==view;});
     document.querySelectorAll("[data-view-link]").forEach(link=>{if(link.dataset.viewLink===view)link.setAttribute("aria-current","page");else link.removeAttribute("aria-current");});
     const heading=document.querySelector('[data-view="'+view+'"] h1');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true});}
-    if(hash==="novo-timbre")await newPreset();
+    if(view==="char")await window.NicoCharUI.mount($("nicoEditor"));
+    else if(view==="membros"){try{await window.NicoCharUI.members($("nicoMembers"));}catch(e){status(e.message);}}
+    else if(view==="perfil"){try{await showProfile(hash.slice(7));}catch(e){$("nicoProfile").textContent=e.message;$("nicoProfileCreations").replaceChildren();}}
+    else if(hash==="novo-timbre")await newPreset();
     else if(view==="painel"){try{await loadAdmin();}catch(error){status(error.message);}}
     else if(hash.startsWith("criacao/")){
       const [id,query]=hash.slice(8).split("?"),key=new URLSearchParams(query).get("key")||"";
       try{const {item}=await request("/creations/"+encodeURIComponent(id)+(key?"?key="+encodeURIComponent(key):""));showDetail(item,key);}catch(error){status(error.message);}
     }
+  }
+  async function showProfile(name,page=1){
+    const data=await window.NicoCharUI.profile($("nicoProfile"),name,page);fill("nicoProfileCreations",data.items,"Ainda não há criações públicas aprovadas.");
+    const controls=document.createElement("div");controls.className="nico-page-controls";for(const [direction,label]of [[-1,"← ANTERIOR"],[1,"PRÓXIMA →"]]){const b=document.createElement("button");b.type="button";b.textContent=label;b.className="button outline compact";b.disabled=direction<0?page===1:page*data.size>=data.total;b.onclick=()=>showProfile(name,page+direction).catch(e=>status(e.message));controls.append(b);}$("nicoProfile").append(controls);
   }
   function exampleProject(){
     const notes=[7,5,3,5,6,4,2,4].map((pitch,step)=>({pitch,step:step*2,velocity:.65}));
@@ -276,6 +286,7 @@
   $("downloadPreset").addEventListener("click",()=>download("nichodev-preset-"+detail.tool+".json",JSON.stringify(detail.preset,null,2)));
 
   document.addEventListener("click",async event=>{
+    const toolLink=event.target.closest('a[href*="/ferramentas/"],a[href="/mixmaster.html"]');if(toolLink&&user){const tool=toolLink.href.includes("guitarra")?"guitarra":toolLink.href.includes("voz")?"voz":"mixmaster";request("/char/tool-opened",{method:"POST",body:{tool}}).catch(()=>{});}
     const close=event.target.closest("[data-close]");
     if(close){
       const dialog=close.closest("dialog");

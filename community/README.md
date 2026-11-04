@@ -124,3 +124,7 @@ Consulte [SECURITY.md](SECURITY.md) para os limites persistentes entre workers/r
 ## Central administrativa (em preparação)
 
 Consulte [ADMIN.md](ADMIN.md) para módulos, papéis, MFA obrigatório, migração, métricas, recibos operacionais e riscos de retorno. Interface e backend devem ser publicados juntos; esta alteração não publica na Hostinger. O código antigo não aplica suspensão, papéis ou MFA: não retornar a ele com a comunidade aberta.
+
+## NICO//CHAR
+
+O editor, os perfis, as novas tabelas e as filas de desenhos/comentários estão documentados em [CHAR.md](CHAR.md). Código integrado continua sem publicação automática.

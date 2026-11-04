@@ -12,6 +12,7 @@ function openStore(filename){
   db.exec("CREATE TABLE IF NOT EXISTS security_config(id INTEGER PRIMARY KEY CHECK(id=1),secret TEXT NOT NULL) STRICT; CREATE TABLE IF NOT EXISTS security_leases(id TEXT NOT NULL,scope TEXT NOT NULL,expires INTEGER NOT NULL,PRIMARY KEY(id,scope)) STRICT; CREATE INDEX IF NOT EXISTS security_leases_scope ON security_leases(scope);");
   db.exec("CREATE TABLE IF NOT EXISTS session_auth(token TEXT PRIMARY KEY REFERENCES sessions(token) ON DELETE CASCADE,authenticated INTEGER NOT NULL) STRICT;");
   require('./admin-store').initAdminStore(db);
+  require('./char').initCharStore(db);
   if(filename!==":memory:")fs.chmodSync(filename,0o600);
   return db;
 }

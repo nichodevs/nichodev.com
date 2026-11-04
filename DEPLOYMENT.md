@@ -41,3 +41,7 @@ Antes de publicar alterações de autenticação, siga [community/SECURITY.md](c
 ## Central administrativa publicada
 
 Consulte [community/ADMIN.md](community/ADMIN.md) para módulos, papéis, MFA obrigatório, migração, métricas, recibos operacionais e riscos de retorno. Interface e backend foram publicados juntos em 04/11/2026, na homologação e depois em produção. O registro dos builds, backups e validações está em [community/ADMIN.md](community/ADMIN.md#publicação-verificada-em-04112026). Novas alterações continuam exigindo publicação explícita. O código antigo não aplica suspensão, papéis ou MFA: não retornar a ele com a comunidade aberta.
+
+## NICO//CHAR
+
+Publique o editor e o backend juntos após CI e homologação autorizada. As novas tabelas são adicionais e os desenhos pendentes nunca devem substituir a aparência pública aprovada. Valide comentários, revisão de chars, exportações PNG/GIF e preservação dos dados conforme [community/CHAR.md](community/CHAR.md). Esta implementação não faz deploy automático.
