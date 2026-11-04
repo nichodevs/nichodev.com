@@ -45,3 +45,11 @@ test('assisted recovery lets only the token holder finish an approved request',a
  await page.locator('#adm-id').fill(id);await page.locator('#adm-token').fill(token);await page.locator('#adm-password').fill(phrase+' alterada');await page.locator('#adm-confirm').fill(phrase+' alterada');await page.locator('dialog[open] button[type=submit]').click();await expect(page.locator('#adm-key')).toBeVisible();await page.locator('dialog[open] input[type=checkbox]').check();await page.locator('dialog[open] button[type=submit]').click();
  expect((await member('/login',{method:'POST',body:{username:'recuperacao_ui',password:phrase+' alterada'}})).status).toBe(200);
 });
+
+test('failed feedback classification restores the persisted status',async({page,community})=>{
+ const call=community.client();await account(call,'admin_feedback');staffFixture(community,'admin_feedback','owner');await call('/feedback',{method:'POST',body:{tool:'site',experience:'bem',comment:'Avaliação privada'}});
+ await login(page,'admin_feedback');staffFixture(community,'admin_feedback','owner');await page.locator('#adminLink').click();await page.getByRole('button',{name:'AVALIAÇÕES',exact:true}).click();
+ await page.route('**/api/community/admin/feedback/*',route=>route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Serviço temporariamente indisponível'})}));
+ const select=page.getByRole('combobox',{name:'Situação da avaliação'});await expect(select).toHaveValue('recebido');await select.selectOption('analise');await expect(select).toHaveValue('recebido');await expect(page.locator('#adminMessage')).toContainText('temporariamente indisponível');await expect(select).toBeEnabled();
+ expect(community.app.locals.db.prepare('SELECT status FROM feedback').get().status).toBe('recebido');
+});
