@@ -28,7 +28,7 @@ Há timeout de cinco segundos, teto de 2 MiB de resposta e validação do format
 
 O painel administrativo exige uma senha confirmada nos últimos dez minutos. Sessões antigas continuam válidas para funções comuns, mas exigem confirmação para administrar. `session_auth` guarda a confirmação separada, sem mudar as três colunas de `sessions`, preservando compatibilidade de leitura/escrita com a versão anterior. Logout, troca de senha e exclusão removem os registros por chave estrangeira.
 
-Esse reforço é reautenticação, **não um segundo fator**. A senha administrativa deve ser exclusiva; MFA/passkeys podem ser uma entrega posterior. O código nunca mostra a senha administrativa nem a grava no armazenamento do navegador.
+A confirmação de senha é reautenticação. A central administrativa agora exige também TOTP recente por sessão, com cadastro e códigos de emergência descritos em [ADMIN.md](ADMIN.md). A senha administrativa deve ser exclusiva; passkeys não fazem parte desta entrega. O código nunca mostra a senha administrativa nem a grava no armazenamento do navegador.
 
 ## GitHub e backups
 
