@@ -1,6 +1,6 @@
 # NICO//CHAR — ID CARD / CHAR LAB
 
-Implementação da direção visual do book de referências: peças originais em pixel art, monocromia com uma cor opcional e integração com o SQLite existente. Esta mudança prepara o código; não publica na Hostinger.
+Implementação da direção visual do book de referências: peças originais em pixel art, monocromia com uma cor opcional e integração com o SQLite existente. Publicado na homologação e em produção em 04/11/2026, após validação independente dos dois ambientes. Novas integrações de código continuam sem publicação automática.
 
 ## Experiência
 
@@ -59,3 +59,22 @@ Membros, perfis, comentários e filas aceitam páginas de 1–100 registros, pad
 Antes de publicar: CI completo aprovado, backup consistente do ambiente, homologação autorizada, comparação dos registros originais, teste de cadastro/sessões/MFA existentes e validação de todas as novas áreas com contas descartáveis. Remover só os dados de teste, executar backups e restauração isolada incluindo as novas tabelas. Manter produção e homologação separadas e executar `route-public-html.cjs` depois do deploy de produção, conforme `PRODUCTION.md`. Toda chave SSH temporária deve ser revogada e testada ao concluir.
 
 Retornar ao código anterior não exige restaurar banco nem apagar tabelas. Porém ele não mostra chars/comentários nem aplica as novas revisões; preserve a base e avalie o fechamento das novas interações antes de qualquer retorno. Integrar o PR não publica automaticamente.
+
+## Publicação verificada em 04/11/2026
+
+Código integrado em `f1818728710a61c2d020904de501a5e3620f9d6b`. [Workflow do pacote aprovado](https://github.com/nichodevs/nichodev.com/actions/runs/41831464788), além dos 226 testes do [CI do recurso](https://github.com/nichodevs/nichodev.com/actions/runs/41828365103). Os dois ZIPs publicados têm SHA-256 `d3ab796a12f642a08542eccf2335b30de17f69db2fe2681ae39c34c2404df71c`; os 141 arquivos foram comparados com o pacote antes do encaminhamento dos HTML de produção.
+
+| Ambiente | Pacote | Build |
+| --- | --- | --- |
+| [Homologação](https://cornflowerblue-lapwing-604910.hostingersite.com/comunidade/#char) | `community-homologacao_20261104_125200.zip` | `01a1a6b1-688f-7163-8bf2-9cf8611e7140` |
+| [Produção](https://nichodev.com/comunidade/#char) | `community-producao_20261104_125200.zip` | `01a1a6b8-6829-70b4-9e3c-c43e43f52358` |
+
+Homologação passou antes da ativação em produção. Nos dois ambientes, contas descartáveis exercitaram TOTP real, permissões, módulos administrativos existentes, salvamento e conflitos, catálogo/itens bloqueados, perfis e membros, conquistas e concessão de evento, desenhos 16×16 e 32×32 privados até aprovação, preservação da aparência pública anterior, comentários moderados, denúncias, ocultação, revisão, notificações e auditoria. A sequência de dias foi preparada somente na atividade diária da conta descartável; não se fabricaram conquistas de contas reais.
+
+A interface publicada passou em desktop e celular: edição, companion, mini estúdio, lápis por teclado, espelhamento, preenchimento, borracha, desfazer, perfis, membros, comentários como texto e movimento reduzido, sem erros de JavaScript. PNG transparente e GIF de quatro quadros exportados pelo navegador foram decodificados independentemente. Produção também passou nas páginas públicas, HSTS/CSP, bloqueio de arquivos privados e redirecionamento permanente de `www` com caminho/consulta, após `route-public-html.cjs`.
+
+Backups consistentes foram executados antes e depois. Os últimos R2 após limpeza dos testes foram verificados em 04/11/2026 às 13:18:00 UTC na homologação e 13:23:43 UTC em produção: criptografia, download e integridade aprovados. A restauração isolada validou todas as tabelas e áudios, chaves estrangeiras, leitura/escrita pela aplicação e acesso privado; removeu sua cópia sem alterar o backup original. Monitores consultados estavam saudáveis.
+
+As contas descartáveis e auxiliares privados de teste foram removidos. Quantidades e SHA-256 das seis tabelas originais (`users`, `creations`, `media`, `favorites`, `user_palettes`, `feedback`) coincidiram com a referência anterior: homologação preservou 5 contas, 4 criações, 1 áudio, 2 paletas e 1 avaliação; produção preservou sua conta própria. Não houve cópia entre bancos nem uso da senha real do administrador.
+
+O envio pelo controle do navegador travou; o usuário selecionou os ZIPs manualmente no hPanel. A versão ativa foi conferida pelos arquivos, build e respostas reais. A chave temporária `nichodev-nico-release-20261104` foi removida do hPanel, nova conexão foi recusada (`Permission denied`, exit 255) e a cópia privada local foi apagada. Recibos detalhados e snapshots permaneceram nas pastas privadas de cada ambiente. Não houve teste prolongado de carga em produção.
