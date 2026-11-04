@@ -92,3 +92,7 @@ Após remover exclusivamente as contas e os registros de teste, as seis tabelas 
 A chave SSH temporária `nichodev-admin-release-20261104` foi removida da Hostinger. Nova autenticação com essa chave foi recusada (exit 255, `Permission denied`); a chave privada local e o estado de sessão de teste foram apagados.
 
 A conta real da equipe deve cadastrar seu próprio autenticador TOTP no primeiro acesso ao painel, com senha e chave de recuperação já guardadas, e guardar os códigos de emergência. Não foram usados seus segredos nem realizado teste prolongado de carga. Não retornar ao código anterior com a comunidade aberta: ele não aplica suspensão, papéis ou MFA.
+
+## Personagens e comentários
+
+As filas **NICO//CHAR** e **COMENTÁRIOS** usam a permissão de moderação existente, senha/MFA recentes, versões, motivos, notificações e auditoria. Somente proprietários concedem cosméticos de eventos/desafios. Consulte [CHAR.md](CHAR.md) para desenho livre privado até aprovação, denúncias, limites e exportação de dados.

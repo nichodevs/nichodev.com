@@ -52,7 +52,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   const get=(sql,...params)=>db.prepare(sql).get(...params);
   const all=(sql,...params)=>db.prepare(sql).all(...params);
   const run=(sql,...params)=>db.prepare(sql).run(...params);
-  const clean=()=>{const time=now();run("DELETE FROM sessions WHERE expires<?",time);run("DELETE FROM users WHERE active=0 AND confirmation_expiry<?",time);run("DELETE FROM limits WHERE expires<?",time);run("DELETE FROM feedback WHERE created<?",time-90*86400000);run("DELETE FROM daily_activity WHERE day<?",new Date(time-90*86400000).toISOString().slice(0,10));run("DELETE FROM preset_usage WHERE day<?",new Date(time-90*86400000).toISOString().slice(0,10));run("DELETE FROM notices WHERE created<?",time-90*86400000);run("DELETE FROM admin_audit WHERE created<?",time-365*86400000);run("DELETE FROM moderation WHERE created<?",time-365*86400000);run("DELETE FROM reports WHERE created<?",time-180*86400000);run("DELETE FROM recovery_requests WHERE created<?",time-30*86400000);run("UPDATE recovery_requests SET status='expired' WHERE status IN ('pending','approved') AND expires<=?",time);run("DELETE FROM media WHERE created<? AND id NOT IN (SELECT media_id FROM creations WHERE media_id IS NOT NULL)",time-86400000);};
+  const clean=()=>{const time=now();run("DELETE FROM sessions WHERE expires<?",time);run("DELETE FROM users WHERE active=0 AND confirmation_expiry<?",time);run("DELETE FROM limits WHERE expires<?",time);run("DELETE FROM feedback WHERE created<?",time-90*86400000);run("DELETE FROM daily_activity WHERE day<?",new Date(time-90*86400000).toISOString().slice(0,10));run("DELETE FROM preset_usage WHERE day<?",new Date(time-90*86400000).toISOString().slice(0,10));run("DELETE FROM notices WHERE created<?",time-90*86400000);run("DELETE FROM admin_audit WHERE created<?",time-365*86400000);run("DELETE FROM moderation WHERE created<?",time-365*86400000);run("DELETE FROM reports WHERE created<?",time-180*86400000);run("DELETE FROM char_reports WHERE created<?",time-180*86400000);run("DELETE FROM recovery_requests WHERE created<?",time-30*86400000);run("UPDATE recovery_requests SET status='expired' WHERE status IN ('pending','approved') AND expires<=?",time);run("DELETE FROM media WHERE created<? AND id NOT IN (SELECT media_id FROM creations WHERE media_id IS NOT NULL)",time-86400000);};
   clean();
   const timer=setInterval(()=>{try{clean();}catch{console.error("Não foi possível executar a limpeza periódica da comunidade.");}},600000);timer.unref();
   app.locals.close=()=>{clearInterval(timer);db.close();};
@@ -123,6 +123,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   api.use((req,res,next)=>{if(!["GET","HEAD"].includes(req.method)&&req.path!=="/media"&&(!req.body||typeof req.body!=="object"||Array.isArray(req.body)))return next(Object.assign(new Error("Envie os campos em JSON."),{status:400}));next();});
   const ops=require("./admin").installAdmin({api,app,db,dbPath,auth,actor,passwordAdmin,rate,now,get,all,run,fail,text,select,digest,random,uuid,cookies,cookieName,verify,password,newPassword,hash,item,creation,visible,guard});
   measure=ops.measure;
+  const chars=require('./char').installChar({api,db,auth,actor,rate,now,get,all,run,fail,ops,text,item,creation,visible});
   api.get("/session",(req,res)=>{const user=actor(req);ops.touch(user);res.json({user:safeUser(user),publicRelease});});
   api.get("/operations/proxy",(req,res)=>{
     if(!probeToken||!crypto.timingSafeEqual(Buffer.from(digest(req.get("X-Nichodev-Probe")||""),"hex"),Buffer.from(digest(probeToken),"hex")))fail(404,"Recurso não encontrado.");
@@ -132,7 +133,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
     const user=auth(req);rate(req,"export",5,3600000);
     const record=get("SELECT username,created FROM users WHERE id=?",user.id);
     const palette=get("SELECT colors FROM user_palettes WHERE user_id=?",user.id);
-    res.attachment("nichodev-meus-dados.json").json({account:record,controls:ops.controls(user.id),activity:all("SELECT day FROM daily_activity WHERE user_id=? ORDER BY day",user.id),notifications:all("SELECT message,created FROM notices WHERE user_id=? ORDER BY id",user.id),moderation:all("SELECT decision,reason,created FROM moderation WHERE owner=? ORDER BY id",user.id),reports:all("SELECT creation_id,reason,status,created FROM reports WHERE reporter=? ORDER BY id",user.id),recoveryRequests:all("SELECT id,status,reason,created,expires FROM recovery_requests WHERE user_id=? ORDER BY created",user.id),palette:palette?JSON.parse(palette.colors):null,creations:all("SELECT c.*,u.username FROM creations c JOIN users u ON u.id=c.owner WHERE c.owner=?",user.id).map(item),favorites:all("SELECT creation_id FROM favorites WHERE user_id=?",user.id).map(row=>row.creation_id),audio:all("SELECT id FROM media WHERE owner=?",user.id).map(row=>({id:row.id,url:app.locals.origin+"/api/community/media/"+row.id})),audioNote:"Os links de áudio exigem sua sessão ativa; baixe os WAV antes de excluir a conta."});
+    res.attachment("nichodev-meus-dados.json").json({account:record,char:chars.own(user.id),comments:all("SELECT id,creation_id,body,status,created FROM creation_comments WHERE user_id=? ORDER BY id",user.id),charReports:all("SELECT user_id,reason,status,created FROM char_reports WHERE reporter=? ORDER BY id",user.id),controls:ops.controls(user.id),activity:all("SELECT day FROM daily_activity WHERE user_id=? ORDER BY day",user.id),notifications:all("SELECT message,created FROM notices WHERE user_id=? ORDER BY id",user.id),moderation:all("SELECT decision,reason,created FROM moderation WHERE owner=? ORDER BY id",user.id),reports:all("SELECT creation_id,reason,status,created FROM reports WHERE reporter=? ORDER BY id",user.id),recoveryRequests:all("SELECT id,status,reason,created,expires FROM recovery_requests WHERE user_id=? ORDER BY created",user.id),palette:palette?JSON.parse(palette.colors):null,creations:all("SELECT c.*,u.username,a.public_design char_design,a.revision char_revision FROM creations c JOIN users u ON u.id=c.owner LEFT JOIN user_chars a ON a.user_id=u.id AND NOT EXISTS(SELECT 1 FROM user_controls x WHERE x.user_id=u.id AND x.suspended=1) WHERE c.owner=?",user.id).map(item),favorites:all("SELECT creation_id FROM favorites WHERE user_id=?",user.id).map(row=>row.creation_id),audio:all("SELECT id FROM media WHERE owner=?",user.id).map(row=>({id:row.id,url:app.locals.origin+"/api/community/media/"+row.id})),audioNote:"Os links de áudio exigem sua sessão ativa; baixe os WAV antes de excluir a conta."});
   });
   api.delete("/account",async(req,res)=>{
     const user=auth(req);rate(req,"delete-account",5,3600000);
@@ -248,16 +249,16 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
     const id=uuid();run("INSERT INTO feedback(id,tool,experience,comment,contact,created) VALUES(?,?,?,?,?,?)",id,tool,experience,comment,contact,now());
     res.status(201).json({id});
   });
-  function creation(id){const row=get("SELECT c.*,u.username FROM creations c JOIN users u ON u.id=c.owner WHERE c.id=?",id);if(!row)fail(404,"Criação não encontrada.");return row;}
+  function creation(id){const row=get("SELECT c.*,u.username,a.public_design char_design,a.revision char_revision FROM creations c JOIN users u ON u.id=c.owner LEFT JOIN user_chars a ON a.user_id=u.id AND NOT EXISTS(SELECT 1 FROM user_controls x WHERE x.user_id=u.id AND x.suspended=1) WHERE c.id=?",id);if(!row)fail(404,"Criação não encontrada.");return row;}
   function mayRead(row,req){const user=actor(req);return user?.id===row.owner||(row.visibility==="public"&&row.status==="approved")||(row.visibility==="unlisted"&&row.share_hash&&digest(String(req.query.key||""))===row.share_hash)||(user?.admin&&Boolean(ops.admin(req,row.visibility==="public"?"moderate":"users")));}
   function visible(row,req){if(!mayRead(row,req))fail(404,"Criação não encontrada.");return row;}
-  function item(row){return {id:row.id,title:row.title,description:row.description,tool:row.tool,kind:row.kind,author:row.username,owner:row.owner,visibility:row.visibility,status:row.status,version:row.version,preset:row.preset?JSON.parse(row.preset):null,mediaId:row.media_id,created:row.created};}
+  function item(row){return {id:row.id,title:row.title,description:row.description,tool:row.tool,kind:row.kind,author:row.username,owner:row.owner,visibility:row.visibility,status:row.status,version:row.version,preset:row.preset?JSON.parse(row.preset):null,mediaId:row.media_id,created:row.created,char:row.char_design?{design:JSON.parse(row.char_design),revision:row.char_revision}:null};}
   api.get("/creations",(req,res)=>{
-    res.json({items:all("SELECT c.*,u.username FROM creations c JOIN users u ON u.id=c.owner WHERE c.visibility='public' AND c.status='approved' ORDER BY c.created DESC LIMIT 100").map(item)});
+    res.json({items:all("SELECT c.*,u.username,a.public_design char_design,a.revision char_revision FROM creations c JOIN users u ON u.id=c.owner LEFT JOIN user_chars a ON a.user_id=u.id AND NOT EXISTS(SELECT 1 FROM user_controls x WHERE x.user_id=u.id AND x.suspended=1) WHERE c.visibility='public' AND c.status='approved' ORDER BY c.created DESC LIMIT 100").map(item)});
   });
   api.get("/me",(req,res)=>{
     const user=auth(req);
-    res.json({items:all("SELECT c.*,u.username FROM creations c JOIN users u ON u.id=c.owner WHERE c.owner=? ORDER BY c.created DESC LIMIT 100",user.id).map(item),favorites:all("SELECT creation_id FROM favorites WHERE user_id=?",user.id).map(row=>row.creation_id)});
+    res.json({items:all("SELECT c.*,u.username,a.public_design char_design,a.revision char_revision FROM creations c JOIN users u ON u.id=c.owner LEFT JOIN user_chars a ON a.user_id=u.id AND NOT EXISTS(SELECT 1 FROM user_controls x WHERE x.user_id=u.id AND x.suspended=1) WHERE c.owner=? ORDER BY c.created DESC LIMIT 100",user.id).map(item),favorites:all("SELECT creation_id FROM favorites WHERE user_id=?",user.id).map(row=>row.creation_id)});
   });
   api.get("/creations/:id",(req,res)=>res.json({item:item(visible(creation(req.params.id),req))}));
   function fields(body,owner){
@@ -323,7 +324,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   api.get("/media/:id",(req,res)=>{
     rate(req,"media-read",120,60000);
     const media=get("SELECT id,owner,length(audio) AS size FROM media WHERE id=?",req.params.id);if(!media)fail(404,"Áudio não encontrado.");
-    const user=actor(req),rows=all("SELECT c.*,u.username FROM creations c JOIN users u ON u.id=c.owner WHERE c.media_id=?",media.id);
+    const user=actor(req),rows=all("SELECT c.*,u.username,a.public_design char_design,a.revision char_revision FROM creations c JOIN users u ON u.id=c.owner LEFT JOIN user_chars a ON a.user_id=u.id AND NOT EXISTS(SELECT 1 FROM user_controls x WHERE x.user_id=u.id AND x.suspended=1) WHERE c.media_id=?",media.id);
     if(user?.id!==media.owner&&!rows.some(row=>mayRead(row,req)))fail(404,"Áudio não encontrado.");
     res.type("audio/wav").set("Accept-Ranges","bytes");
     if(req.method==="HEAD")return res.set("Content-Length",String(media.size)).end();
@@ -361,6 +362,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   app.get("/health",(req,res)=>{get("SELECT 1");res.json({status:"ok"});});
   app.get("/community/preset-format.js",(req,res)=>res.sendFile(path.join(__dirname,"preset-format.js")));
   app.get("/community/palette-format.js",(req,res)=>res.sendFile(path.join(__dirname,"palette-format.js")));
+  app.get("/community/char-format.js",(req,res)=>res.sendFile(path.join(__dirname,"char-format.js")));
   app.get("/community/tool-bridge.js",(req,res)=>res.sendFile(path.join(__dirname,"tool-bridge.js")));
   const pageDir=path.join(path.dirname(siteDir),"server-pages");
   function readPage(file,done){

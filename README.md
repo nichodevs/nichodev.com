@@ -102,3 +102,5 @@ Os ZIPs dos releases são os downloads permanentes. Os artefatos das Actions exp
 
 
 Os limites compartilhados, consultas de senhas comprometidas, proteção administrativa e retenção de backups estão descritos em [community/SECURITY.md](community/SECURITY.md).
+
+**NICO//CHAR:** editor modular e desenho livre, ID card, companions, mini estúdio, PNG/GIF, marcos cosméticos e identidade nos perfis/criações/comentários. A implementação e os cuidados de moderação e publicação estão em [community/CHAR.md](community/CHAR.md).
