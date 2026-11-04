@@ -13,8 +13,8 @@
   <script src="/community/preset-format.js" defer></script>
   <script src="/community/palette-format.js" defer></script>
   <script src="palette.js?v=account-sync-1" defer></script>
-  <link rel="stylesheet" href="char.css?v=nico-char-1"><script src="/community/char-format.js?v=1" defer></script><script src="char-render.js?v=1" defer></script><script src="char.js?v=1" defer></script>
-  <script src="preview.js?v=nico-char-1" defer></script>
+  <link rel="stylesheet" href="char.css?v=header-char-1"><script src="/community/char-format.js?v=1" defer></script><script src="char-render.js?v=1" defer></script><script src="char.js?v=header-char-1" defer></script>
+  <script src="preview.js?v=header-char-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">PULAR PARA O CONTEÚDO</a>
@@ -22,7 +22,7 @@
   <div class="app-shell">
     <header class="app-header">
       <a class="brand" href="#inicio" aria-label="Nichodev, início da prévia"><span class="pixel-mark" aria-hidden="true">▥</span><span>NICHODEV<span class="brand-sub">AUDIO ARCADE / COMUNIDADE</span></span></a>
-      <button class="account-button" type="button" data-action="account"><span aria-hidden="true">＋</span><span id="accountLabel">ENTRAR / CRIAR CONTA</span></button>
+      <div class="header-account"><a id="headerChar" class="header-char" href="#char" aria-label="Abrir CHAR LAB"><canvas id="headerCharCanvas" width="64" height="64" role="img" aria-label="CHAR padrão"></canvas></a><button class="account-button" type="button" data-action="account"><span aria-hidden="true">＋</span><span id="accountLabel">ENTRAR / CRIAR CONTA</span></button></div>
     </header>
     <nav class="main-nav" aria-label="Navegação da prévia">
       <a href="#inicio" data-view-link="inicio" aria-current="page">EXPLORAR</a>

@@ -4,6 +4,8 @@ Implementação da direção visual do book de referências: peças originais em
 
 ## Experiência
 
+O cabeçalho também mostra o quadradinho do CHAR ao lado do botão de conta: padrão para visitantes, personagem salvo para a conta conectada e atalho para o CHAR LAB. Ao sair ou trocar de conta, a imagem anterior é limpa.
+
 - `#char`: editor aberto também como prévia para visitantes; somente contas autenticadas salvam. As mudanças ficam na prévia até **SALVAR CHAR**. Há descartar, padrão, desfazer/refazer (50 estados) e aviso de saída sem salvar.
 - `#estudio`: ID card de 128×128 CSS px com nome, classe visual, nível cosmético e acesso à personalização.
 - `#perfil/usuario`: personagem e criações públicas aprovadas, paginadas. Avatar do autor também acompanha presets, galeria e comentários.

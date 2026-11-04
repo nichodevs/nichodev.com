@@ -76,7 +76,7 @@
   const lookup=id=>[...mine,...items].find(item=>item.id===id);
   function render(){
     const focused=document.activeElement,focusAction=focused?.dataset.action,focusId=focused?.dataset.id;
-    window.NicoCharUI.studio($("nicoStudio"));
+    window.NicoCharUI.header();window.NicoCharUI.studio($("nicoStudio"));
     fill("presetCards",items.filter(item=>item.kind==="preset"&&(presetFilter==="todos"||item.tool===presetFilter)),"Ainda não há timbres públicos aprovados. Capture um timbre na ferramenta para começar.");
     fill("galleryCards",items.filter(item=>galleryFilter==="todos"||(galleryFilter==="musica"?item.kind==="audio":item.kind==="preset")),"Nenhuma publicação aprovada nesta categoria.");
     $("accountLabel").textContent=user?"@"+user.username:"ENTRAR / CRIAR CONTA";
