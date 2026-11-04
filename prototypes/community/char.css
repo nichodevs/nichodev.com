@@ -4,3 +4,5 @@
 
 @media(min-width:1001px){.nico-workbench{height:680px;min-height:0}.nico-categories,.nico-library{overflow-y:auto;min-height:0}.nico-stage{overflow:auto}.nico-categories button{min-height:36px;flex-shrink:0}}
 .nico-comment{border-top:1px solid var(--line);padding:16px 0}.nico-comment small{color:var(--muted)}.nico-comment p{margin:8px 0}.nico-comment .text-link{display:block}#nicoComments{margin-top:24px}
+
+.header-account{display:flex;align-items:center;gap:10px;max-width:100%;margin-left:auto}.header-char{display:flex;align-items:center;justify-content:center;width:58px;height:58px;flex:0 0 58px;border:1px solid var(--line);background:var(--panel-dark);text-decoration:none}.header-char:hover{border-color:var(--lime)}.header-char canvas{display:block;width:48px;height:48px;image-rendering:pixelated}.header-account .account-button{margin-left:0;min-width:0}@media(max-width:420px){.header-account{gap:8px}.header-account .account-button{font-size:8px;padding:10px;gap:8px}.header-char{width:48px;height:48px;flex-basis:48px}.header-char canvas{width:40px;height:40px}}
