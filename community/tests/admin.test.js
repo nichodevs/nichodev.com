@@ -1,0 +1,83 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),crypto=require('node:crypto'),fs=require('node:fs'),path=require('node:path');
+const {openCommunity,account,phrase}=require('../../tests/helpers/community');
+const {staffFixture}=require('../../tests/helpers/admin');
+const {totp,cipher}=require('../mfa');
+const {initialPreset}=require('../preset-format');
+const post=body=>({method:'POST',body}),patch=body=>({method:'PATCH',body});
+async function setup(t){const f=await openCommunity();t.after(()=>f.close());const owner=f.client(),member=f.client();const o=await account(owner,'dono'),m=await account(member,'artista');staffFixture(f,'dono','owner');return {f,owner,member,o,m,db:f.app.locals.db};}
+test('TOTP matches all RFC 6238 SHA-1 vectors and authenticated encryption rejects tampering',()=>{
+  const secret='GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';for(const [seconds,code]of [[59,'94287082'],[1111111109,'07081804'],[1111111111,'14050471'],[1234567890,'89005924'],[2000000000,'69279037'],[20000000000,'65353130']])assert.equal(totp(secret,Math.floor(seconds/30),8),code);
+  const c=cipher('private'),sealed=c.seal(secret);assert.equal(c.open(sealed),secret);const b=Buffer.from(sealed,'base64url');b[15]^=1;assert.throws(()=>c.open(b.toString('base64url')));
+});
+test('MFA enrollment needs password and recovery proof, rejects replay, expires session and uses backup once',async t=>{
+  const f=await openCommunity();t.after(()=>f.close());const call=f.client(),a=await account(call,'responsavel'),db=f.app.locals.db;db.exec("UPDATE users SET admin=1; UPDATE user_controls SET role='owner'");
+  assert.equal((await call('/admin/users')).data.code,'ADMIN_MFA_SETUP_REQUIRED');
+  assert.equal((await call('/admin/mfa/setup',post({current:phrase,recoveryKey:'wrong'}))).status,400);
+  const d=await call('/admin/mfa/setup',post({current:phrase,recoveryKey:a.key}));assert.equal(d.status,200);assert.ok(!db.prepare('SELECT secret FROM admin_mfa').get().secret.includes(d.data.secret));
+  const code=totp(d.data.secret,Math.floor(Date.now()/30000));const v=await call('/admin/mfa/verify',post({code}));assert.equal(v.status,200);assert.equal(v.data.backupCodes.length,8);
+  assert.equal((await call('/admin/mfa/verify',post({code}))).status,400);assert.equal((await call('/admin/users')).status,200);
+  db.exec('UPDATE session_mfa SET verified=0');assert.equal((await call('/admin/users')).data.code,'ADMIN_MFA_REQUIRED');
+  const backup=v.data.backupCodes[0];assert.equal((await call('/admin/mfa/backup',post({code:backup}))).status,204);assert.equal((await call('/admin/mfa/backup',post({code:backup}))).status,400);
+  assert.equal((await call('/admin/users')).data.code,'ADMIN_MFA_SETUP_REQUIRED');
+  assert.equal((await call('/admin/audit')).status,403);
+});
+test('user pagination, suspension, reactivation, session revocation, role separation and audit persist',async t=>{
+  const {f,owner,member,m,db}=await setup(t);const mod=f.client();await account(mod,'moderador');staffFixture(f,'moderador','moderator');
+  for(const route of ['/admin/users','/admin/stats','/admin/backups','/admin/settings','/admin/audit','/admin/feedback','/admin/recovery'])assert.equal((await mod(route)).status,403,route);
+  assert.equal((await mod('/admin/creations')).status,200);assert.equal((await owner('/admin/users?size=101')).status,400);
+  db.exec('BEGIN');for(let i=0;i<1100;i++)db.prepare('INSERT INTO users(id,username,password,recovery,active,created) VALUES(?,?,?,?,1,?)').run('fake'+i,'user_'+String(i).padStart(4,'0'),'not-a-real-hash','not-a-real-key',Date.now()-i);db.exec('COMMIT');
+  const one=await owner('/admin/users?q=user_&size=25&page=1'),two=await owner('/admin/users?q=user_&size=25&page=2');assert.equal(one.data.total,1100);assert.equal(one.data.items.length,25);assert.equal(new Set([...one.data.items,...two.data.items].map(x=>x.id)).size,50);assert.ok(!JSON.stringify(one.data).includes('not-a-real'));
+  assert.equal((await owner('/admin/users/'+m.user.id,patch({action:'suspend'}))).status,400);
+  assert.equal((await owner('/admin/users/'+m.user.id,patch({action:'suspend',reason:'Abuso confirmado'}))).status,204);
+  assert.equal((await member('/me')).status,401);assert.equal((await member('/login',post({username:'artista',password:phrase}))).status,401);
+  assert.equal((await owner('/admin/users/'+m.user.id,patch({action:'reactivate',reason:'Revisão concluída'}))).status,204);assert.equal((await member('/login',post({username:'artista',password:phrase}))).status,200);
+  assert.equal((await owner('/admin/users/'+m.user.id,patch({action:'sessions',reason:'Sessão comprometida'}))).status,204);assert.equal((await member('/me')).status,401);
+  const history=await owner('/admin/users/'+m.user.id+'/history');assert.ok(history.data.items.some(x=>x.action==='user.suspend'));
+  const id=db.prepare("SELECT id FROM users WHERE username='dono'").get().id;assert.equal((await owner('/admin/users/'+id,patch({action:'suspend',reason:'Self'}))).status,403);
+  const demote=await mod('/admin/users/'+id+'/role',patch({role:'member',reason:'Ataque'}));assert.equal(demote.status,403);
+  assert.equal((await owner('/admin/users/'+m.user.id+'/role',patch({role:'moderator',reason:'Equipe de revisão'}))).status,204);
+  assert.equal((await member('/login',post({username:'artista',password:phrase}))).data.user.role,'moderator');
+  assert.equal((await member('/admin/creations')).data.code,'ADMIN_MFA_SETUP_REQUIRED');
+  assert.equal((await owner('/admin/users/'+id+'/role',patch({role:'member',reason:'Auto rebaixamento'}))).status,409);
+  await f.restart();assert.equal((await owner('/admin/users/'+m.user.id+'/history')).status,200);
+});
+test('moderation records reasons, rejects stale decisions, notifies authors and limits public publishing',async t=>{
+  const {f,owner,member,m,db}=await setup(t);const reporter=f.client();await account(reporter,'ouvinte');
+  let c=(await member('/creations',post({kind:'preset',tool:'guitarra',title:'Teste',description:'Preset completo',visibility:'public',preset:initialPreset('guitarra')}))).data.item;
+  assert.equal((await reporter('/creations/'+c.id+'/report',post({reason:'Revisão necessária'}))).status,404);
+  assert.equal((await owner('/admin/creations/'+c.id,patch({status:'approved',reason:'Regras atendidas',version:c.version}))).status,204);
+  assert.equal((await owner('/admin/creations/'+c.id,patch({status:'hidden',reason:'Decisão antiga',version:c.version}))).status,409);
+  assert.equal((await reporter('/creations/'+c.id+'/report',post({reason:'Possível abuso'}))).status,201);assert.equal((await reporter('/creations/'+c.id+'/report',post({reason:'Repetição'}))).status,409);
+  const r=(await owner('/admin/reports')).data.items[0];assert.equal((await owner('/admin/reports/'+r.id,patch({status:'reviewed',reason:'Apurado'}))).status,204);
+  assert.equal((await owner('/admin/creations/'+c.id,patch({status:'hidden',reason:'Revisão da publicação',version:c.version+1}))).status,204);
+  assert.equal((await owner('/admin/creations/'+c.id+'/history')).data.total,2);assert.match((await member('/notifications')).data.items[0].message,/Revisão/);
+  assert.equal((await owner('/admin/users/'+m.user.id,patch({action:'publication-block',until:Date.now()+86400000,reason:'Bloqueio temporário'}))).status,204);
+  assert.equal((await member('/creations/'+c.id,patch({...c,version:c.version+2}))).status,403);assert.ok(db.prepare('SELECT COUNT(*) n FROM admin_audit').get().n>=4);
+});
+test('assisted recovery never exposes proof or token, invalidates compromised sessions and consumes approval once',async t=>{
+  const {f,owner,member,m,db}=await setup(t),recover=f.client();
+  assert.equal((await recover('/recovery-requests',post({username:'artista',recoveryKey:'bad'}))).status,400);
+  const r=await recover('/recovery-requests',post({username:'artista',recoveryKey:m.key}));assert.equal(r.status,201);assert.equal((await member('/me')).status,401);
+  const queue=await owner('/admin/recovery');assert.ok(!JSON.stringify(queue.data).includes(m.key));assert.ok(!JSON.stringify(queue.data).includes(r.data.token));
+  const endpoint='/recovery-requests/'+r.data.id+'/complete',body={token:r.data.token,password:phrase+' nova'};
+  assert.equal((await recover(endpoint,post(body))).status,400);
+  assert.equal((await owner('/admin/recovery/'+r.data.id,patch({status:'approved',reason:'Chave verificada; sessões comprometidas'}))).status,204);
+  assert.equal((await recover(endpoint,post({...body,token:'bad'}))).status,400);
+  const done=await recover(endpoint,post(body));assert.equal(done.status,200);assert.notEqual(done.data.recoveryKey,m.key);
+  assert.equal((await recover(endpoint,post(body))).status,400);assert.equal((await member('/login',post({username:'artista',password:body.password}))).status,200);
+  assert.equal(db.prepare('SELECT status FROM recovery_requests').get().status,'completed');
+});
+test('settings enforce validation and version, aggregate stats minimize tracking, operational state does not invent receipts',async t=>{
+  const {owner,member,m,f,db}=await setup(t);const d=(await owner('/admin/settings')).data;
+  const v={...d.value,registrationsOpen:false,publicationOpen:false,rolloutPercent:0};
+  assert.equal((await owner('/admin/settings',{method:'PUT',body:{value:{...v,uploadMB:999},version:d.version,reason:'Inválido'}})).status,400);
+  assert.equal((await owner('/admin/settings',{method:'PUT',body:{value:v,version:d.version,reason:'Manutenção planejada'}})).status,200);
+  assert.equal((await owner('/admin/settings',{method:'PUT',body:{value:v,version:d.version,reason:'Versão antiga'}})).status,409);
+  assert.equal((await f.client()('/register',post({username:'fechado',password:phrase}))).status,503);
+  assert.equal((await member('/creations',post({kind:'preset',tool:'guitarra',title:'Público',description:'Descrição',visibility:'public',preset:initialPreset('guitarra')}))).status,403);
+  assert.equal((await member('/session')).status,200);const stats=(await owner('/admin/stats')).data;assert.equal(stats.totals.users,2);assert.ok(stats.active.length);assert.ok(!JSON.stringify(stats).includes(m.user.id));
+  const b=(await owner('/admin/backups')).data;assert.equal(b.r2,null);assert.equal(b.restore,null);assert.equal((await owner('/admin/backups/restore',post({}))).status,404);
+  fs.writeFileSync(path.join(f.directory,'offsite-secret'),'credential');fs.mkdirSync(path.join(f.directory,'offsite'));fs.writeFileSync(path.join(f.directory,'offsite/last-success.json'),JSON.stringify({status:'OFFSITE_BACKUP_OK',downloadVerified:true,integrity:true,at:Date.now(),site:'127.0.0.1',object:'should-not-leak'}));
+  const health=(await owner('/admin/health')).data;assert.ok(health.memoryBytes>0);assert.ok(Array.isArray(health.alerts));assert.equal((await owner('/admin/backups')).data.r2.integrity,true);assert.ok(!JSON.stringify((await owner('/admin/backups')).data).includes('should-not-leak'));
+  assert.ok(db.prepare('SELECT COUNT(*) n FROM daily_activity').get().n<=2);
+});

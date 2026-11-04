@@ -36,3 +36,8 @@ Os VST3 seguem seu [processo de release](plugin/RELEASING.md): os ZIPs são anex
 ## Atualizações de segurança da comunidade
 
 Antes de publicar alterações de autenticação, siga [community/SECURITY.md](community/SECURITY.md): backup, homologação, consulta externa de novas senhas, schema adicional e teste de retorno. Publique interface e backend juntos. Confira HSTS nas páginas/APIs HTTPS e HEAD/Range na mídia; não teste exaustão em produção.
+
+
+## Central administrativa (em preparação)
+
+Consulte [community/ADMIN.md](community/ADMIN.md) para módulos, papéis, MFA obrigatório, migração, métricas, recibos operacionais e riscos de retorno. Interface e backend devem ser publicados juntos; esta alteração não publica na Hostinger. O código antigo não aplica suspensão, papéis ou MFA: não retornar a ele com a comunidade aberta.

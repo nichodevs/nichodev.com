@@ -1,3 +1,4 @@
+const {staffFixture}=require('../../tests/helpers/admin');
 const {test}=require("node:test"),assert=require("node:assert/strict"),crypto=require("node:crypto"),fs=require("node:fs"),path=require("node:path"),os=require("node:os");
 const {execFile}=require("node:child_process"),{promisify}=require("node:util"),{DatabaseSync}=require("node:sqlite");
 const execute=promisify(execFile),{openStore}=require("../store"),{security,checkNewPassword,byteRange}=require("../security");
@@ -56,7 +57,7 @@ test("orçamento global e reservas de autenticação bloqueiam antes do hash; us
 });
 
 test("admin exige senha recente, não promove membro e não dispensa prova em sessão antiga",async t=>{
- const f=await openCommunity();t.after(()=>f.close());const client=f.client(),member=f.client();await account(client,"responsavel");await account(member,"membro");f.app.locals.db.exec("UPDATE users SET admin=1 WHERE username='responsavel'; UPDATE session_auth SET authenticated=0");
+ const f=await openCommunity();t.after(()=>f.close());const client=f.client(),member=f.client();await account(client,"responsavel");await account(member,"membro");staffFixture(f,"responsavel");f.app.locals.db.exec("UPDATE session_auth SET authenticated=0");
  assert.equal((await client("/admin/feedback")).data.code,"ADMIN_REAUTH_REQUIRED");
  assert.equal((await member("/admin/reauth",post({current:phrase}))).status,403);
  assert.equal((await client("/admin/reauth",post({current:phrase+"errada"}))).status,400);

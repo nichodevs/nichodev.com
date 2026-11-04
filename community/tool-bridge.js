@@ -57,7 +57,7 @@
         if(!window.confirm("Aplicar este preset substituirá os ajustes atuais. Deseja continuar?"))return;
         if(tool==="guitarra"){window.applySnapshot(preset.data);currentAB=null;}
         else window.applyRawParams(preset.data.values,preset.data.enabled);
-        status.textContent="Preset aplicado: "+item.title;apply.remove();
+        status.textContent="Preset aplicado: "+item.title;apply.remove();if(item.visibility==="public")request("/creations/"+encodeURIComponent(item.id)+"/use",{}).catch(()=>{});
       });
       bar.insertBefore(apply,status);status.textContent="Confira o nome e aplique o preset quando estiver pronto.";
     }).catch(error=>{status.textContent=error.message;});

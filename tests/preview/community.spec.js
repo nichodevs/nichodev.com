@@ -1,3 +1,4 @@
+const {staffFixture}=require('../helpers/admin');
 const { test: base, expect } = require("@playwright/test");
 const { openCommunity, account, phrase } = require("../helpers/community");
 const { initialPreset } = require("../../community/preset-format");
@@ -199,12 +200,12 @@ test("upload privado reproduz WAV real, sem áudio sintético substituto",async(
 
 test("painel real exige admin e preserva foco ao classificar avaliação",async({page,community})=>{
   const call=community.client();await account(call,"administrador");community.app.locals.db.exec("UPDATE users SET admin=1");await call("/feedback",post({tool:"site",experience:"bem",comment:"<img src=x onerror=alert(1)>"}));
-  await login(page,"administrador");await page.locator("#adminLink").click();await expect(page.locator("#feedbackList")).toContainText("<img src=x onerror=alert(1)>");expect(await page.locator("#feedbackList img").count()).toBe(0);
+  await login(page,"administrador");staffFixture(community,"administrador");await page.locator("#adminLink").click();await page.getByRole("button",{name:"AVALIAÇÕES",exact:true}).click();await expect(page.locator("#feedbackList")).toContainText("<img src=x onerror=alert(1)>");expect(await page.locator("#feedbackList img").count()).toBe(0);
   const select=page.locator("#feedbackList select");await select.focus();await select.selectOption("analise");await expect(select).toBeEnabled();await expect(select).toBeFocused();expect(community.app.locals.db.prepare("SELECT status FROM feedback").get().status).toBe("analise");
 });
 
 test("admin confirma senha recente e pode cancelar sem liberar o painel",async({page,community})=>{
-  const call=community.client();await account(call,"admin_recente");community.app.locals.db.exec("UPDATE users SET admin=1");await login(page,"admin_recente");community.app.locals.db.exec("UPDATE session_auth SET authenticated=0");
+  const call=community.client();await account(call,"admin_recente");community.app.locals.db.exec("UPDATE users SET admin=1");await login(page,"admin_recente");staffFixture(community,"admin_recente");community.app.locals.db.exec("UPDATE session_auth SET authenticated=0");
   await page.locator("#adminLink").click();await expect(page.locator("#adminReauthDialog")).toBeVisible();
   await page.locator("#adminReauthPassword").fill(phrase+"errada");await page.locator('#adminReauthForm button[type="submit"]').click();await expect(page.locator("#adminReauthError")).toContainText("não confere");await expect(page.locator("#adminReauthPassword")).toHaveValue("");
   await page.getByRole("button",{name:"Cancelar confirmação administrativa"}).click();await expect(page.locator("#adminReauthDialog")).not.toBeVisible();expect(community.app.locals.db.prepare("SELECT MAX(authenticated) AS authenticated FROM session_auth").get().authenticated).toBe(0);

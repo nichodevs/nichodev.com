@@ -5,7 +5,7 @@ const http = require("node:http");
 const os = require("node:os");
 const path = require("node:path");
 const {DatabaseSync} = require("node:sqlite");
-let stage="paths";
+let stage="paths",receiptDir;
 const checks={};
 
 const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
@@ -39,6 +39,7 @@ async function main() {
   assert.ok(process.argv[2],"Informe a pasta do site, absoluta ou relativa ao diretório do usuário.");
   const site=fs.realpathSync(path.resolve(os.homedir(),process.argv[2]));
   const privateDir=fs.realpathSync(path.join(site,"community-private"));
+  receiptDir=privateDir;
   const source=path.join(privateDir,"latest.sqlite");
   stage="source";
   assert.ok(fs.lstatSync(source).isFile(),"O backup deve ser um arquivo regular.");
@@ -102,9 +103,11 @@ async function main() {
       db.prepare("INSERT INTO session_auth(token,authenticated) VALUES(?,?)").run(sha(token),Date.now());
       const headers={cookie};
       const session=await request("/api/community/session",{headers});
-      assert.deepEqual(JSON.parse(session.body).user,{id:user.id,username:db.prepare("SELECT username FROM users WHERE id=?").get(user.id).username,admin:Boolean(user.admin)});
+      const control=db.prepare("SELECT * FROM user_controls WHERE user_id=?").get(user.id);
+      if(control?.suspended){assert.equal(JSON.parse(session.body).user,null);assert.equal((await request("/api/community/me",{headers})).status,401);continue;}
+      assert.deepEqual(JSON.parse(session.body).user,{id:user.id,username:db.prepare("SELECT username FROM users WHERE id=?").get(user.id).username,admin:Boolean(user.admin),role:control?.role||(user.admin?"admin":"member")});
       assert.equal((await request("/api/community/me",{headers})).status,200);
-      assert.equal((await request("/api/community/admin/feedback",{headers})).status,user.admin?200:403);
+      assert.equal((await request("/api/community/admin/feedback",{headers})).status,403); // Disposable password-only sessions cannot bypass MFA.
       for(const row of db.prepare("SELECT id,preset,visibility FROM creations WHERE owner=?").all(user.id)) {
         stage="creations";
         const response=await request("/api/community/creations/"+encodeURIComponent(row.id),{headers});
@@ -142,6 +145,7 @@ async function main() {
     checks.backupUnchanged=true;
     stage=previousStage;
   }
+  require("../community/operation-receipt").writeReceipt(privateDir,"restore-status.json",{ok:true,integrity:true,backupUnchanged:true,isolatedCopyRemoved:true});
   console.log(JSON.stringify({...result,backupUnchanged:true,isolatedCopyRemoved:!fs.existsSync(dir)}));
 }
-main().catch(error=>{const value=error.code||error.cause?.code||"ERROR",code=/^[A-Z0-9_]+$/.test(value)?value:"ERROR";console.error("RESTORE_CHECK_FAILED "+JSON.stringify({stage,code,...checks}));process.exitCode=1;});
+main().catch(error=>{if(receiptDir)try{require("../community/operation-receipt").writeReceipt(receiptDir,"restore-status.json",{ok:false,integrity:false});}catch{}const value=error.code||error.cause?.code||"ERROR",code=/^[A-Z0-9_]+$/.test(value)?value:"ERROR";console.error("RESTORE_CHECK_FAILED "+JSON.stringify({stage,code,...checks}));process.exitCode=1;});

@@ -11,7 +11,7 @@ test("exportação não revela segredos e exclusão remove somente dados do titu
  await a("/creations",post({kind:"audio",tool:"voz",title:"Meu áudio",description:"Teste privado",visibility:"private",mediaId:upload.data.id}));
  assert.equal((await guest("/account/export")).status,401);
  const exported=await a("/account/export");assert.equal(exported.status,200);assert.equal(exported.data.account.username,"excluir");assert.equal(exported.data.creations.length,2);assert.equal(exported.data.audio.length,1);
- assert.doesNotMatch(JSON.stringify(exported.data),/password|recovery|share_hash|token/);
+ assert.doesNotMatch(JSON.stringify(exported.data),/"(?:password|recovery|share_hash|token|proof_hash|token_hash|secret)"\s*:/);
  assert.equal((await a("/account",{method:"DELETE",body:{confirm:"errado",password:phrase}})).status,400);
  assert.equal((await a("/account",{method:"DELETE",body:{confirm:"excluir",password:phrase+"errada"}})).status,400);
  assert.equal((await a("/account",{method:"DELETE",body:{confirm:"excluir",password:phrase}})).status,204);
@@ -39,7 +39,7 @@ test("convite do primeiro administrador não permite cadastrar outros usuários 
  assert.equal((await call("/register",{...post({username:"nichodevadm",password:phrase}),headers:{"X-Nichodev-Bootstrap":"convite-privado"}})).status,201);
  assert.equal((await call("/admin/feedback")).status,401);
  const confirmed=await call("/register/confirm",post({saved:true}));assert.equal(confirmed.status,200);assert.equal(confirmed.data.user.admin,true);
- assert.equal((await call("/admin/feedback")).status,200);
+ assert.equal((await call("/admin/feedback")).data.code,"ADMIN_MFA_SETUP_REQUIRED");
 });
 test("diagnóstico de proxy não fica público e recusa encaminhamento de uma origem não confiável",async t=>{
  const f=await openCommunity({probeToken:"privado",trustedProxy:"192.0.2.1"});t.after(()=>f.close());

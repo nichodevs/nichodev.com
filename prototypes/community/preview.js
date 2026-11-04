@@ -9,10 +9,11 @@
   let user=null,items=[],mine=[],favorites=new Set(),presetFilter="todos",galleryFilter="todos",pending=null,accountMode="login";
   let keyFlow="",keyValue="",keyUsername="",passwordMode="recover",draftPreset=null,editing=null,mediaId=null,detail=null,detailKey="",deleting=null,audioContext=null,audioTimer=null;
   const status=message=>{$("pageStatus").textContent=message;};
-  async function request(path,{method="GET",body,raw}={},reauthenticated=false){
+  async function request(path,{method="GET",body,raw}={},reauthenticated=0){
     const response=await fetch(api+path,{method,credentials:"same-origin",headers:{"X-Nichodev-Client":"1",...(path==="/register"&&bootstrapInvite?{"X-Nichodev-Bootstrap":bootstrapInvite}:{}),...(body?{"Content-Type":"application/json"}:{}),...(raw?{"Content-Type":"audio/wav"}:{})},...(body?{body:JSON.stringify(body)}:{}),...(raw?{body:raw}:{})});
     const data=await response.json().catch(()=>({}));
-    if(data.code==="ADMIN_REAUTH_REQUIRED"&&!reauthenticated){await confirmAdminPassword();return request(path,{method,body,raw},true);}
+    if(data.code==="ADMIN_REAUTH_REQUIRED"&&reauthenticated<3){await confirmAdminPassword();return request(path,{method,body,raw},reauthenticated+1);}
+    if(["ADMIN_MFA_REQUIRED","ADMIN_MFA_SETUP_REQUIRED"].includes(data.code)&&reauthenticated<3){await window.NichodevAdmin.unlock(request);return request(path,{method,body,raw},reauthenticated+1);}
     if(!response.ok){const error=new Error(data.error||"Não foi possível concluir. Tente novamente.");error.status=response.status;throw error;}
     return data;
   }
@@ -78,6 +79,7 @@
     fill("presetCards",items.filter(item=>item.kind==="preset"&&(presetFilter==="todos"||item.tool===presetFilter)),"Ainda não há timbres públicos aprovados. Capture um timbre na ferramenta para começar.");
     fill("galleryCards",items.filter(item=>galleryFilter==="todos"||(galleryFilter==="musica"?item.kind==="audio":item.kind==="preset")),"Nenhuma publicação aprovada nesta categoria.");
     $("accountLabel").textContent=user?"@"+user.username:"ENTRAR / CRIAR CONTA";
+    if(!user?.admin)$("adminRoot").replaceChildren();
     $("studioGuest").hidden=Boolean(user);$("studioMember").hidden=!user;$("adminLink").hidden=!user?.admin;
     $("studioSubtitle").textContent=user?"Suas criações são salvas neste ambiente, @"+user.username+".":"Entre para acessar suas criações e favoritos.";
     const all=[...new Map([...mine,...items].map(item=>[item.id,item])).values()];
@@ -92,6 +94,8 @@
     ({items}=await request("/creations"));
     if(user){const data=await request("/me");mine=data.items;favorites=new Set(data.favorites);}
     else{mine=[];favorites=new Set();}
+    const config=await request("/config");$("communityMessage").hidden=!config.maintenanceMessage;$("communityMessage").textContent=config.maintenanceMessage;$("communityRules").textContent=config.rules;$("communityRules").hidden=false;
+    if(user){const n=await request("/notifications");$("memberNotices").replaceChildren(...n.items.map(x=>{const p=document.createElement("p");p.textContent=new Date(x.created).toLocaleString("pt-BR")+" — "+x.message;return p;}));if(!n.items.length)$("memberNotices").textContent="Nenhuma notificação.";}
     render();
   }
   function showAccount(mode){
@@ -152,43 +156,10 @@
     $("detailVisibility").textContent=item.visibility==="private"?"Somente você e a administração podem acessar.":item.visibility==="unlisted"?"Quem tiver o link poderá acessar e repassá-lo.":"A publicação precisa ser aprovada para aparecer na galeria.";
     document.querySelector('[data-action="remix-detail"]').hidden=!item.preset;
     document.querySelector('[data-action="share-detail"]').hidden=!(item.owner===user?.id||item.visibility==="public");
+    $("reportCreation").hidden=!user||item.visibility!=="public"||item.owner===user.id;
     $("shareStatus").textContent="";openDialog("detailDialog");
   }
-  async function loadAdmin(){
-    const root=$("feedbackList"),moderation=$("moderationList");root.replaceChildren();moderation.replaceChildren();
-    if(!user?.admin){empty(root,"Acesso restrito à administração.");return;}
-    const data=await request("/admin/feedback");
-    for(const item of data.items){
-      if($("feedbackFilter").value!=="todos"&&$("feedbackFilter").value!==item.status)continue;
-      const row=document.createElement("article");row.className="feedback-item";
-      const heading=document.createElement("p");heading.textContent=names[item.tool]+" / "+experiences[item.experience];
-      const comment=document.createElement("p");comment.textContent=item.comment||"Sem comentário.";
-      const contact=document.createElement("p");contact.textContent=item.contact||"Sem contato informado.";
-      const select=document.createElement("select");select.setAttribute("aria-label","Situação da avaliação");
-      for(const [value,title]of [["recebido","Recebido"],["analise","Em análise"],["concluido","Concluído"]])select.append(new Option(title,value));
-      select.value=item.status;
-      const error=document.createElement("p");error.setAttribute("role","alert");
-      select.addEventListener("change",async()=>{
-        const old=item.status,focused=document.activeElement===select;select.disabled=true;
-        try{await request("/admin/feedback/"+item.id,{method:"PATCH",body:{status:select.value}});item.status=select.value;if($("feedbackFilter").value!=="todos"&&$("feedbackFilter").value!==item.status){row.remove();$("feedbackFilter").focus();}}
-        catch(e){select.value=old;error.textContent=e.message;}finally{select.disabled=false;if(focused&&row.isConnected)select.focus();}
-      });
-      row.append(heading,comment,contact,select,error);root.append(row);
-    }
-    if(!root.children.length)empty(root,"Nenhuma avaliação nesta situação.");
-    const queue=await request("/admin/creations");
-    for(const item of queue.items){
-      const row=card(item);
-      for(const [state,title]of [["approved","APROVAR"],["hidden","OCULTAR"]]){
-        const action=document.createElement("button");action.type="button";action.className="button outline compact";action.textContent=title;
-        action.addEventListener("click",async()=>{action.disabled=true;try{await request("/admin/creations/"+item.id,{method:"PATCH",body:{status:state}});await refresh();await loadAdmin();(moderation.querySelector("button")||document.querySelector('[data-view="painel"] h1')).focus();status(state==="approved"?"Publicação aprovada.":"Publicação ocultada.");}catch(error){status(error.message);action.disabled=false;}});
-        row.append(action);
-      }
-      row.querySelector('[data-action="detail"]').addEventListener("click",event=>{event.stopPropagation();showDetail(item);});
-      moderation.append(row);
-    }
-    if(!queue.items.length)empty(moderation,"Nenhuma publicação aguardando moderação.");
-  }
+  async function loadAdmin(){await window.NichodevAdmin.mount($("adminRoot"),request,user);}
   async function route(){
     const hash=location.hash.slice(1)||"inicio";if(hash==="main"||hash==="exemplos")return;
     closeDialogs();stopExample();
@@ -300,8 +271,10 @@
     catch(error){$("deleteError").textContent=error.message;}
     finally{$("confirmDelete").disabled=false;}
   });
+  $("reportCreation").addEventListener("click",async()=>{try{const id=detail.id;$("detailDialog").close();await window.NichodevAdmin.report(request,id);status("Denúncia recebida para revisão.");}catch(error){status(error.message);}});
+  $("assistedRecovery").addEventListener("click",async()=>{try{$("passwordDialog").close();await window.NichodevAdmin.assisted(request);status("Etapa de recuperação concluída.");}catch(error){status(error.message);}});
   $("downloadPreset").addEventListener("click",()=>download("nichodev-preset-"+detail.tool+".json",JSON.stringify(detail.preset,null,2)));
-  $("feedbackFilter").addEventListener("change",()=>loadAdmin().catch(error=>status(error.message)));
+
   document.addEventListener("click",async event=>{
     const close=event.target.closest("[data-close]");
     if(close){

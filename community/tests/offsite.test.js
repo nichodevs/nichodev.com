@@ -32,7 +32,7 @@ test("backup externo exige crypt, verifica o download e limpa somente suas cópi
     assert.equal(result.status,"OFFSITE_BACKUP_OK");assert.equal(result.encrypted,true);assert.equal(result.downloadVerified,true);assert.equal(copies,2);
     assert.deepEqual(fs.readFileSync(path.join(data,"community.sqlite")),original);
     assert.deepEqual(fs.readdirSync(data).filter(name=>name.startsWith("offsite-send-")),[]);
-    crypt=false;await assert.rejects(backupOffsite(site),/criptografia/);assert.equal(copies,2);
+    crypt=false;await assert.rejects(backupOffsite(site),/criptografia/);assert.equal(copies,2);assert.equal(JSON.parse(fs.readFileSync(path.join(data,"offsite/status.json"))).ok,false);
     crypt=true;corrupt=true;await assert.rejects(backupOffsite(site),/difere/);
     assert.deepEqual(fs.readFileSync(path.join(data,"community.sqlite")),original);
     assert.deepEqual(fs.readdirSync(data).filter(name=>name.startsWith("offsite-send-")),[]);
