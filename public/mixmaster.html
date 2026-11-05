@@ -13,7 +13,7 @@
   <script>try{if(localStorage.getItem("nichodev-mixmaster-theme")==="dark")document.documentElement.dataset.theme="dark"}catch{}</script>
   <link rel="stylesheet" href="style.css?v=footer-wave-20261020">
   <link rel="stylesheet" href="cursores-retro.css">
-  <link rel="stylesheet" href="mixmaster.css?v=css-cleanup-20261029">
+  <link rel="stylesheet" href="mixmaster.css?v=chip-lab-3">
 <link rel="canonical" href="https://nichodev.com/mixmaster.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="nichodev.com">
@@ -42,7 +42,12 @@
     </header>
 
     <section class="mix-titlebar">
-      <div><p class="eyebrow">ESTÚDIO MULTIFAIXA NO NAVEGADOR</p><h1>MIXMASTER</h1><p class="tagline">GRAVE. EDITE. MISTURE. SOE MELHOR.</p></div>
+      <div>
+        <p class="eyebrow">ESTÚDIO MULTIFAIXA NO NAVEGADOR</p><h1>MIXMASTER</h1><p class="tagline">GRAVE. EDITE. MISTURE. SOE MELHOR.</p>
+        <button id="openChipLab" class="chip-shortcut" type="button" aria-controls="chipLab">
+          <strong>♫ CHIP LAB</strong><span>Criar loop 8-bit →</span>
+        </button>
+      </div>
       <div class="transport" role="group" aria-label="Controles de reprodução">
         <button id="playButton" class="transport-primary" type="button" title="Reproduzir (espaço)">▶<small>PLAY</small></button>
         <button id="stopButton" type="button" title="Parar">■<small>STOP</small></button>
@@ -86,10 +91,46 @@
     </section>
 
     <section class="clip-editor" aria-label="Editor do clipe selecionado">
-      <div class="editor-tabs"><button class="selected" type="button" data-tab="edit">EDIÇÃO</button><button type="button" data-tab="envelope">ENVELOPE</button><button type="button" data-tab="midi">MIDI</button><span id="selectionLabel">NENHUM CLIPE SELECIONADO</span></div>
+      <div class="editor-tabs"><button class="selected" type="button" data-tab="edit">EDIÇÃO</button><button type="button" data-tab="envelope">ENVELOPE</button><button type="button" data-tab="midi">MIDI</button><button type="button" data-tab="chip" aria-controls="chipLab">CHIP LAB</button><span id="selectionLabel">NENHUM CLIPE SELECIONADO</span></div>
       <div class="edit-tools" data-panel="edit"><button id="splitButton" type="button" disabled>CORTAR NO PLAYHEAD</button><button id="trimStartButton" type="button" disabled>RECORTAR INÍCIO</button><button id="trimEndButton" type="button" disabled>RECORTAR FINAL</button><button id="duplicateButton" type="button" disabled>DUPLICAR CLIPE</button><button id="joinButton" type="button" disabled>JUNTAR SELEÇÃO</button><button id="deleteButton" type="button" disabled>EXCLUIR CLIPE</button><label>ZOOM <input id="zoomControl" type="range" min="8" max="48" value="16"></label></div>
       <div class="edit-tools envelope-tools" data-panel="envelope" hidden><label>VOLUME DO CLIPE <output id="clipGainValue">100%</output><input id="clipGain" type="range" min="0" max="150" value="100" disabled></label><canvas id="envelopeCanvas" width="720" height="130" tabindex="0" role="group" aria-label="Editor de envelope de volume" aria-describedby="envelopeHelp"></canvas><p id="envelopeHelp">Selecione ou crie um ponto com mouse ou toque. Com o teclado, use as setas para ajustar posição e volume; segure Shift para mover em passos maiores.</p><p id="envelopeStatus" class="envelope-status" role="status" aria-live="polite">Selecione um clipe de áudio para editar o envelope.</p></div>
       <div class="edit-tools midi-tools" data-panel="midi" hidden><p>Crie uma faixa MIDI para desenhar notas no piano roll. As notas são reproduzidas por sintetizador simples.</p><div id="pianoRoll" class="piano-roll" aria-label="Editor de notas MIDI"></div></div>
+      <section id="chipLab" class="chip-lab" data-panel="chip" aria-labelledby="chipTitle" hidden>
+        <header class="chip-overview"><h2 id="chipTitle" tabindex="-1">CHIP LAB</h2><p>4 FAIXAS · 1 COMPASSO</p></header>
+        <p>Escolha um loop, ajuste os passos e envie para a linha do tempo.</p>
+        <div class="chip-transport">
+          <label class="chip-example">Loop de exemplo <select id="chipPreset" aria-describedby="chipExampleKey"></select></label>
+          <button id="chipPlay" type="button">▶ Ouvir loop</button>
+          <button id="chipStop" type="button" disabled>■ Parar</button>
+          <label class="chip-bpm">BPM da prévia <input id="chipBpm" type="number" min="40" max="240" step="1" value="120"></label>
+        </div>
+        <p id="chipExampleKey"></p>
+        <div class="chip-body">
+          <div class="chip-grid-panel">
+            <h3>Sequenciador · 16 passos</h3>
+            <p id="chipGridHelp">Clique ou toque em um passo para ligar ou desligar a nota. Use “Nota do passo” para mudar a altura ou a peça da bateria. No teclado, use as setas e Enter.</p>
+            <div class="chip-grid-scroll">
+              <div id="chipGrid" role="group" aria-label="Grade de passos" aria-describedby="chipGridHelp"></div>
+            </div>
+            <p class="chip-scroll-hint">Deslize a grade para ver os 16 passos →</p>
+            <p>B = bumbo · C = caixa · H = chimbal</p>
+          </div>
+          <div class="chip-fields">
+            <label for="chipInstrument">Timbre da faixa</label>
+            <select id="chipInstrument" aria-describedby="chipLaneName"></select>
+            <p id="chipLaneName"></p>
+            <label for="chipNote">Nota do passo</label>
+            <select id="chipNote" aria-describedby="chipStepName"></select>
+            <p id="chipStepName"></p>
+          </div>
+        </div>
+        <div class="chip-bottom">
+          <button id="chipInsert" type="button" aria-describedby="chipInsertHelp">＋ Adicionar à linha do tempo</button>
+          <p id="chipInsertHelp">4 clipes MIDI editáveis no cursor, no BPM do projeto.</p>
+        </div>
+        <p id="chipStatus" role="status"></p>
+        <a class="chip-credits" href="assets/chip-lab/credits.txt" target="_blank" rel="noopener">Créditos dos instrumentos</a>
+      </section>
     </section>
     <p class="mix-help">DICA: importe vários áudios ou grave pelo microfone. Arraste os clipes para posicioná-los; clique na régua para mover o cursor. Mute, solo, volume e pan ficam nos controles de cada faixa.</p>
     <footer>ÁUDIO LOCAL · O PROJETO FICA SALVO NESTE NAVEGADOR · MIXMASTER v1
@@ -125,6 +166,6 @@
     </footer>
   </main>
   <script src="js/back-sound.js?v=2" defer></script>
-  <script src="js/mixmaster.js?v=29" defer></script>
+  <script src="js/mixmaster.js?v=32" defer></script>
 </body>
 </html>

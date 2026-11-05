@@ -99,3 +99,117 @@ body.mix-page{font-size:8px;line-height:1.7}
 .inspector-note,.envelope-tools p,.midi-tools p,.mix-help{font-size:8px;line-height:1.7}
 .envelope-status{font-size:8px!important;line-height:1.7!important}
 .mix-app footer{font-size:6px}
+
+/* CHIP LAB uses a dark arcade surface in both MIXMASTER themes. */
+.chip-shortcut {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-height: 44px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 2px solid #1e2910;
+  background: #c9f23a;
+  color: #161d0e;
+  cursor: pointer;
+  font: 600 13px/1.4 system-ui, sans-serif;
+}
+.chip-shortcut strong { font: 9px/1.4 "Press Start 2P", monospace; }
+.chip-shortcut:hover { background: #defa83; color: #161d0e; }
+.chip-lab {
+  --chip-base: #0b0d12;
+  --chip-panel: #121621;
+  --chip-tile: #1b2130;
+  --chip-line: #394359;
+  --chip-ink: #edf0f7;
+  --chip-muted: #aab5ca;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 18px;
+  color: var(--chip-ink);
+  background: var(--chip-base);
+  font: 13px/1.5 ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+.chip-lab[hidden] { display: none; }
+.chip-overview, .chip-transport, .chip-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.chip-overview, .chip-bottom { justify-content: space-between; }
+.chip-lab h2 { margin: 0; color: var(--mix-lime); font: 17px/1.6 "Press Start 2P", monospace; }
+.chip-lab h3 { margin: 0; color: var(--chip-muted); font: 9px/1.6 "Press Start 2P", monospace; text-transform: uppercase; }
+.chip-lab p { margin: 0; color: var(--chip-muted); }
+.chip-lab button, .chip-lab input, .chip-lab select {
+  min-height: 36px;
+  border: 1px solid var(--chip-line);
+  border-radius: 0;
+  background: var(--chip-tile);
+  color: var(--chip-ink);
+  font: inherit;
+}
+.chip-lab button { padding: 6px 10px; cursor: pointer; }
+.chip-lab button:disabled { cursor: not-allowed; }
+.chip-lab button:hover:not(:disabled) { color: var(--chip-base) !important; }
+.chip-lab :is(button, input, select):focus-visible { outline: 2px solid var(--mix-lime); outline-offset: 2px; }
+#chipPlay { border-color: var(--mix-lime); color: var(--mix-lime); }
+.chip-bpm, .chip-example { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+#chipPreset { padding: 4px 7px; }
+#chipTitle { scroll-margin-top: 12px; }
+#chipBpm { width: 68px; padding: 4px 6px; }
+#chipInsert { border-color: var(--mix-lime); background: var(--mix-lime); color: var(--chip-base); font-weight: 700; }
+.chip-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(180px, 220px); gap: 12px; }
+.chip-grid-panel, .chip-fields { min-width: 0; padding: 12px; border: 1px solid var(--chip-line); background: var(--chip-panel); }
+.chip-grid-panel p, .chip-fields p { font-size: 12px; }
+#chipGridHelp { margin-top: 5px; }
+.chip-grid-scroll { overflow-x: auto; margin-block: 6px; padding: 3px; scroll-padding-inline-start: 104px; }
+#chipGrid { min-width: 690px; }
+.chip-lane {
+  display: grid;
+  grid-template-columns: 98px repeat(16, minmax(34px, 1fr));
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 4px;
+}
+.chip-track {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: grid;
+  align-self: stretch;
+  align-content: center;
+  background: var(--chip-panel);
+  line-height: 1.2;
+}
+.chip-track strong { color: var(--chip-voice); }
+.chip-track small { color: var(--chip-muted); }
+.chip-count { text-align: center; color: var(--chip-muted); font-size: 11px; }
+.chip-lane-0 { --chip-voice: var(--mix-lime); }
+.chip-lane-1 { --chip-voice: #d5b9ff; }
+.chip-lane-2 { --chip-voice: #8bdde7; }
+.chip-lane-3 { --chip-voice: #ffc688; }
+.chip-lab .chip-step { min-width: 0; padding: 2px; font-size: 12px; }
+.chip-step:nth-child(4n + 2) { box-shadow: inset 2px 0 var(--chip-line); }
+.chip-step.has-note { background: var(--chip-voice); color: var(--chip-base); font-weight: 700; }
+.chip-step.is-selected { box-shadow: inset 0 0 0 2px var(--chip-base); border-color: var(--mix-lime); }
+.chip-fields { display: grid; align-content: start; gap: 4px; }
+.chip-fields label { color: var(--chip-ink); font-weight: 700; }
+.chip-fields p:not(:last-child) { margin-bottom: 7px; }
+.chip-fields select { width: 100%; padding: 4px 7px; }
+#chipInstrument { border-left: 3px solid var(--mix-lime); }
+#chipStatus:empty { display: none; }
+.chip-credits { justify-self: start; color: var(--chip-muted); font-size: 11px; }
+.chip-scroll-hint { display: none; }
+.piano-roll.chip-piano-roll {
+  max-height: min(50vh, 360px);
+  grid-template-columns: 58px repeat(16, minmax(23px, 1fr));
+}
+@media (max-width: 780px) {
+  .chip-lab { padding: 12px; }
+  .chip-body { grid-template-columns: minmax(0, 1fr); }
+  .chip-scroll-hint { display: block; }
+}
