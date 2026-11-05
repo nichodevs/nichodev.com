@@ -24,7 +24,7 @@ npm ci
 npm start
 ```
 
-Abra [http://localhost:3000](http://localhost:3000). A variável `PORT` permite escolher outra porta. O servidor Express também oferece `/health` e `/api/status`; a publicação na Hostinger usa os arquivos estáticos.
+Abra [http://localhost:3000](http://localhost:3000). A variável `PORT` permite escolher outra porta. Essa entrada estática local oferece `/health` e `/api/status`. Na Hostinger, site e comunidade usam o pacote Node.js completo e a entrada descrita em [DEPLOYMENT.md](DEPLOYMENT.md).
 
 A gravação requer permissão de microfone e uma página em HTTPS ou `localhost`.
 

@@ -38,7 +38,7 @@ function installChar(c){
       const old=get('SELECT * FROM user_chars WHERE user_id=?',u.id);if(req.body.revision!==(old?.revision||0))fail(409,'Seu personagem mudou em outra sessão. Reabra o CHAR LAB antes de salvar.');
       if(design.drawing&&old?.status==='hidden'&&old.design===JSON.stringify(design))fail(409,'Revise seu desenho antes de enviar novamente.');
       if(!design.hidden)ops.publish(u,'public');
-      const review=Boolean(design.drawing||old?.status==='hidden'),status=review?'pending':'ready',publicDesign=design.hidden?null:review?(old?.public_design||null):JSON.stringify(design);
+      const review=Boolean(design.drawing||old?.status==='hidden'||old?.status==='pending'),status=review?'pending':'ready',publicDesign=design.hidden?null:review?(old?.public_design||null):JSON.stringify(design);
       run("INSERT INTO user_chars VALUES(?,?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET design=excluded.design,public_design=excluded.public_design,revision=excluded.revision,updated=excluded.updated,status=excluded.status,reason=excluded.reason",u.id,JSON.stringify(design),publicDesign,(old?.revision||0)+1,now(),status,'');
     });res.json(own(u.id));
   });

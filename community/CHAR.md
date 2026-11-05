@@ -52,7 +52,7 @@ O painel administrativo tem filas **NICO//CHAR** e **COMENTÁRIOS**, acessíveis
 
 Comentários pertencem a criações públicas aprovadas: até 600 caracteres, limite de 10 envios/hora, paginação e revisão antes da publicação. O autor pode consultar os próprios comentários pendentes/ocultos e excluir os seus com a revisão atual. HTML é mostrado como texto. Nenhum visitante vê pendências de outra conta. Moderadores usam a fila de comentários; recursos e denúncias de comentários podem indicar criação/texto para development@nichodev.com. Excluir a conta ou a criação remove seus comentários conforme as chaves estrangeiras.
 
-Membros, perfis, comentários e filas aceitam páginas de 1–100 registros, padrão 25. As listas de criações continuam com os limites existentes. Joins e índices evitam buscar um PNG por autor ou carregar milhares de personagens de uma vez.
+Membros, perfis, comentários e filas aceitam páginas de 1–100 registros, padrão 25. Criações públicas, Meu Estúdio e Favoritos têm paginação de 25 itens na interface; a API aceita até 100 por página e aplica os filtros antes de paginar. Favoritos são consultados diretamente, inclusive quando a criação saiu das primeiras páginas públicas. Joins e índices evitam buscar um PNG por autor ou carregar milhares de personagens de uma vez.
 
 ## Validação e publicação
 

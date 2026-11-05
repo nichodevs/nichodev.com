@@ -6,7 +6,9 @@
   else{try{bootstrapInvite=sessionStorage.getItem("nichodev-bootstrap");}catch{}}
   const names={voz:"VOZ WEB",guitarra:"GUITARRA WEB",mixmaster:"MIXMASTER",site:"SITE"};
   const experiences={bem:"Funcionou bem",dificuldade:"Tive dificuldade",problema:"Encontrei um problema"};
-  let user=null,items=[],mine=[],favorites=new Set(),presetFilter="todos",galleryFilter="todos",pending=null,accountMode="login";
+  let user=null,favorites=new Set(),presetFilter="todos",galleryFilter="todos",pending=null,accountMode="login",refreshVersion=0;
+  const lists={presetCards:{path:"/creations",kind:"preset",label:"timbres públicos"},galleryCards:{path:"/creations",label:"galeria"},favoriteCards:{path:"/me/favorites",private:true,label:"favoritos"},savedCards:{path:"/me",kind:"preset",private:true,label:"meus timbres"},myPublications:{path:"/me",kind:"audio",private:true,label:"minhas prévias"}};
+  for(const list of Object.values(lists))Object.assign(list,{items:[],page:1,total:0,size:25,version:0});
   let keyFlow="",keyValue="",keyUsername="",passwordMode="recover",draftPreset=null,editing=null,mediaId=null,detail=null,detailKey="",deleting=null,audioContext=null,audioTimer=null;
   const status=message=>{$("pageStatus").textContent=message;};
   async function request(path,{method="GET",body,raw}={},reauthenticated=0){
@@ -73,31 +75,59 @@
   function fill(id,list,message){
     const root=$(id);root.replaceChildren();list.forEach(item=>root.append(card(item)));if(!list.length)empty(root,message);
   }
-  const lookup=id=>[...mine,...items].find(item=>item.id===id);
+  const lookup=id=>Object.values(lists).flatMap(list=>list.items).find(item=>item.id===id);
+  function pagination(id){
+    const list=lists[id];let root=$(id+"Pagination");
+    if(!root){root=document.createElement("nav");root.id=id+"Pagination";root.className="pagination";root.setAttribute("aria-label","Paginação de "+list.label);$(id).after(root);}
+    root.replaceChildren();root.hidden=list.total<=list.size;
+    if(root.hidden)return;
+    const previous=button("ANTERIOR","list-page"),next=button("PRÓXIMA","list-page"),label=document.createElement("span");
+    for(const [control,page] of [[previous,list.page-1],[next,list.page+1]]){control.dataset.list=id;control.dataset.page=page;control.dataset.step=page-list.page;control.disabled=page<1||page>Math.ceil(list.total/list.size);}
+    label.textContent="Página "+list.page+" de "+Math.ceil(list.total/list.size)+" · "+list.total+" criações";root.append(previous,label,next);
+  }
+  async function loadList(id,page=lists[id].page,redraw=true){
+    const list=lists[id],version=++list.version,owner=user?.id;
+    if(list.private&&!user){Object.assign(list,{items:[],page:1,total:0});return;}
+    const query=new URLSearchParams({page,size:list.size});
+    if(list.kind)query.set("kind",list.kind);
+    if(id==="presetCards"&&presetFilter!=="todos")query.set("tool",presetFilter);
+    if(id==="galleryCards"&&galleryFilter!=="todos")query.set("kind",galleryFilter==="musica"?"audio":"preset");
+    const data=await request(list.path+"?"+query);
+    if(version!==list.version||owner!==user?.id)return;
+    const last=Math.max(1,Math.ceil(data.total/data.size));if(page>last)return loadList(id,last,redraw);
+    Object.assign(list,{items:data.items,page:data.page,total:data.total,size:data.size});
+    if(data.favorites)favorites=new Set(data.favorites);
+    if(redraw)render();
+  }
   function render(){
-    const focused=document.activeElement,focusAction=focused?.dataset.action,focusId=focused?.dataset.id;
+    const focused=document.activeElement,focusAction=focused?.dataset.action,focusId=focused?.dataset.id,focusList=focused?.dataset.list,focusStep=focused?.dataset.step;
     window.NicoCharUI.header();window.NicoCharUI.studio($("nicoStudio"));
-    fill("presetCards",items.filter(item=>item.kind==="preset"&&(presetFilter==="todos"||item.tool===presetFilter)),"Ainda não há timbres públicos aprovados. Capture um timbre na ferramenta para começar.");
-    fill("galleryCards",items.filter(item=>galleryFilter==="todos"||(galleryFilter==="musica"?item.kind==="audio":item.kind==="preset")),"Nenhuma publicação aprovada nesta categoria.");
+    fill("presetCards",lists.presetCards.items,"Ainda não há timbres públicos aprovados. Capture um timbre na ferramenta para começar.");
+    fill("galleryCards",lists.galleryCards.items,"Nenhuma publicação aprovada nesta categoria.");
     $("accountLabel").textContent=user?"@"+user.username:"ENTRAR / CRIAR CONTA";
     if(!user?.admin)$("adminRoot").replaceChildren();
     $("studioGuest").hidden=Boolean(user);$("studioMember").hidden=!user;$("adminLink").hidden=!user?.admin;
     $("studioSubtitle").textContent=user?"Suas criações são salvas neste ambiente, @"+user.username+".":"Entre para acessar suas criações e favoritos.";
-    const all=[...new Map([...mine,...items].map(item=>[item.id,item])).values()];
-    fill("favoriteCards",all.filter(item=>favorites.has(item.id)),"Favorite um timbre público para encontrá-lo aqui.");
-    fill("savedCards",mine.filter(item=>item.kind==="preset"),"Capture seus ajustes na Voz ou Guitarra, ou importe um preset JSON.");
-    fill("myPublications",mine.filter(item=>item.kind==="audio"),"Envie uma prévia WAV. Suas criações começam privadas.");
+    fill("favoriteCards",lists.favoriteCards.items,"Favorite um timbre público para encontrá-lo aqui.");
+    fill("savedCards",lists.savedCards.items,"Capture seus ajustes na Voz ou Guitarra, ou importe um preset JSON.");
+    fill("myPublications",lists.myPublications.items,"Envie uma prévia WAV. Suas criações começam privadas.");
+    Object.keys(lists).forEach(pagination);
     if(focusAction&&focusId){const target=[...document.querySelectorAll("[data-action]")].find(element=>element.dataset.action===focusAction&&element.dataset.id===focusId&&element.getClientRects().length);target?.focus();}
+    if(focusList){const root=$(focusList+"Pagination"),target=root.querySelector('[data-step="'+focusStep+'"]:not(:disabled)')||root.querySelector("button:not(:disabled)");if(!root.hidden)target?.focus();}
   }
   async function refresh(){
-    ({user}=await request("/session"));
+    const version=++refreshVersion,session=await request("/session");if(version!==refreshVersion)return;
+    const changed=user?.id!==session.user?.id;user=session.user;
+    if(changed){favorites=new Set();$("memberNotices").replaceChildren();for(const list of Object.values(lists)){list.version++;Object.assign(list,{items:[],page:1,total:0});}render();}
     await window.NichodevPalette.setUser(user);
     await window.NicoCharUI.setUser(request,user,refresh);
-    ({items}=await request("/creations"));
-    if(user){const data=await request("/me");mine=data.items;favorites=new Set(data.favorites);}
-    else{mine=[];favorites=new Set();}
-    const config=await request("/config");$("communityMessage").hidden=!config.maintenanceMessage;$("communityMessage").textContent=config.maintenanceMessage;$("communityRules").textContent=config.rules;$("communityRules").hidden=false;
-    if(user){const n=await request("/notifications");$("memberNotices").replaceChildren(...n.items.map(x=>{const p=document.createElement("p");p.textContent=new Date(x.created).toLocaleString("pt-BR")+" — "+x.message;return p;}));if(!n.items.length)$("memberNotices").textContent="Nenhuma notificação.";}
+    if(version!==refreshVersion)return;
+    await Promise.all(Object.keys(lists).map(id=>loadList(id,lists[id].page,false)));
+    if(version!==refreshVersion)return;
+    const config=await request("/config");if(version!==refreshVersion)return;
+    $("communityMessage").hidden=!config.maintenanceMessage;$("communityMessage").textContent=config.maintenanceMessage;$("communityRules").textContent=config.rules;$("communityRules").hidden=false;
+    if(user){const n=await request("/notifications");if(version!==refreshVersion)return;$("memberNotices").replaceChildren(...n.items.map(x=>{const p=document.createElement("p");p.textContent=new Date(x.created).toLocaleString("pt-BR")+" — "+x.message;return p;}));if(!n.items.length)$("memberNotices").textContent="Nenhuma notificação.";}
+    else $("memberNotices").replaceChildren();
     render();
   }
   function showAccount(mode){
@@ -162,7 +192,9 @@
     $("shareStatus").textContent="";openDialog("detailDialog");window.NicoCharUI.comments($("nicoComments"),item).catch(e=>{$("nicoComments").textContent=e.message;});
   }
   async function loadAdmin(){await window.NichodevAdmin.mount($("adminRoot"),request,user);}
+  let profileEpoch=0;
   async function route(){
+    profileEpoch++;
     const hash=location.hash.slice(1)||"inicio";if(hash==="main"||hash==="exemplos")return;
     if(hash!=="char"&&!window.NicoCharUI.canLeave()){history.replaceState(null,"","#char");return;}
     window.NicoCharUI.stop();closeDialogs();stopExample();
@@ -181,7 +213,10 @@
     }
   }
   async function showProfile(name,page=1){
-    const data=await window.NicoCharUI.profile($("nicoProfile"),name,page);fill("nicoProfileCreations",data.items,"Ainda não há criações públicas aprovadas.");
+    const epoch=++profileEpoch;
+    const data=await window.NicoCharUI.profile($("nicoProfile"),name,page,()=>epoch===profileEpoch).catch(error=>{if(epoch===profileEpoch)throw error;});
+    if(!data)return;
+    fill("nicoProfileCreations",data.items,"Ainda não há criações públicas aprovadas.");
     const controls=document.createElement("div");controls.className="nico-page-controls";for(const [direction,label]of [[-1,"← ANTERIOR"],[1,"PRÓXIMA →"]]){const b=document.createElement("button");b.type="button";b.textContent=label;b.className="button outline compact";b.disabled=direction<0?page===1:page*data.size>=data.total;b.onclick=()=>showProfile(name,page+direction).catch(e=>status(e.message));controls.append(b);}$("nicoProfile").append(controls);
   }
   function exampleProject(){
@@ -297,12 +332,13 @@
       return;
     }
     const mode=event.target.closest("[data-account-mode]");if(mode){showAccount(mode.dataset.accountMode);return;}
-    const filter=event.target.closest("[data-preset-filter]");if(filter){presetFilter=filter.dataset.presetFilter;document.querySelectorAll("[data-preset-filter]").forEach(b=>b.setAttribute("aria-pressed",String(b===filter)));render();return;}
-    const gallery=event.target.closest("[data-gallery-filter]");if(gallery){galleryFilter=gallery.dataset.galleryFilter;document.querySelectorAll("[data-gallery-filter]").forEach(b=>b.setAttribute("aria-pressed",String(b===gallery)));render();return;}
+    const filter=event.target.closest("[data-preset-filter]");if(filter){presetFilter=filter.dataset.presetFilter;document.querySelectorAll("[data-preset-filter]").forEach(b=>b.setAttribute("aria-pressed",String(b===filter)));try{await loadList("presetCards",1);}catch(error){status(error.message);}return;}
+    const gallery=event.target.closest("[data-gallery-filter]");if(gallery){galleryFilter=gallery.dataset.galleryFilter;document.querySelectorAll("[data-gallery-filter]").forEach(b=>b.setAttribute("aria-pressed",String(b===gallery)));try{await loadList("galleryCards",1);}catch(error){status(error.message);}return;}
     const control=event.target.closest("[data-action]");if(!control)return;
     const action=control.dataset.action,id=control.dataset.id;
     try{
-      if(action==="account"){if(user)navigate("estudio");else showAccount("login");}
+      if(action==="list-page")await loadList(control.dataset.list,Number(control.dataset.page));
+      else if(action==="account"){if(user)navigate("estudio");else showAccount("login");}
       else if(action==="recover")showPassword("recover");
       else if(action==="settings"){if(!user)return;$("settingsUser").textContent="@"+user.username;openDialog("settingsDialog");}
       else if(action==="change-password")showPassword("change");

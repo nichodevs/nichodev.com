@@ -29,14 +29,16 @@ async function inspect({data,origin,now=Date.now()}){
   }
   try{const disk=fs.statfsSync(data);if(disk.bavail/disk.blocks<.1)errors.push("Menos de 10% de espaço livre no disco.");}catch{errors.push("Não foi possível conferir o espaço livre.");}
   try{
-    const file=path.join(data,"server-health.json");if(fs.statSync(file).size<32768){
-      const health=JSON.parse(fs.readFileSync(file,"utf8"));
-      if(Number.isFinite(health.checkedAt)&&now-health.checkedAt<=5*60000&&health.checkedAt<=now+60000){
-        if(health.memoryBytes>512*1048576)errors.push("A memória do backend passou de 512 MiB.");
-        if(health.p95Ms>1000)errors.push("A API apresentou p95 acima de um segundo.");
-      }
+    const file=path.join(data,"server-health.json");
+    if(fs.statSync(file).size>=32768)throw Error("Resumo inválido.");
+    const health=JSON.parse(fs.readFileSync(file,"utf8"));
+    if(!Number.isFinite(health.checkedAt)||health.checkedAt>now+60000||![health.memoryBytes,health.p95Ms].every(v=>Number.isFinite(v)&&v>=0))throw Error("Resumo inválido.");
+    if(now-health.checkedAt>5*60000)errors.push("O resumo de saúde do backend está desatualizado.");
+    else{
+      if(health.memoryBytes>512*1048576)errors.push("A memória do backend passou de 512 MiB.");
+      if(health.p95Ms>1000)errors.push("A API apresentou p95 acima de um segundo.");
     }
-  }catch{}
+  }catch{errors.push("O resumo de saúde do backend não tem confirmação disponível.");}
   for(const file of ["backup-status.json","offsite/status.json","restore-status.json"]){
     try{const record=JSON.parse(fs.readFileSync(path.join(data,file),"utf8"));if(record.ok===false)errors.push("Falha registrada em "+file+".");}catch{}
   }

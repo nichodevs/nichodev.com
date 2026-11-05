@@ -11,3 +11,4 @@ h1,h2,h3,.brand{font-weight:700}.eyebrow,.card-kicker,.main-nav a,.text-link,.fi
 
 #detailAudio{width:100%;flex-basis:100%}#moderationList{display:grid;gap:18px}.sound-card h3{overflow-wrap:anywhere}
 .palette-settings{margin-bottom:28px}.palette-colors{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin:20px 0}.palette-colors label{min-width:0}.palette-colors input[type=color]{display:block;width:100%;height:44px;padding:4px;margin-top:8px;border:1px solid var(--line);background:var(--panel-dark);cursor:pointer}
+.pagination{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;margin:20px 0 32px}.pagination span{font-size:13px;color:var(--muted)}
