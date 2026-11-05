@@ -53,3 +53,9 @@ test('failed feedback classification restores the persisted status',async({page,
  const select=page.getByRole('combobox',{name:'Situação da avaliação'});await expect(select).toHaveValue('recebido');await select.selectOption('analise');await expect(select).toHaveValue('recebido');await expect(page.locator('#adminMessage')).toContainText('temporariamente indisponível');await expect(select).toBeEnabled();
  expect(community.app.locals.db.prepare('SELECT status FROM feedback').get().status).toBe('recebido');
 });
+
+test('community settings can pause rollout at zero and save other changes while paused',async({page,community})=>{
+  const call=community.client();await account(call,'rollout_owner');staffFixture(community,'rollout_owner','owner');await login(page,'rollout_owner');staffFixture(community,'rollout_owner','owner');await page.locator('#adminLink').click();await page.getByRole('button',{name:'CONFIGURAÇÕES',exact:true}).click();
+  await page.locator('#adm-rolloutPercent').fill('0');await page.locator('#adm-reason').fill('Pausar novos recursos');await page.getByRole('button',{name:'SALVAR CONFIGURAÇÕES'}).click();await expect(page.locator('#adm-reason')).toHaveValue('');await expect(page.locator('#adm-rolloutPercent')).toHaveValue('0');expect((await call('/admin/settings')).data.value.rolloutPercent).toBe(0);
+  await page.locator('#adm-maintenanceMessage').fill('Recursos pausados para revisão');await page.locator('#adm-reason').fill('Atualizar aviso durante a pausa');await page.getByRole('button',{name:'SALVAR CONFIGURAÇÕES'}).click();await expect(page.locator('#adm-reason')).toHaveValue('');await expect(page.locator('#adm-maintenanceMessage')).toHaveValue('Recursos pausados para revisão');const value=(await call('/admin/settings')).data.value;expect(value.rolloutPercent).toBe(0);expect(value.maintenanceMessage).toBe('Recursos pausados para revisão');
+});

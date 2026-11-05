@@ -28,6 +28,25 @@ test("paleta é privada por conta, valida contraste e persiste entre sessões e 
   assert.equal((await b("/palette")).data.palette,null);
 });
 const preset = (extra = {}) => ({ kind: "preset", tool: "guitarra", title: "Timbre de teste", description: "Descrição privada", visibility: "private", preset: initialPreset("guitarra"), ...extra });
+test("listas paginam além de cem, filtram no banco e preservam favoritos antigos sem expor privados",async t=>{
+  const f=await fixture(t),owner=f.client(),other=f.client(),guest=f.client(),{user}=await account(owner,"lista_autor"),{user:reader}=await account(other,"lista_leitor");
+  const db=f.app.locals.db,insert=db.prepare("INSERT INTO creations(id,owner,kind,tool,title,description,visibility,status,preset,created) VALUES(?,?,?,?,?,?,?,?,?,?)");
+  for(let i=0;i<105;i++)insert.run("public-"+String(i).padStart(3,"0"),user.id,"preset",i===0?"voz":"guitarra","Timbre "+i,"Descrição","public","approved",JSON.stringify(initialPreset(i===0?"voz":"guitarra")),i);
+  for(const [id,visibility,status] of [["private","private","pending"],["unlisted","unlisted","pending"],["pending","public","pending"],["hidden","public","hidden"]])insert.run(id,user.id,"preset","guitarra",id,"Descrição",visibility,status,JSON.stringify(initialPreset("guitarra")),200);
+  const first=(await guest("/creations")).data,second=(await guest("/creations?page=2")).data;
+  assert.equal(first.total,105);assert.equal(first.items.length,100);assert.equal(first.page,1);assert.equal(first.size,100);assert.equal(second.items.length,5);assert.equal(second.items.at(-1).id,"public-000");
+  assert.equal(new Set([...first.items,...second.items].map(x=>x.id)).size,105);
+  const voice=(await guest("/creations?kind=preset&tool=voz&size=25")).data;assert.equal(voice.total,1);assert.equal(voice.items[0].id,"public-000");
+  const own=(await owner("/me?page=2")).data;assert.equal(own.total,109);assert.equal(own.items.length,9);assert.equal((await other("/me")).data.total,0);
+  db.prepare("INSERT INTO favorites VALUES(?,?)").run(reader.id,"public-000");
+  for(const id of ["private","unlisted","pending","hidden"])db.prepare("INSERT INTO favorites VALUES(?,?)").run(reader.id,id);
+  const favorites=(await other("/me/favorites?size=25")).data;assert.equal(favorites.total,1);assert.deepEqual(favorites.items.map(x=>x.id),["public-000"]);
+  for(let i=1;i<105;i++)db.prepare("INSERT INTO favorites VALUES(?,?)").run(reader.id,"public-"+String(i).padStart(3,"0"));
+  const oldFavorites=(await other("/me/favorites?page=2")).data;assert.equal(oldFavorites.total,105);assert.equal(oldFavorites.items.length,5);assert.equal(oldFavorites.items.at(-1).id,"public-000");
+  assert.equal((await guest("/me/favorites")).status,401);assert.equal((await owner("/me/favorites")).data.total,0);
+  db.prepare("UPDATE creations SET visibility='private' WHERE id='public-000'").run();assert.equal((await other("/me/favorites")).data.total,104);
+  for(const query of ["page=0","page=1.5","size=101","size=0","kind=invalid","tool=invalid"])assert.equal((await guest("/creations?"+query)).status,400);
+});
 function wav(float = false) {
   const data = Buffer.alloc(float ? 48 : 46); data.write("RIFF");data.writeUInt32LE(data.length-8,4);data.write("WAVEfmt ",8);data.writeUInt32LE(16,16);data.writeUInt16LE(float?3:1,20);data.writeUInt16LE(1,22);data.writeUInt32LE(8000,24);data.writeUInt32LE(float?32000:16000,28);data.writeUInt16LE(float?4:2,32);data.writeUInt16LE(float?32:16,34);data.write("data",36);data.writeUInt32LE(float?4:2,40);return data;
 }

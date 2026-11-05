@@ -50,6 +50,23 @@ test('arte livre fica privada até revisão com MFA, auditoria, denúncia e bloq
   f.app.locals.db.prepare('UPDATE user_controls SET publish_until=? WHERE user_id=?').run(Date.now()+60000,author.user.id);assert.equal((await a('/char',put(base,4))).status,403);
   f.app.locals.db.exec('UPDATE session_mfa SET verified=0');assert.equal((await mod('/admin/chars')).data.code,'ADMIN_MFA_REQUIRED');
 });
+test('reenvios de char ocultado conservam revisão até decisão, inclusive desenho trocado por peças',async t=>{
+  const f=await openCommunity();t.after(()=>f.close());const mod=f.client(),guest=f.client();await account(mod,'resend_mod');staffFixture(f,'resend_mod','moderator');
+  for(const drawing of [null,{size:16,pixels:'2'.repeat(256)}]){
+    const author=f.client(),name=drawing?'resend_drawing':'resend_modular',u=await account(author,name),design={...F.defaults,name:'Revisar',drawing};
+    assert.equal((await author('/char',put(design))).status,200);
+    assert.equal((await mod('/admin/chars/'+u.user.id,{method:'PATCH',body:{status:'hidden',revision:1,reason:'Conteúdo precisa de revisão'}})).status,204);
+    const modular={...design,drawing:null};let revision=2;
+    for(let i=0;i<3;i++){
+      const saved=await author('/char',put(modular,revision++));assert.equal(saved.status,200);assert.equal(saved.data.status,'pending');
+      assert.equal((await guest('/profiles/'+name)).data.char,null);
+    }
+    assert.equal((await mod('/admin/chars/'+u.user.id)).data.revision,revision);
+    assert.equal((await mod('/admin/chars/'+u.user.id,{method:'PATCH',body:{status:'ready',revision,reason:'Conteúdo revisado e aprovado'}})).status,204);
+    assert.equal((await guest('/profiles/'+name)).data.char.design.name,'Revisar');
+    assert.equal((await author('/char',put({...modular,name:'Atualizado'},revision+1))).data.status,'ready');
+  }
+});
 test('conquistas vêm dos marcos reais e eventos exigem proprietário com motivo',async t=>{
   const f=await openCommunity();t.after(()=>f.close());const a=f.client(),owner=f.client();const u=await account(a,'earned_char');await account(owner,'earned_owner');staffFixture(f,'earned_owner','owner');
   assert.deepEqual((await a('/char')).data.unlocks,[]);

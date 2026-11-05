@@ -42,3 +42,28 @@ test('delayed saves preserve newer edits and stale account responses never mix c
   await page.locator('#nicoSave').click();await received;await page.locator('#nicoCharName').fill('STATE B');release();await expect(page.locator('#nicoStatus')).toContainText('novas mudanças');await expect(page.locator('#nicoName')).toHaveText('STATE B');expect((await call('/char')).data.design.name).toBe('STATE A');await page.unroute('**/api/community/char');await page.locator('#nicoSave').click();await expect(page.locator('#nicoStatus')).toContainText('salvo');expect((await call('/char')).data.design.name).toBe('STATE B');
   const result=await page.evaluate(async()=>{const data=name=>({design:{...NicoChar.defaults,name},revision:1,unlocks:[],level:1,status:'ready'});let release;const pending=new Promise(r=>release=r);const first=NicoCharUI.setUser(()=>pending,{id:'first',username:'first'});await NicoCharUI.setUser(async()=>data('SECOND CHAR'),{id:'second',username:'second'});release(data('FIRST CHAR'));await first;const root=document.createElement('div');NicoCharUI.studio(root);return root.textContent;});expect(result).toContain('SECOND CHAR');expect(result).not.toContain('FIRST CHAR');
 });
+
+test('undo and redo keep the drawing cursor inside a restored smaller grid',async({page,community})=>{
+  const call=community.client();await account(call,'grid_history');await login(page,'grid_history');await page.getByRole('link',{name:'CHAR LAB',exact:true}).click();await page.locator('[data-category=drawing]').click();
+  const size=value=>page.getByRole('button',{name:value+'×'+value,exact:true}).click();
+  const corner=async()=>{await page.locator('#nicoDrawing').focus();for(let i=0;i<31;i++){await page.keyboard.press('ArrowRight');await page.keyboard.press('ArrowDown');}};
+  await size(16);await size(32);await corner();await page.locator('#nicoUndo').click();await expect(page.locator('#nicoCursor')).toContainText('Pixel 16, 16 · 16×16');
+  await page.locator('#nicoRedo').click();await size(16);await page.locator('#nicoUndo').click();await corner();await page.locator('#nicoRedo').click();await expect(page.locator('#nicoCursor')).toContainText('Pixel 16, 16 · 16×16');
+  await page.locator('#nicoDrawing').focus();await page.keyboard.press('Space');await page.locator('#nicoSave').click();await expect(page.locator('#nicoStatus')).toContainText('revisão');const drawing=(await call('/char')).data.design.drawing;expect(drawing.pixels).toHaveLength(256);expect(drawing.pixels[255]).toBe('2');
+});
+
+test('late profile responses cannot replace a newer profile or populate it after leaving',async({page,community})=>{
+  for(const username of ['profile_first','profile_second']){const call=community.client();await account(call,username);await call('/creations',{method:'POST',body:{kind:'preset',tool:'voz',title:'Timbre '+username,description:'Perfil de teste',visibility:'public',preset:initialPreset('voz')}});}
+  community.app.locals.db.exec("UPDATE creations SET status='approved'");await page.goto('/comunidade/');await expect(page.locator('#communityRules')).toBeVisible();
+  await page.evaluate(()=>{const original=NicoCharUI.profile;window.finishedProfiles=0;NicoCharUI.profile=async(...args)=>{try{return await original(...args);}finally{if(args[1]==='profile_first')window.finishedProfiles++;}};});let completed=0;
+  for(const destination of ['perfil/profile_second','inicio']){
+    let release,ready,done;const hold=new Promise(r=>release=r),received=new Promise(r=>ready=r),finished=new Promise(r=>done=r);
+    await page.route('**/api/community/profiles/profile_first?*',async route=>{const response=await route.fetch();ready();await hold;await route.fulfill({response});done();});
+    await page.evaluate(()=>location.hash='perfil/profile_first');await received;await page.evaluate(hash=>location.hash=hash,destination);
+    if(destination.startsWith('perfil/'))await expect(page.locator('#nicoProfile h1')).toHaveText('@profile_second');else await expect(page.locator('[data-view=inicio]')).toBeVisible();
+    release();await finished;await page.waitForFunction(count=>window.finishedProfiles===count,++completed);
+    if(destination.startsWith('perfil/')){await expect(page.locator('#nicoProfile h1')).toHaveCount(1);await expect(page.locator('#nicoProfile h1')).toHaveText('@profile_second');await expect(page.locator('#nicoProfileCreations')).toContainText('Timbre profile_second');await expect(page.locator('#nicoProfileCreations')).not.toContainText('Timbre profile_first');}
+    else{await expect(page.locator('#nicoProfile')).toBeEmpty();await expect(page.locator('#detailDialog')).not.toBeVisible();}
+    await page.unroute('**/api/community/profiles/profile_first?*');
+  }
+});

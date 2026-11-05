@@ -253,13 +253,21 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   function mayRead(row,req){const user=actor(req);return user?.id===row.owner||(row.visibility==="public"&&row.status==="approved")||(row.visibility==="unlisted"&&row.share_hash&&digest(String(req.query.key||""))===row.share_hash)||(user?.admin&&Boolean(ops.admin(req,row.visibility==="public"?"moderate":"users")));}
   function visible(row,req){if(!mayRead(row,req))fail(404,"Criação não encontrada.");return row;}
   function item(row){return {id:row.id,title:row.title,description:row.description,tool:row.tool,kind:row.kind,author:row.username,owner:row.owner,visibility:row.visibility,status:row.status,version:row.version,preset:row.preset?JSON.parse(row.preset):null,mediaId:row.media_id,created:row.created,char:row.char_design?{design:JSON.parse(row.char_design),revision:row.char_revision}:null};}
+  function creationPage(req,where,params=[]){
+    const page=Number(req.query.page??1),size=Number(req.query.size??100);
+    if(!Number.isSafeInteger(page)||page<1||page>1000000||!Number.isSafeInteger(size)||size<1||size>100)fail(400,"Paginação inválida.");
+    if(req.query.kind){where+=" AND c.kind=?";params.push(select(req.query.kind,["preset","audio"]));}
+    if(req.query.tool){where+=" AND c.tool=?";params.push(select(req.query.tool,["voz","guitarra","mixmaster"]));}
+    return {items:all("SELECT c.*,u.username,a.public_design char_design,a.revision char_revision FROM creations c JOIN users u ON u.id=c.owner LEFT JOIN user_chars a ON a.user_id=u.id AND NOT EXISTS(SELECT 1 FROM user_controls x WHERE x.user_id=u.id AND x.suspended=1) WHERE "+where+" ORDER BY c.created DESC,c.id LIMIT ? OFFSET ?",...params,size,(page-1)*size).map(item),total:get("SELECT COUNT(*) n FROM creations c WHERE "+where,...params).n,page,size};
+  }
   api.get("/creations",(req,res)=>{
-    res.json({items:all("SELECT c.*,u.username,a.public_design char_design,a.revision char_revision FROM creations c JOIN users u ON u.id=c.owner LEFT JOIN user_chars a ON a.user_id=u.id AND NOT EXISTS(SELECT 1 FROM user_controls x WHERE x.user_id=u.id AND x.suspended=1) WHERE c.visibility='public' AND c.status='approved' ORDER BY c.created DESC LIMIT 100").map(item)});
+    res.json(creationPage(req,"c.visibility='public' AND c.status='approved'"));
   });
   api.get("/me",(req,res)=>{
     const user=auth(req);
-    res.json({items:all("SELECT c.*,u.username,a.public_design char_design,a.revision char_revision FROM creations c JOIN users u ON u.id=c.owner LEFT JOIN user_chars a ON a.user_id=u.id AND NOT EXISTS(SELECT 1 FROM user_controls x WHERE x.user_id=u.id AND x.suspended=1) WHERE c.owner=? ORDER BY c.created DESC LIMIT 100",user.id).map(item),favorites:all("SELECT creation_id FROM favorites WHERE user_id=?",user.id).map(row=>row.creation_id)});
+    res.json({...creationPage(req,"c.owner=?",[user.id]),favorites:all("SELECT creation_id FROM favorites WHERE user_id=?",user.id).map(row=>row.creation_id)});
   });
+  api.get("/me/favorites",(req,res)=>{const user=auth(req);res.json(creationPage(req,"EXISTS(SELECT 1 FROM favorites f WHERE f.creation_id=c.id AND f.user_id=?) AND (c.owner=? OR (c.visibility='public' AND c.status='approved'))",[user.id,user.id]));});
   api.get("/creations/:id",(req,res)=>res.json({item:item(visible(creation(req.params.id),req))}));
   function fields(body,owner){
     const kind=select(body.kind,["preset","audio"]),tool=select(body.tool,["voz","guitarra","mixmaster"]),visibility=select(body.visibility,["private","unlisted","public"]);

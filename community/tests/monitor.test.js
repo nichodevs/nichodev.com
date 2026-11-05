@@ -13,6 +13,7 @@ test("monitor exige aplicação, banco, backups recentes e recibo de verificaç�
  const db=openStore(path.join(data,"community.sqlite"));db.close();fs.copyFileSync(path.join(data,"community.sqlite"),path.join(data,"latest.sqlite"));fs.mkdirSync(path.join(data,"offsite"));
  const receipt={status:"OFFSITE_BACKUP_OK",downloadVerified:true,integrity:true,site:"nichodev.com",at:Date.now()};
  fs.writeFileSync(path.join(data,"offsite/last-success.json"),JSON.stringify(receipt));
+ fs.writeFileSync(path.join(data,"server-health.json"),JSON.stringify({checkedAt:Date.now(),memoryBytes:100*1048576,p95Ms:20}));
  t.mock.method(globalThis,"fetch",async()=>({ok:true,json:async()=>({status:"ok"})}));
  assert.equal((await inspect({data,origin:"https://nichodev.com"})).ok,true);
  fs.writeFileSync(path.join(data,"offsite/last-success.json"),JSON.stringify({...receipt,downloadVerified:false}));
@@ -20,6 +21,23 @@ test("monitor exige aplicação, banco, backups recentes e recibo de verificaç�
  fs.writeFileSync(path.join(data,"offsite/last-success.json"),JSON.stringify(receipt));
  assert.equal((await inspect({data,origin:"https://nichodev.com",now:Date.now()+37*3600000})).ok,false);
  t.mock.method(globalThis,"fetch",async()=>{throw Error("timeout");});assert.equal((await inspect({data,origin:"https://nichodev.com"})).ok,false);
+});
+
+test("monitor não declara saúde com resumo ausente, vencido ou inválido",async t=>{
+ const data=fs.mkdtempSync(path.join(os.tmpdir(),"nichodev-monitor-"));
+ t.after(()=>{assert.equal(path.dirname(path.resolve(data)),path.resolve(os.tmpdir()));fs.rmSync(data,{recursive:true,force:true});});
+ const db=openStore(path.join(data,"community.sqlite"));db.close();fs.copyFileSync(path.join(data,"community.sqlite"),path.join(data,"latest.sqlite"));fs.mkdirSync(path.join(data,"offsite"));
+ const now=Date.now();
+ fs.writeFileSync(path.join(data,"offsite/last-success.json"),JSON.stringify({status:"OFFSITE_BACKUP_OK",downloadVerified:true,integrity:true,site:"nichodev.com",at:now}));
+ t.mock.method(globalThis,"fetch",async()=>({ok:true,json:async()=>({status:"ok"})}));
+ const valid={checkedAt:now,memoryBytes:100*1048576,p95Ms:20},file=path.join(data,"server-health.json");
+ for(const value of [null,{...valid,checkedAt:now-10*60000},{...valid,checkedAt:now+120000},{...valid,p95Ms:"20"},{checkedAt:now},"{",' '.repeat(32768)]){
+   if(value!==null)fs.writeFileSync(file,typeof value==='string'?value:JSON.stringify(value));
+   const result=await inspect({data,origin:"https://nichodev.com",now});
+   assert.equal(result.ok,false);assert.ok(result.errors.some(x=>x.includes("resumo de saúde")));
+ }
+ fs.writeFileSync(file,JSON.stringify(valid));
+ assert.equal((await inspect({data,origin:"https://nichodev.com",now})).ok,true);
 });
 
 test("monitor considera saúde recente e falhas operacionais sem ler credenciais",async t=>{

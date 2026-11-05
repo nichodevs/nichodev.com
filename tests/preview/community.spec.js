@@ -40,6 +40,50 @@ test.beforeEach(async({page})=>{
   await page.route("https://fonts.googleapis.com/**",r=>r.abort());await page.route("https://fonts.gstatic.com/**",r=>r.abort());
   await page.goto("/comunidade/");await expect(page.locator("#exampleCards .sound-card")).toHaveCount(3);
 });
+test("listas e filtros alcançam criações antigas e favoritos além da primeira página",async({page,community})=>{
+  test.setTimeout(60000);
+  const author=community.client(),reader=community.client(),{user}=await account(author,"lista_autor"),{user:owner}=await account(reader,"lista_leitor"),db=community.app.locals.db;
+  const insert=db.prepare("INSERT INTO creations(id,owner,kind,tool,title,description,visibility,status,preset,media_id,created) VALUES(?,?,?,?,?,?,?,?,?,?,?)");
+  db.prepare("INSERT INTO media(id,owner,audio,created) VALUES(?,?,?,?)").run("page-audio",owner.id,wav(),1);
+  db.prepare("INSERT INTO media(id,owner,audio,created) VALUES(?,?,?,?)").run("page-public-audio",user.id,wav(),1);
+  for(let i=0;i<105;i++){
+    const tool=i===0?"voz":"guitarra";
+    insert.run("page-public-"+i,user.id,"preset",tool,"Público "+i,"Descrição","public","approved",JSON.stringify(initialPreset(tool)),null,i);
+    insert.run("page-public-audio-"+i,user.id,"audio","mixmaster","Áudio público "+i,"Descrição","public","approved",null,"page-public-audio",i);
+    insert.run("page-mine-"+i,owner.id,"preset","guitarra","Privado "+i,"Descrição","private","pending",JSON.stringify(initialPreset("guitarra")),null,i);
+    if(i<30){insert.run("page-audio-"+i,owner.id,"audio","mixmaster","Áudio privado "+i,"Descrição","private","pending",null,"page-audio",i);db.prepare("INSERT INTO favorites VALUES(?,?)").run(owner.id,"page-public-"+i);}
+  }
+  await page.reload();await page.locator('.main-nav a[href="#timbres"]').click();
+  await expect(page.locator("#presetCards .sound-card")).toHaveCount(25);
+  await expect(page.locator("#presetCardsPagination")).toContainText("Página 1 de 5");
+  await page.locator('#presetCardsPagination [data-page="2"]').focus();await page.locator('#presetCardsPagination [data-page="2"]').press("Enter");
+  await expect(page.locator("#presetCardsPagination")).toContainText("Página 2 de 5");await expect(page.locator('#presetCardsPagination [data-step="1"]')).toBeFocused();
+  for(let i=1;i<4;i++)await page.locator('#presetCardsPagination [data-page="'+(i+2)+'"]').click();
+  await expect(page.locator("#presetCards h3")).toContainText(["Público 4","Público 3","Público 2","Público 1","Público 0"]);
+  await page.locator('[data-preset-filter="voz"]').click();await expect(page.locator("#presetCards h3")).toHaveText(["Público 0"]);await expect(page.locator("#presetCardsPagination")).toBeHidden();
+  await login(page,"lista_leitor");await page.locator('.main-nav a[href="#estudio"]').click();
+  await expect(page.locator("#savedCardsPagination")).toContainText("Página 1 de 5");
+  for(let i=0;i<4;i++)await page.locator('#savedCardsPagination [data-page="'+(i+2)+'"]').click();
+  await expect(page.locator("#savedCards h3")).toContainText(["Privado 4","Privado 3","Privado 2","Privado 1","Privado 0"]);
+  await page.locator('#myPublicationsPagination [data-page="2"]').click();await expect(page.locator("#myPublications .sound-card")).toHaveCount(5);
+  await page.locator('#favoriteCardsPagination [data-page="2"]').click();await expect(page.locator("#favoriteCards h3")).toContainText(["Público 4","Público 3","Público 2","Público 1","Público 0"]);
+  await page.locator('.main-nav a[href="#galeria"]').click();await expect(page.locator("#galleryCards h3")).not.toContainText(["Privado 0"]);
+  await page.locator('[data-gallery-filter="musica"]').click();await expect(page.locator("#galleryCards .sound-card")).toHaveCount(25);await expect(page.locator("#galleryCardsPagination")).toContainText("Página 1 de 5");
+  for(let i=0;i<4;i++)await page.locator('#galleryCardsPagination [data-page="'+(i+2)+'"]').click();
+  await expect(page.locator("#galleryCards h3")).toContainText(["Áudio público 4","Áudio público 3","Áudio público 2","Áudio público 1","Áudio público 0"]);
+  await page.locator('.main-nav a[href="#estudio"]').click();await page.getByRole("button",{name:"SAIR DA CONTA"}).click();await expect(page.locator("#savedCards .sound-card")).toHaveCount(0);await expect(page.locator("#favoriteCards .sound-card")).toHaveCount(0);
+});
+for(const endpoint of ["/config","/notifications"])test("resposta atrasada de "+endpoint+" não reaparece após sair da conta",async({page,community})=>{
+  await seed(community);await register(page,"resposta_antiga");
+  let held,ready;const waiting=new Promise(resolve=>{ready=resolve;});
+  await page.route("**/api/community"+endpoint,route=>{if(!held){held=route;ready();}else return route.continue();});
+  await page.locator('.main-nav a[href="#timbres"]').click();await page.locator('#presetCards [data-action="favorite"]').click();await waiting;
+  await page.locator('.main-nav a[href="#estudio"]').click();await page.getByRole("button",{name:"SAIR DA CONTA"}).click();await expect(page.locator("#accountLabel")).toHaveText("ENTRAR / CRIAR CONTA");
+  const response=page.waitForResponse(response=>response.url().endsWith(endpoint));
+  await held.fulfill({json:endpoint==="/config"?{maintenanceMessage:"RESPOSTA ANTIGA",rules:"REGRA ANTIGA"}:{items:[{message:"AVISO PRIVADO ANTIGO",created:1}]}});
+  await (await response).finished();await page.waitForLoadState("networkidle");
+  await expect(page.locator("#communityMessage")).not.toContainText("RESPOSTA ANTIGA");await expect(page.locator("#communityRules")).not.toContainText("REGRA ANTIGA");await expect(page.locator("#memberNotices")).toBeEmpty();
+});
 test("configurações permitem baixar dados e excluir conta somente com confirmação e senha",async({page})=>{
   await register(page,"apagar");await page.getByRole("button",{name:"CONFIGURAÇÕES DA CONTA"}).click();
   const data=JSON.parse((await downloadBytes(page,"#settingsDialog a[download]")).toString());expect(data.account.username).toBe("apagar");expect(data.account.password).toBeUndefined();
