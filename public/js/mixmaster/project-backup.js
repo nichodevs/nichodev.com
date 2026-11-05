@@ -1,4 +1,4 @@
-import { PITCHES, clipEnd } from "./project-model.js?v=1";
+import { CHIP_INSTRUMENTS, pitchesFor, clipEnd } from "./project-model.js?v=3";
 import { loadBlob } from "./project-store.js?v=1";
 
 function blobToBase64(blob) {
@@ -56,7 +56,9 @@ export function validateProjectBackup(backup) {
       if (clip.waveformPeaks !== undefined && (!Array.isArray(clip.waveformPeaks) || clip.waveformPeaks.some(pair => !Array.isArray(pair) || pair.length !== 2 || !Number.isFinite(pair[0]) || !Number.isFinite(pair[1]) || pair[0] > pair[1]))) invalid("O backup contém uma forma de onda inválida.");
       if (clip.type === "midi") {
         if (!inRange(clip.duration, Number.MIN_VALUE, maxTimeline) || !Array.isArray(clip.notes ?? [])) invalid("O backup contém uma região MIDI inválida.");
-        for (const note of clip.notes || []) if (!note || !Number.isInteger(note.step) || note.step < 0 || note.step > 15 || !Number.isInteger(note.pitch) || note.pitch < 0 || note.pitch >= PITCHES.length || (note.velocity !== undefined && !inRange(note.velocity, 0, 1))) invalid("O backup contém uma nota MIDI inválida.");
+        if (clip.instrument !== undefined && (typeof clip.instrument !== "string" || !Object.hasOwn(CHIP_INSTRUMENTS, clip.instrument))) invalid("O backup contém um timbre MIDI inválido.");
+        const pitchCount = pitchesFor(clip).length;
+        for (const note of clip.notes || []) if (!note || !Number.isInteger(note.step) || note.step < 0 || note.step > 15 || !Number.isInteger(note.pitch) || note.pitch < 0 || note.pitch >= pitchCount || (note.velocity !== undefined && !inRange(note.velocity, 0, 1))) invalid("O backup contém uma nota MIDI inválida.");
       } else {
         if (!validId(clip.audioId) || !inRange(clip.sourceStart, 0) || !inRange(clip.sourceEnd, 0) || clip.sourceEnd <= clip.sourceStart) invalid("O backup contém limites de áudio inválidos.");
         referencedIds.add(clip.audioId);

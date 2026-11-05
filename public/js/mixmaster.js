@@ -1,18 +1,20 @@
 "use strict";
 (async () => {
   const [
-    { PITCHES, durationOf, clipEnd },
-    { scheduleMidiNotes },
+    { pitchesFor, durationOf, clipEnd },
+    { prepareMidiSamples, scheduleMidiNotes },
     {
       blobs, temporaryAudio, openDB, storeBlob, loadBlob, readProjectMetadata, persistProject,
       getStoredAudioKeys, deleteStoredAudioKeys, storeBackupAudio, clearProjectStorage
     },
-    { createProjectBackup, validateProjectBackup }
+    { createProjectBackup, validateProjectBackup },
+    { mountChipLab }
   ] = await Promise.all([
-    import("./mixmaster/project-model.js?v=1"),
-    import("./mixmaster/midi-synth.js?v=1"),
+    import("./mixmaster/project-model.js?v=3"),
+    import("./mixmaster/midi-synth.js?v=3"),
     import("./mixmaster/project-store.js?v=1"),
-    import("./mixmaster/project-backup.js?v=1")
+    import("./mixmaster/project-backup.js?v=3"),
+    import("./mixmaster/chip-lab.js?v=3")
   ]);
   const $ = id => document.getElementById(id);
   const els = {
@@ -26,6 +28,7 @@
   let audioContext, masterNode, meterFrame, playFrame = 0, playStartedAt = 0, playOffset = 0, activeSources = [];
   let recorder, recorderStream, recordingSource, recordingAnalyser, recordingSilencer, recordingFrame = 0, recordingStartedAt = 0, lastWaveformSampleAt = 0, liveWaveformPeaks = [], recordChunks = [], undoStack = [], redoStack = [], saveTimer;
   let projectReady = Promise.resolve(), recordingSetup = false, recordingFinalizing = false;
+  let playRequest = 0;
   let recordingClip = null, recordingTrack = null, lastClipWaveformUpdate = 0;
   const buffers = new Map(), routeNodes = new Map();
   let audioOperations = 0, recoveryUrl = null, recoveryId = null;
@@ -283,6 +286,7 @@
     for (const track of state.tracks) renderTrack(track, width);
     positionPlayhead();
     renderSelection(); renderPiano(); renderEnvelope(); updateUndoButtons();
+    if (state.tab === "chip") chipLab.refresh();
   }
   function renderTrack(track, width) {
     const row = document.createElement("div"); row.className = `track-row${track.id === state.selectedTrackId ? " active-track-row" : ""}`; row.dataset.trackId = track.id; row.setAttribute("aria-selected", String(track.id === state.selectedTrackId));
@@ -314,7 +318,8 @@
     block.dataset.clipId = clip.id; block.style.left = `${clip.start * state.zoom}px`; block.style.width = `${Math.max(38, durationOf(clip) * state.zoom)}px`;
     if (clip.type === "midi") {
       block.innerHTML = `<span class="clip-label">${esc(clip.name || "MIDI")}</span>`;
-      for (const note of clip.notes || []) { const bar = document.createElement("i"); bar.className = "midi-note"; bar.style.left = `${4 + note.step / 16 * 92}%`; bar.style.top = `${13 + note.pitch * 5}px`; bar.style.width = "3%"; block.append(bar); }
+      const pitchSpacing = clip.instrument ? 40 / (pitchesFor(clip).length - 1) : 5;
+      for (const note of clip.notes || []) { const bar = document.createElement("i"); bar.className = "midi-note"; bar.style.left = `${4 + note.step / 16 * 92}%`; bar.style.top = `${13 + note.pitch * pitchSpacing}px`; bar.style.width = "3%"; block.append(bar); }
     } else {
       const canvas = document.createElement("canvas"); canvas.width = Math.min(12000, Math.max(80, Math.round(durationOf(clip) * 10))); canvas.height = 140; block.append(canvas);
       const title = document.createElement("span"); title.className = "clip-label"; title.textContent = clip.name; block.append(title);
@@ -406,13 +411,17 @@
     $("toneValue").textContent = `${$("toneControl").value}%`; $("delayValue").textContent = `${$("delayControl").value}%`; $("reverbValue").textContent = `${$("reverbControl").value}%`;
   }
   function renderPiano() {
+    if (state.tab !== "midi") return;
     els.piano.replaceChildren();
     const midi = selectedClip();
+    els.piano.classList.toggle("chip-piano-roll", Boolean(midi?.clip.instrument));
     if (!midi || midi.clip.type !== "midi") { els.piano.textContent = "Selecione uma faixa MIDI para editar as notas."; return; }
-    for (let pitch = 0; pitch < PITCHES.length; pitch++) {
-      const label = document.createElement("span"); label.className = "piano-key"; label.textContent = PITCHES[pitch]; els.piano.append(label);
+    const pitches = pitchesFor(midi.clip);
+    for (let pitch = 0; pitch < pitches.length; pitch++) {
+      const label = document.createElement("span"); label.className = "piano-key"; label.textContent = pitches[pitch]; els.piano.append(label);
       for (let step = 0; step < 16; step++) {
-        const button = document.createElement("button"); button.type = "button"; button.className = `${step % 4 === 0 ? "beat " : ""}${midi.clip.notes?.some(note => note.step === step && note.pitch === pitch) ? "note-on" : ""}`; button.setAttribute("aria-label", `${PITCHES[pitch]}, passo ${step + 1}`); button.title = `${PITCHES[pitch]} · passo ${step + 1}`;
+        const active = midi.clip.notes?.some(note => note.step === step && note.pitch === pitch) ?? false;
+        const button = document.createElement("button"); button.type = "button"; button.className = `${step % 4 === 0 ? "beat " : ""}${active ? "note-on" : ""}`; button.setAttribute("aria-label", `${pitches[pitch]}, passo ${step + 1}`); button.setAttribute("aria-pressed", String(active)); button.title = `${pitches[pitch]} · passo ${step + 1}`;
         button.addEventListener("click", () => { checkpoint(); midi.clip.notes ||= []; const index = midi.clip.notes.findIndex(note => note.step === step && note.pitch === pitch); if (index >= 0) midi.clip.notes.splice(index, 1); else midi.clip.notes.push({ step, pitch, velocity: .8 }); midi.clip.duration = Math.max(midi.clip.duration, 60 / state.bpm * 4); saveProject(); render(); });
         els.piano.append(button);
       }
@@ -490,6 +499,32 @@
   function setStatus(message) { els.status.textContent = message; }
   async function addTrack() { await projectReady; checkpoint(); const track = freshTrack(`FAIXA ${state.tracks.length + 1}`); state.tracks.push(track); state.selectedTrackId = track.id; if (audioContext && track.type !== "midi") createTrackRoute(track); saveProject(); render(); setStatus("Nova faixa de áudio criada"); }
   async function addMidiTrack() { await projectReady; checkpoint(); const track = freshTrack(`MIDI ${state.tracks.filter(item => item.type === "midi").length + 1}`, "midi"); track.clips.push({ id: id(), type: "midi", name: "REGIÃO MIDI", start: state.playhead, duration: 60 / state.bpm * 4, notes: [] }); state.tracks.push(track); state.selectedTrackId = track.id; state.selected = [track.clips[0].id]; saveProject(); render(); setStatus("Faixa MIDI criada · clique na grade para desenhar notas"); }
+  async function insertChipLoop({ name, lanes }) {
+    await projectReady;
+    const duration = 240 / state.bpm;
+    if (state.playhead + duration > 24 * 60 * 60) {
+      setStatus("Mova o cursor para inserir o loop dentro das 24 horas do projeto.");
+      return false;
+    }
+    chipLab.stop();
+    stopPlayback(false);
+    const tracks = lanes.map(lane => {
+      const track = freshTrack(`CHIP · ${lane.name}`, "midi");
+      track.clips.push({
+        id: id(), type: "midi", name, start: state.playhead, duration,
+        instrument: lane.instrument, notes: lane.notes
+      });
+      return track;
+    });
+    checkpoint();
+    state.tracks.push(...tracks);
+    state.selectedTrackId = tracks[0].id;
+    state.selected = [tracks[0].clips[0].id];
+    saveProject();
+    render();
+    setStatus(`CHIP LAB · 4 clipes MIDI adicionados a ${state.bpm} BPM`);
+    return true;
+  }
   async function importFiles(files, targetTrack) {
     const valid = [...files].filter(file => file.type.startsWith("audio/"));
     await projectReady;
@@ -658,17 +693,24 @@
   }
   function envelopeAt(points, x) { if (!points?.length) return .8; const right = points.findIndex(point => point.x >= x); if (right < 0) return points.at(-1).y; if (right === 0) return points[0].y; const a = points[right - 1], b = points[right]; const t = (x - a.x) / (b.x - a.x); return a.y + (b.y - a.y) * t; }
   function scheduleEnvelope(param, clip, start, duration, from = 0, to = 1) { const points = trimEnvelope(clip.envelope, from, to); param.setValueAtTime(0, start); param.linearRampToValueAtTime((clip.gain ?? 1) * points[0].y, start + .005); for (const point of points.slice(1)) param.linearRampToValueAtTime((clip.gain ?? 1) * point.y, start + Math.max(.01, point.x * duration)); }
-  function scheduleMidi(ctx, track, clip, when, offset = 0, destination) {
-    const output = destination || routeNodes.get(track.id)?.volume;
+  function scheduleMidi(ctx, track, clip, when, offset) {
+    const output = routeNodes.get(track.id)?.volume;
     if (!output) return;
     scheduleMidiNotes(ctx, clip, state.bpm, when, offset, output, (source, gain) => { if (ctx === audioContext) activeSources.push({ source, gain, trackId: track.id, clipId: clip.id }); });
   }
   async function play() {
+    stopPlayback(false);
+    const request = playRequest;
     try {
+      chipLab.stop();
       await projectReady;
+      if (request !== playRequest) return;
       const ctx = audioCtx();
       if (ctx.state === "suspended") await ctx.resume();
-      stopPlayback(false); state.playing = true; playOffset = state.playhead; playStartedAt = ctx.currentTime; activeSources = [];
+      await prepareMidiSamples(ctx, state.tracks.flatMap(track => track.clips));
+      if (request !== playRequest) return;
+      chipLab.stop();
+      state.playing = true; playOffset = state.playhead; playStartedAt = ctx.currentTime; activeSources = [];
       const soloExists = state.tracks.some(track => track.solo);
       for (const track of state.tracks) {
         if (!track.muted && (!soloExists || track.solo)) { if (!routeNodes.has(track.id)) createTrackRoute(track); updateRoute(track); }
@@ -691,7 +733,11 @@
       els.play.classList.add("playing"); setStatus("Reproduzindo mix");
       const tick = () => { if (!state.playing) return; state.playhead = playOffset + audioContext.currentTime - playStartedAt; positionPlayhead(); if (state.playhead >= projectDuration() + effectTailDuration()) stopPlayback(true); else playFrame = requestAnimationFrame(tick); };
       playFrame = requestAnimationFrame(tick);
-    } catch (error) { setStatus(error.message); }
+    } catch (error) {
+      if (request !== playRequest) return;
+      stopPlayback(false);
+      setStatus(error.message);
+    }
   }
 
   function downloadProjectFile(blob, filename) {
@@ -731,6 +777,7 @@
         clip.sourceEnd = Math.min(clip.sourceEnd, buffer.duration);
       }
       if (referencedIds.size) await storeBackupAudio(assetMap, newAudioIds);
+      chipLab.stop();
       checkpoint(); stopPlayback(true);
       state.tracks = project.tracks;
       for (const track of state.tracks) for (const clip of track.clips) if (clip.type === "audio") clip.audioId = newAudioIds.get(clip.audioId);
@@ -769,6 +816,7 @@
     setStatus("Projeto resetado · comece com uma faixa vazia");
   }
   function stopPlayback(reset = false) {
+    playRequest++;
     if (playFrame) cancelAnimationFrame(playFrame);
     playFrame = 0;
     if (state.playing) { state.playing = false; stopSources(); els.play.classList.remove("playing"); saveProject(); }
@@ -852,20 +900,65 @@
     const sampleRate = audioContext?.sampleRate || 44100, Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext; if (!Offline) { setStatus("A exportação WAV não é suportada neste navegador."); return; }
     setStatus("Renderizando a mixagem WAV…"); const offline = new Offline(2, Math.ceil((duration + effectTailDuration()) * sampleRate), sampleRate), master = offline.createGain(); master.gain.value = state.master; master.connect(offline.destination);
     const soloExists = state.tracks.some(track => track.solo);
-    for (const track of state.tracks) {
-      if (track.muted || (soloExists && !track.solo)) continue;
-      const volume = offline.createGain(); volume.gain.value = track.volume; const pan = offline.createStereoPanner(); pan.pan.value = track.pan; const filter = offline.createBiquadFilter(); filter.type = "lowpass"; filter.frequency.value = 500 + track.tone * 19500; volume.connect(pan); pan.connect(filter); filter.connect(master);
-      if (track.reverb > 0) { const wet = offline.createGain(); const trackReverb = offline.createConvolver(); trackReverb.buffer = impulse(offline, 1.8); wet.gain.value = track.reverb; filter.connect(trackReverb); trackReverb.connect(wet); wet.connect(master); }
-      if (track.delay > 0) { const delay = offline.createDelay(1.2), wet = offline.createGain(), feedback = offline.createGain(); delay.delayTime.value = .24; wet.gain.value = track.delay; feedback.gain.value = .18; filter.connect(delay); delay.connect(wet); wet.connect(master); delay.connect(feedback); feedback.connect(delay); }
-      for (const clip of track.clips) {
-        if (clip.type === "midi") { scheduleMidi(offline, track, clip, 0, 0, volume); continue; }
-        const sourceBuffer = buffers.get(clip.audioId); if (!sourceBuffer) continue; const source = offline.createBufferSource(), clipGain = offline.createGain(); source.buffer = sourceBuffer; scheduleEnvelope(clipGain.gain, clip, clip.start, durationOf(clip)); source.connect(clipGain); clipGain.connect(volume); source.start(clip.start, clip.sourceStart, durationOf(clip));
+    const tracks = structuredClone(state.tracks.filter(track => !track.muted && (!soloExists || track.solo)));
+    const bpm = state.bpm;
+    const audioBuffers = new Map(buffers);
+    try {
+      await prepareMidiSamples(offline, tracks.flatMap(track => track.clips));
+      for (const track of tracks) {
+        const volume = offline.createGain(); volume.gain.value = track.volume; const pan = offline.createStereoPanner(); pan.pan.value = track.pan; const filter = offline.createBiquadFilter(); filter.type = "lowpass"; filter.frequency.value = 500 + track.tone * 19500; volume.connect(pan); pan.connect(filter); filter.connect(master);
+        if (track.reverb > 0) { const wet = offline.createGain(); const trackReverb = offline.createConvolver(); trackReverb.buffer = impulse(offline, 1.8); wet.gain.value = track.reverb; filter.connect(trackReverb); trackReverb.connect(wet); wet.connect(master); }
+        if (track.delay > 0) { const delay = offline.createDelay(1.2), wet = offline.createGain(), feedback = offline.createGain(); delay.delayTime.value = .24; wet.gain.value = track.delay; feedback.gain.value = .18; filter.connect(delay); delay.connect(wet); wet.connect(master); delay.connect(feedback); feedback.connect(delay); }
+        for (const clip of track.clips) {
+          if (clip.type === "midi") { scheduleMidiNotes(offline, clip, bpm, 0, 0, volume); continue; }
+          const sourceBuffer = audioBuffers.get(clip.audioId); if (!sourceBuffer) continue; const source = offline.createBufferSource(), clipGain = offline.createGain(); source.buffer = sourceBuffer; scheduleEnvelope(clipGain.gain, clip, clip.start, durationOf(clip)); source.connect(clipGain); clipGain.connect(volume); source.start(clip.start, clip.sourceStart, durationOf(clip));
+        }
       }
+      const rendered = await offline.startRendering();
+      downloadProjectFile(encodeWav(rendered), "mixmaster-export.wav");
+      setStatus("Mixagem exportada como WAV estéreo");
     }
-    try { const rendered = await offline.startRendering(); const blob = encodeWav(rendered); const url = URL.createObjectURL(blob), anchor = document.createElement("a"); anchor.href = url; anchor.download = "mixmaster-export.wav"; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 10000); setStatus("Mixagem exportada como WAV estéreo"); }
     catch (error) { setStatus(`Erro ao exportar: ${error.message}`); }
   }
-  function setTab(tab) { state.tab = tab; document.querySelectorAll("[data-tab]").forEach(button => button.classList.toggle("selected", button.dataset.tab === tab)); document.querySelectorAll("[data-panel]").forEach(panel => { panel.hidden = panel.dataset.panel !== tab; }); if (tab === "midi") renderPiano(); if (tab === "envelope") renderEnvelope(); }
+  async function previewChipLoop(draft, isCurrent) {
+    if (recordingSetup || recorder?.state === "recording" || recordingFinalizing) {
+      throw new Error("Finalize a gravação antes de ouvir o loop.");
+    }
+    const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    if (!Offline) throw new Error("A prévia do loop não é suportada neste navegador.");
+    stopPlayback(false);
+    const ctx = audioCtx();
+    const { bpm, lanes } = draft;
+    const duration = 240 / bpm;
+    const clips = lanes.map(lane => ({ type: "midi", start: 0, duration, notes: lane.notes, instrument: lane.instrument }));
+    await prepareMidiSamples(ctx, clips);
+    if (!isCurrent()) return;
+    const offline = new Offline(1, Math.ceil(duration * ctx.sampleRate), ctx.sampleRate);
+    for (const clip of clips) scheduleMidiNotes(offline, clip, bpm, 0, 0, offline.destination);
+    const buffer = await offline.startRendering();
+    if (!isCurrent()) return;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    source.loopEnd = duration;
+    source.connect(masterNode);
+    source.start();
+    return () => { source.stop(); source.disconnect(); };
+  }
+  const chipLab = mountChipLab(document.querySelector('[data-panel="chip"]'), {
+    onPlay: previewChipLoop,
+    onInsert: insertChipLoop,
+    getProjectBpm: () => state.bpm
+  });
+  function setTab(tab) {
+    if (state.tab === "chip" && tab !== "chip") chipLab.stop();
+    state.tab = tab;
+    document.querySelectorAll("[data-tab]").forEach(button => button.classList.toggle("selected", button.dataset.tab === tab));
+    document.querySelectorAll("[data-panel]").forEach(panel => { panel.hidden = panel.dataset.panel !== tab; });
+    if (tab === "midi") renderPiano();
+    if (tab === "envelope") renderEnvelope();
+    if (tab === "chip") chipLab.refresh();
+  }
 
   const themeToggle = $("themeToggle");
   function applyTheme(theme, persist = true) {
@@ -882,9 +975,12 @@
   $("newTrackButton").addEventListener("click", addTrack);
   $("newMidiButton").addEventListener("click", addMidiTrack);
   $("audioFiles").addEventListener("change", event => { importFiles(event.target.files); event.target.value = ""; });
-  els.record.addEventListener("click", () => recorder?.state === "recording" ? stopRecording() : startRecording());
+  els.record.addEventListener("click", () => {
+    chipLab.stop();
+    if (recorder?.state === "recording") stopRecording(); else startRecording();
+  });
   els.play.addEventListener("click", () => state.playing ? stopPlayback(false) : play());
-  els.stop.addEventListener("click", () => { stopPlayback(true); setStatus("Reprodução parada"); });
+  els.stop.addEventListener("click", () => { chipLab.stop(); stopPlayback(true); setStatus("Reprodução parada"); });
   $("splitButton").addEventListener("click", splitClip);
   $("trimStartButton").addEventListener("click", trimClipStart);
   $("trimEndButton").addEventListener("click", trimClipEnd);
@@ -908,6 +1004,12 @@
   bindAdjustment($("clipGain"), event => { const item = selectedClip(); if (!item) return; item.clip.gain = Number(event.target.value) / 100; $("clipGainValue").textContent = `${event.target.value}%`; saveProject(); });
   for (const [control, property, scale] of [["toneControl", "tone", .01], ["delayControl", "delay", .01], ["reverbControl", "reverb", .01]]) bindAdjustment($(control), event => { const track = activeTrack(); if (!track) return; track[property] = Number(event.target.value) * scale; $(control.replace("Control", "Value")).textContent = `${event.target.value}%`; updateRoute(track); saveProject(); });
   document.querySelectorAll("[data-tab]").forEach(button => button.addEventListener("click", () => setTab(button.dataset.tab)));
+  $("openChipLab").addEventListener("click", () => {
+    setTab("chip");
+    const title = $("chipTitle");
+    title.focus({ preventScroll: true });
+    title.scrollIntoView({ block: "start" });
+  });
   $("undoButton").addEventListener("click", () => { if (!undoStack.length) return; redoStack.push(snapshot()); restoreSnapshot(undoStack.pop()); setStatus("Ação desfeita"); updateUndoButtons(); });
   $("redoButton").addEventListener("click", () => { if (!redoStack.length) return; undoStack.push(snapshot()); restoreSnapshot(redoStack.pop()); setStatus("Ação refeita"); updateUndoButtons(); });
   window.addEventListener("keydown", event => {
@@ -922,6 +1024,7 @@
       event.preventDefault(); deleteSelected();
     }
   });
+  window.addEventListener("pagehide", () => chipLab.stop());
   window.addEventListener("beforeunload", event => {
     if (unsavedChanges || saveTimer) persistProjectNow();
     if (unsavedChanges || recorder?.state === "recording" || recordingFinalizing || state.tracks.some(track => track.clips.some(clip => temporaryAudio.has(clip.audioId)))) {

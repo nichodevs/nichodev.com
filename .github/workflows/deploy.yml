@@ -70,6 +70,7 @@ jobs:
             set cmd:fail-exit no
             mkdir -p assets
             mkdir -p assets/cursors
+            mkdir -p assets/chip-lab
             mkdir -p js
             mkdir -p js/mixmaster
             mkdir -p onda
@@ -106,6 +107,12 @@ jobs:
             put public/js/mixmaster/project-model.js -o js/mixmaster/project-model.js
             put public/js/mixmaster/project-store.js -o js/mixmaster/project-store.js
             put public/js/mixmaster/project-backup.js -o js/mixmaster/project-backup.js
+            put public/js/mixmaster/chip-lab.js -o js/mixmaster/chip-lab.js
+            put public/assets/chip-lab/piano.wav -o assets/chip-lab/piano.wav
+            put public/assets/chip-lab/guitar.wav -o assets/chip-lab/guitar.wav
+            put public/assets/chip-lab/bass.wav -o assets/chip-lab/bass.wav
+            put public/assets/chip-lab/acousticDrums.wav -o assets/chip-lab/acousticDrums.wav
+            put public/assets/chip-lab/credits.txt -o assets/chip-lab/credits.txt
             put public/js/mixmaster.js -o js/mixmaster.js
             put public/assets/social-card.png -o assets/social-card.png
             put public/sitemap.xml -o sitemap.xml
@@ -157,6 +164,12 @@ jobs:
             /js/mixmaster/project-model.js
             /js/mixmaster/project-store.js
             /js/mixmaster/project-backup.js
+            /js/mixmaster/chip-lab.js
+            /assets/chip-lab/piano.wav
+            /assets/chip-lab/guitar.wav
+            /assets/chip-lab/bass.wav
+            /assets/chip-lab/acousticDrums.wav
+            /assets/chip-lab/credits.txt
             /assets/cursors/cursor-alt.png
             /assets/cursors/cursor-crosshair.png
             /assets/cursors/cursor-move.png

@@ -229,7 +229,7 @@
   $("labPlay").addEventListener("click",async()=>{
     if(audioContext){stopExample();return;}
     try{
-      const {scheduleMidiNotes}=await import("/js/mixmaster/midi-synth.js?v=1");
+      const {scheduleMidiNotes}=await import("/js/mixmaster/midi-synth.js?v=3");
       const Context=window.AudioContext||window.webkitAudioContext;
       if(!Context)throw new Error("Este navegador não oferece Web Audio. Experimente outro navegador atualizado.");
       const project=exampleProject().project,track=project.tracks[0],ctx=new Context();audioContext=ctx;

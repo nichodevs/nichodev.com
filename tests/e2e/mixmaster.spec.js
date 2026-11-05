@@ -1,5 +1,6 @@
 const { test, expect } = require("@playwright/test");
 const { wav, downloadBytes } = require("../helpers/audio");
+const { createHash } = require("node:crypto");
 
 const PROJECT_KEY = "nichodev-mixmaster-project-v1";
 
@@ -53,6 +54,211 @@ test.beforeEach(async ({ page }) => {
   await page.clock.install();
   await page.goto("/mixmaster.html");
   await expect(page.locator(".track-row")).toHaveCount(1);
+});
+
+test("CHIP LAB separa presets, toca o loop e insere quatro clipes MIDI editáveis", async ({ page }) => {
+  await page.addInitScript(() => {
+    const createBufferSource = AudioContext.prototype.createBufferSource;
+    window.chipPreview = [];
+    AudioContext.prototype.createBufferSource = function () {
+      const source = createBufferSource.call(this);
+      const { start, stop } = source;
+      let preview;
+      source.start = function (...args) {
+        if (this.loop) {
+          let peak = 0;
+          for (const sample of this.buffer.getChannelData(0)) peak = Math.max(peak, Math.abs(sample));
+          preview = { duration: this.loopEnd, peak, stopped: false };
+          window.chipPreview.push(preview);
+        }
+        return start.apply(this, args);
+      };
+      source.stop = function (...args) {
+        if (preview) preview.stopped = true;
+        return stop.apply(this, args);
+      };
+      return source;
+    };
+  });
+  await page.reload();
+  const original = backup([audioClip("clip-a", 0, 0, 1)]);
+  original.project.bpm = 100;
+  original.project.playhead = 3;
+  await restore(page, original);
+  const before = await savedProject(page);
+  const chipTab = page.locator('[data-tab="chip"]');
+  await page.getByRole("button", { name: /CHIP LAB.*Criar loop 8-bit/ }).click();
+  await expect(page.locator("#chipTitle")).toBeFocused();
+  await expect(page.locator(".chip-step")).toHaveCount(64);
+  for (const label of ["Tela de Título", "Corrida Pixel", "Fase Noturna"]) {
+    await page.locator("#chipPreset").selectOption({ label });
+    expect((await page.locator(".chip-step.has-note").allTextContents()).every(text => /^[A-G](?:#?\d)?$|^H$/.test(text))).toBe(true);
+  }
+  await expect(page.locator("#chipBpm")).toHaveValue("120");
+  const melodyStep = page.locator('.chip-step[data-lane="0"][data-step="0"]');
+  await expect(melodyStep).toHaveText("A4");
+  await melodyStep.click();
+  await page.locator("#chipNote").selectOption({ label: "D5" });
+  await expect(melodyStep).toHaveText("D5");
+  await melodyStep.click();
+  await expect(melodyStep).toHaveAttribute("aria-pressed", "false");
+  await melodyStep.press("Enter");
+  await expect(melodyStep).toHaveText("D5");
+  await expect(melodyStep).toHaveAttribute("aria-pressed", "true");
+  await page.locator("#chipInstrument").selectOption("triangle");
+  await expect(melodyStep).toHaveText("D5");
+  await expect(page.locator("#chipBpm")).toHaveValue("120");
+  await page.locator("#chipPlay").click();
+  await expect.poll(() => page.evaluate(() => window.chipPreview.length)).toBe(1);
+  const preview = await page.evaluate(() => window.chipPreview[0]);
+  expect(preview.duration).toBe(2);
+  expect(preview.peak).toBeGreaterThan(.02);
+  await page.locator('[data-tab="edit"]').click();
+  await expect.poll(() => page.evaluate(() => window.chipPreview[0].stopped)).toBe(true);
+  await chipTab.click();
+  await expect(melodyStep).toHaveText("D5");
+
+  await page.locator("#chipInsert").click();
+  await expect(page.locator(".midi-clip")).toHaveCount(4);
+  const after = await savedProject(page);
+  expect(after.tracks.slice(0, 1)).toEqual(before.tracks);
+  expect(after.bpm).toBe(100);
+  const clips = after.tracks.slice(1).map(track => track.clips[0]);
+  expect(clips.map(clip => clip.instrument)).toEqual(["triangle", "pulse50", "triangle", "noise"]);
+  for (const clip of clips) {
+    expect(clip.start).toBe(3);
+    expect(clip.duration).toBeCloseTo(2.4, 8);
+    expect(clip.notes.length).toBeGreaterThan(0);
+  }
+  await page.locator("#undoButton").click();
+  await expect(page.locator(".midi-clip")).toHaveCount(0);
+  expect((await savedProject(page)).tracks).toEqual(before.tracks);
+  await page.locator("#redoButton").click();
+  await expect(page.locator(".midi-clip")).toHaveCount(4);
+  await page.locator('[data-tab="midi"]').click();
+  const note = page.getByRole("button", { name: "D5, passo 1", exact: true });
+  await expect(note).toHaveAttribute("aria-pressed", "true");
+  await note.click();
+  await expect(note).toHaveAttribute("aria-pressed", "false");
+  await page.locator("#undoButton").click();
+  await expect(note).toHaveAttribute("aria-pressed", "true");
+
+  const wavFile = await downloadBytes(page, "#exportButton");
+  const byteRate = wavFile.readUInt32LE(28);
+  let peak = 0;
+  for (let offset = 44 + byteRate * 3; offset + 2 <= wavFile.length; offset += 2) {
+    peak = Math.max(peak, Math.abs(wavFile.readInt16LE(offset)));
+  }
+  expect(peak).toBeGreaterThan(100);
+  const exported = JSON.parse((await downloadBytes(page, "#exportProjectButton")).toString("utf8"));
+  expect(exported.project.tracks.slice(1).map(track => track.clips[0])).toEqual(clips);
+  await page.reload();
+  await expect(page.locator(".midi-clip")).toHaveCount(4);
+  expect((await savedProject(page)).tracks.slice(1).map(track => track.clips[0])).toEqual(clips);
+  await upload(page, exported);
+  await expect(page.locator("#projectStatus")).toContainText("Backup restaurado");
+  expect((await savedProject(page)).tracks.slice(1).map(track => track.clips[0])).toEqual(clips);
+  exported.project.tracks[4].clips[0].instrument = "constructor";
+  await upload(page, exported);
+  await expect(page.locator("#projectStatus")).toContainText("timbre MIDI inválido");
+  expect((await savedProject(page)).tracks.slice(1).map(track => track.clips[0])).toEqual(clips);
+});
+
+test("CHIP LAB mantém as gravações na prévia, nos clipes MIDI e no WAV", async ({ page }) => {
+  const instruments = ["piano", "guitar", "bass", "acousticDrums"];
+  const requests = [];
+  page.on("request", request => {
+    if (request.url().includes("/assets/chip-lab/") && request.url().endsWith(".wav")) {
+      requests.push(new URL(request.url()).pathname.split("/").pop());
+    }
+  });
+  await page.addInitScript(() => {
+    window.recordedPreviewPeak = 0;
+    window.recordedTimelineVoices = 0;
+    const create = AudioContext.prototype.createBufferSource;
+    AudioContext.prototype.createBufferSource = function () {
+      const source = create.call(this);
+      const start = source.start.bind(source);
+      source.start = (...args) => {
+        if (source.loop) {
+          for (const sample of source.buffer.getChannelData(0)) {
+            window.recordedPreviewPeak = Math.max(window.recordedPreviewPeak, Math.abs(sample));
+          }
+        } else {
+          window.recordedTimelineVoices++;
+        }
+        return start(...args);
+      };
+      return source;
+    };
+  });
+  await page.reload();
+  await page.locator("#openChipLab").click();
+  for (const [lane, instrument] of instruments.entries()) {
+    await page.locator(`.chip-step[data-lane="${lane}"][data-step="1"]`).click();
+    const row = page.locator(`.chip-step[data-lane="${lane}"]`);
+    const notes = await row.allTextContents();
+    await expect(page.locator('#chipInstrument optgroup[label="Clássicos 8-bit"] option').first()).toBeAttached();
+    await page.locator("#chipInstrument").selectOption(instrument);
+    expect(await row.allTextContents()).toEqual(notes);
+  }
+  expect(requests).toEqual([]);
+  await page.locator("#chipPlay").click();
+  await expect(page.locator("#chipStatus")).toContainText("Ouvindo");
+  expect(await page.evaluate(() => window.recordedPreviewPeak)).toBeGreaterThan(.04);
+  expect(requests.sort()).toEqual(instruments.map(name => name + ".wav").sort());
+  await page.locator("#chipInsert").click();
+  await expect(page.locator(".midi-clip")).toHaveCount(4);
+  const project = await savedProject(page);
+  expect(project.tracks.slice(1).map(track => track.clips[0].instrument)).toEqual(instruments);
+  await page.locator("#playButton").click();
+  await expect.poll(() => page.evaluate(() => window.recordedTimelineVoices)).toBeGreaterThan(20);
+  await page.locator("#stopButton").click();
+  const exported = JSON.parse((await downloadBytes(page, "#exportProjectButton")).toString("utf8"));
+  expect(exported.assets).toEqual([]);
+  await page.reload();
+  await expect(page.locator(".midi-clip")).toHaveCount(4);
+  await upload(page, exported);
+  await expect(page.locator("#projectStatus")).toContainText("Backup restaurado");
+  expect((await savedProject(page)).tracks).toEqual(project.tracks);
+
+  const recordings = new Set();
+  for (let lane = 0; lane < instruments.length; lane++) {
+    const solo = page.locator(".track-row").nth(lane + 1).locator('[data-action="solo"]');
+    await solo.click();
+    const file = await downloadBytes(page, "#exportButton");
+    expect(file.toString("ascii", 0, 4)).toBe("RIFF");
+    let peak = 0;
+    for (let offset = 44; offset + 2 <= file.length; offset += 2) {
+      peak = Math.max(peak, Math.abs(file.readInt16LE(offset)));
+    }
+    expect(peak).toBeGreaterThan(500);
+    recordings.add(createHash("sha256").update(file).digest("hex"));
+    await solo.click();
+  }
+  expect(recordings.size).toBe(4);
+});
+
+test("CHIP LAB mantém a grade navegável em tela estreita", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const shortcut = page.getByRole("button", { name: /CHIP LAB.*Criar loop 8-bit/ });
+  await expect(shortcut).toBeInViewport();
+  await shortcut.click();
+  await expect(page.locator("#chipTitle")).toBeInViewport();
+  const scroll = page.locator(".chip-grid-scroll");
+  expect(await scroll.evaluate(grid => grid.scrollWidth)).toBeGreaterThan(await scroll.evaluate(grid => grid.clientWidth));
+  const melody = page.getByRole("button", { name: "Melodia, passo 1, A4" });
+  await melody.press("End");
+  const lastStep = page.getByRole("button", { name: "Melodia, passo 16, pausa" });
+  await expect(lastStep).toBeFocused();
+  expect(await scroll.evaluate(grid => grid.scrollLeft)).toBeGreaterThan(0);
+  await page.locator("#chipNote").selectOption({ label: "A4" });
+  const note = page.getByRole("button", { name: "Melodia, passo 16, A4" });
+  await expect(note).toHaveAttribute("aria-pressed", "true");
+  await note.press("Delete");
+  await expect(lastStep).toBeFocused();
+  await page.locator("#chipInsert").click();
+  await expect(page.locator(".midi-clip")).toHaveCount(4);
 });
 
 test("backup inválido preserva o projeto e não grava áudios parciais", async ({ page }) => {

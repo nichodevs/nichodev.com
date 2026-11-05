@@ -1,0 +1,51 @@
+CHIP LAB | Gravações de instrumentos
+
+Bancos WAV mono a 32 kHz com trechos de 750 ms por nota de referência.
+As gravações foram convertidas para mono, recortadas, ajustadas em nível
+e receberam fades curtos.
+
+Piano acústico — Salamander Grand Piano V3, Alexander Holm
+Yamaha C5. Creative Commons Attribution 3.0 Unported.
+https://creativecommons.org/licenses/by/3.0/
+https://github.com/sfzinstruments/SalamanderGrandPiano/tree/3382bf9496bba2486f5ab0de55a264d1dfc38404
+
+Guitarra limpa — Electric Guitar FSBS (clean), FreePats
+Creative Commons CC0 1.0 Universal.
+https://github.com/freepats/electric-guitar-FSBS-clean/tree/192cf0d9bf2c4ba6ead8e3524ba3f78818e4fe91
+
+Baixo elétrico — Growlybass, Karoryfer Samples
+Squier Jazz Bass. Creative Commons CC0 1.0 Universal.
+https://github.com/sfzinstruments/karoryfer.growlybass/tree/4f483268fc66b5a6d5781d421c0d11b8d08d3fc6
+
+Bateria acústica — Virtuosity Drums, Versilian Studios e Karoryfer Samples
+Interpretação de Austin McMahon. Creative Commons CC0 1.0 Universal.
+https://github.com/sfzinstruments/virtuosity_drums/tree/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc
+
+Texto da licença CC0: https://creativecommons.org/publicdomain/zero/1.0/
+
+Arquivos de origem por banco, na ordem em que aparecem:
+piano-C2: Samples/C2v8.flac
+piano-C3: Samples/C3v8.flac
+piano-C4: Samples/C4v8.flac
+piano-Fs4: Samples/F#4v8.flac
+piano-C5: Samples/C5v8.flac
+piano-Fs5: Samples/F#5v8.flac
+piano-C6: Samples/C6v8.flac
+guitar-C2: samples/bridge/C2_s1_01.flac
+guitar-A2: samples/bridge/A2_s2_01.flac
+guitar-E3: samples/bridge/E3_s3_01.flac
+guitar-Cs4: samples/bridge/C#4_s5_01.flac
+guitar-G4: samples/bridge/G4_s6_01.flac
+guitar-D5: samples/bridge/D5_s6_01.flac
+guitar-Gs5: samples/bridge/G#5_s6_01.flac
+guitar-Cs6: samples/bridge/C#6_s6_01.flac
+bass-Cs2: sustain/db2_f_rr1.wav
+bass-Fs2: sustain/gb2_f_rr1.wav
+bass-C3: sustain/c3_f_rr1.wav
+bass-Fs3: sustain/gb3_f_rr1.wav
+bass-C4: sustain/c4_f_rr1.wav
+bass-Fs4: sustain/gb4_f_rr1.wav
+bass-C5: sustain/c5_f_rr1.wav
+drums-kick: Samples/mid/kick/mid_kick_snon_vl4_rr1.flac
+drums-snare: Samples/mid/snare/mid_snare_center_vl8.flac
+drums-hat: Samples/mid/hh/mid_hh_closed_vl3_rr1.flac
