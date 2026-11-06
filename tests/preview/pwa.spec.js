@@ -8,8 +8,9 @@ test.use({
   launchOptions: { args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] }
 });
 
-test("the PWA opens the existing community and records an exportable WAV", async ({ browserName, context, page }) => {
-  test.skip(browserName !== "chromium", "The test microphone is provided by Chromium");
+test.skip(({ browserName }) => browserName !== "chromium", "The test microphone is provided by Chromium");
+
+test("the PWA opens the existing community and records an exportable WAV", async ({ context, page }) => {
   const community = await openCommunity();
   try {
     const client = community.client();
