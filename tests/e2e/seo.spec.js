@@ -3,7 +3,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const origin = "https://nichodev.com";
-const routes = ["/", "/voz.html", "/guitarra.html", "/mixmaster.html", "/downloads.html", "/onda/"];
+const { canonicalPages, english } = require("../../lib/site-language");
+const routes = canonicalPages.filter(route => !route.startsWith("/comunidade"));
 const card = origin + "/assets/social-card.png";
 
 test.use({ javaScriptEnabled: false });
@@ -42,6 +43,21 @@ for (const route of [...routes, "/index.html"]) {
   });
 }
 
+test("English navigation works without JavaScript", async ({ page }) => {
+  await page.goto("/?test=1");
+  await page.getByRole("link", { name: "English" }).click();
+  await expect(page).toHaveURL(/\/en\/\?test=1$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", origin + "/en/");
+  await expect(page.locator('link[rel="alternate"][hreflang="pt-BR"]')).toHaveAttribute("href", origin + "/");
+  await page.locator("#mixmasterBtn").click();
+  await expect(page).toHaveURL(/\/en\/mixmaster\.html$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await page.getByRole("link", { name: "Português" }).click();
+  await expect(page).toHaveURL(/\/mixmaster\.html$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "pt-BR");
+});
+
 test("sitemap e robots anunciam apenas as páginas canônicas", async ({ request, page }) => {
   const response = await request.get("/sitemap.xml");
   expect(response.ok()).toBeTruthy();
@@ -53,7 +69,7 @@ test("sitemap e robots anunciam apenas as páginas canônicas", async ({ request
   }, xml);
   expect(parsed.errors).toBe(0);
   expect(parsed.namespace).toBe("http://www.sitemaps.org/schemas/sitemap/0.9");
-  expect(parsed.urls.sort()).toEqual([...routes,"/comunidade/","/comunidade/privacy.html","/comunidade/rules.html"].map(route => origin + route).sort());
+  expect(parsed.urls.sort()).toEqual([...canonicalPages, ...canonicalPages.map(english)].map(route => origin + route).sort());
   const robots = await request.get("/robots.txt");
   expect(robots.ok()).toBeTruthy();
   expect(await robots.text()).toContain("Sitemap: " + origin + "/sitemap.xml");

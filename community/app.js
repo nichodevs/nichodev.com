@@ -40,7 +40,8 @@ function validateWav(buffer) {
   if(format.code===3)for(let at=dataStart;at<dataStart+data;at+=4)if(!Number.isFinite(buffer.readFloatLE(at)))fail(400,"O áudio contém amostras inválidas.");
 }
 
-const publicPages={"/":"index.html","/index.html":"index.html","/voz.html":"voz.html","/guitarra.html":"guitarra.html","/mixmaster.html":"mixmaster.html","/downloads.html":"downloads.html","/onda/":"onda/index.html"};
+const {publicPages,communityPages,toolPages,canonicalPages,renderLanguage,english,installEnglishScripts,translateError}=require("../lib/site-language");
+const indexablePages=new Set([...canonicalPages,...canonicalPages.map(english),"/index.html","/comunidade","/sitemap.xml","/robots.txt"]);
 
 function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__dirname,"../prototypes/community"),siteDir=path.join(__dirname,"../public"),trustedProxy=false,publicRelease=false,bootstrapToken="",bootstrapUser="",probeToken="",passwordCheck=checkNewPassword}) {
   const db=openStore(dbPath),app=express(),guard=security(db);
@@ -106,7 +107,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   app.use((req,res,next)=>{
     if(secure)res.set("Strict-Transport-Security","max-age=31536000");
     if(publicRelease&&req.hostname==="www.nichodev.com")return res.redirect(308,"https://nichodev.com/"+req.originalUrl.replace(/^\/+/,""));
-    if(!publicRelease||!["/","/index.html","/voz.html","/guitarra.html","/mixmaster.html","/downloads.html","/onda/","/comunidade","/comunidade/","/comunidade/privacy.html","/comunidade/rules.html","/sitemap.xml","/robots.txt"].includes(req.path))res.set("X-Robots-Tag","noindex, nofollow");
+    if(!publicRelease||!indexablePages.has(req.path))res.set("X-Robots-Tag","noindex, nofollow");
     res.set({"X-Content-Type-Options":"nosniff","Referrer-Policy":"same-origin","Cache-Control":"no-store","Content-Security-Policy":"default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'"});
     next();
   });
@@ -317,7 +318,8 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
     if(current.visibility==="public"&&current.status!=="approved")fail(400,"A publicação aguarda moderação.");
     const key=current.visibility==="unlisted"?random():null;
     run("UPDATE creations SET share_hash=? WHERE id=?",key?digest(key):null,current.id);
-    res.json({url:app.locals.origin+"/comunidade/#criacao/"+current.id+(key?"?key="+key:"")});
+    const route="/comunidade/#criacao/";
+    res.json({url:app.locals.origin+(req.get("X-Nichodev-Language")==="en"?english(route):route)+current.id+(key?"?key="+key:"")});
   });
   api.post("/media",(req,res,next)=>{try{auth(req);rate(req,"media",20,3600000);next();}catch(error){next(error);}},express.raw({type:"audio/wav",limit:"10mb",inflate:false}),(req,res)=>{
     const user=auth(req);validateWav(req.body);
@@ -353,7 +355,15 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
     }catch(error){done();throw error;}
   });
   app.use("/api/community",api);
-  app.get(["/comunidade","/comunidade/"],(req,res,next)=>{
+  for(const route of ["/en","/en/onda","/en/comunidade"])app.get(route,(req,res,next)=>req.path===route?res.redirect(308,route+"/"+req.originalUrl.slice(route.length)):next());
+  function sendLocalized(req,res,html,nonce){
+    const isEnglish=req.path.startsWith("/en/");
+    res.set("Content-Language",isEnglish?"en":"pt-BR");
+    html=renderLanguage(html,isEnglish?req.path.slice(3):req.path,req.originalUrl,publicRelease);
+    if(nonce)html=html.replace(/<script\b/g,'<script nonce="'+nonce+'"');
+    res.type("html").send(html);
+  }
+  app.get(["/comunidade","/comunidade/","/comunidade/index.html",english("/comunidade/")],(req,res,next)=>{
     fs.readFile(path.join(publicDir,"index.html"),"utf8",(error,html)=>{
       if(error)return next(error);
       if(publicRelease){
@@ -364,7 +374,13 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
           .replace("Seus dados são salvos neste ambiente de homologação.","Seus dados são salvos na comunidade nichodev.com.");
         res.removeHeader("X-Robots-Tag");
       }
-      res.type("html").send(html);
+      sendLocalized(req,res,html);
+    });
+  });
+  for(const route of communityPages.slice(1))app.get([route,english(route)],(req,res,next)=>{
+    fs.readFile(path.join(publicDir,path.basename(route)),"utf8",(error,html)=>{
+      if(error)return next(error);
+      sendLocalized(req,res,html);
     });
   });
   app.get("/health",(req,res)=>{get("SELECT 1");res.json({status:"ok"});});
@@ -389,16 +405,16 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
         const quote=double!==undefined?'"':"'";
         return name+"="+quote+prefix+value+quote;
       });
+      if(integrated)html=html.replace("</body>",'<script src="/community/preset-format.js" defer></script><script src="/community/tool-bridge.js" defer></script></body>');
       const nonce=crypto.randomBytes(18).toString("base64");
       res.set("Content-Security-Policy",res.get("Content-Security-Policy").replace("script-src 'self'","script-src 'self' 'nonce-"+nonce+"'"));
-      html=html.replace(/<script\b/g,'<script nonce="'+nonce+'"');
-      if(integrated)html=html.replace("</body>",'<script src="/community/preset-format.js" defer></script><script src="/community/tool-bridge.js" defer></script></body>');
-      res.type("html").send(html);
+      sendLocalized(req,res,html,nonce);
     });
   }
-  for(const file of ["voz.html","guitarra.html"])app.get("/comunidade/ferramentas/"+file,renderPage(file,true));
+  for(const route of toolPages)app.get([route,english(route)],renderPage(path.basename(route),true));
   app.get("/onda",(req,res,next)=>req.path==="/onda/"?next():res.redirect(308,"/onda/"+req.originalUrl.slice(req.path.length)));
-  for(const [route,file]of Object.entries(publicPages))app.get(route,renderPage(file));
+  for(const [route,file]of Object.entries(publicPages))app.get([route,english(route)],renderPage(file));
+  installEnglishScripts(app,{siteDir,communityDir:publicDir,bridgeFile:path.join(__dirname,"tool-bridge.js")});
   app.use("/onda",express.static(path.join(pageDir,"onda"),{index:false}));
   app.use("/comunidade",express.static(publicDir,{index:"index.html"}));
   app.use(express.static(siteDir));
@@ -409,7 +425,8 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
       try{const user=actor(req);if(user?.admin)ops.audit(user,'failed.'+(req.route?.path||'admin'),String(req.params?.id||'admin'),'Solicitação recusada ('+status+')','failed');}catch{}
     }
     if(status===429||error.retryAfter)res.set("Retry-After",String(error.retryAfter||600));
-    res.status(status).json({...((String(error.code||"").startsWith("ADMIN_"))?{code:error.code}:{}),error:status===500?"Não foi possível concluir. Seus dados não foram confirmados; tente novamente.":status===413?"Arquivo ou solicitação acima do limite permitido.":error.message});
+    const message=status===500?"Não foi possível concluir. Seus dados não foram confirmados; tente novamente.":status===413?"Arquivo ou solicitação acima do limite permitido.":error.message;
+    res.status(status).json({...((String(error.code||"").startsWith("ADMIN_"))?{code:error.code}:{}),error:translateError(message,req.get("X-Nichodev-Language"))});
   });
   return app;
 }

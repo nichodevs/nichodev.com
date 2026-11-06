@@ -12,7 +12,7 @@
   let keyFlow="",keyValue="",keyUsername="",passwordMode="recover",draftPreset=null,editing=null,mediaId=null,detail=null,detailKey="",deleting=null,audioContext=null,audioTimer=null;
   const status=message=>{$("pageStatus").textContent=message;};
   async function request(path,{method="GET",body,raw}={},reauthenticated=0){
-    const response=await fetch(api+path,{method,credentials:"same-origin",headers:{"X-Nichodev-Client":"1",...(path==="/register"&&bootstrapInvite?{"X-Nichodev-Bootstrap":bootstrapInvite}:{}),...(body?{"Content-Type":"application/json"}:{}),...(raw?{"Content-Type":"audio/wav"}:{})},...(body?{body:JSON.stringify(body)}:{}),...(raw?{body:raw}:{})});
+    const response=await fetch(api+path,{method,credentials:"same-origin",headers:{"X-Nichodev-Client":"1","X-Nichodev-Language":document.documentElement.lang,...(path==="/register"&&bootstrapInvite?{"X-Nichodev-Bootstrap":bootstrapInvite}:{}),...(body?{"Content-Type":"application/json"}:{}),...(raw?{"Content-Type":"audio/wav"}:{})},...(body?{body:JSON.stringify(body)}:{}),...(raw?{body:raw}:{})});
     const data=await response.json().catch(()=>({}));
     if(data.code==="ADMIN_REAUTH_REQUIRED"&&reauthenticated<3){await confirmAdminPassword();return request(path,{method,body,raw},reauthenticated+1);}
     if(["ADMIN_MFA_REQUIRED","ADMIN_MFA_SETUP_REQUIRED"].includes(data.code)&&reauthenticated<3){await window.NichodevAdmin.unlock(request);return request(path,{method,body,raw},reauthenticated+1);}
@@ -321,7 +321,7 @@
   $("downloadPreset").addEventListener("click",()=>download("nichodev-preset-"+detail.tool+".json",JSON.stringify(detail.preset,null,2)));
 
   document.addEventListener("click",async event=>{
-    const toolLink=event.target.closest('a[href*="/ferramentas/"],a[href="/mixmaster.html"]');if(toolLink&&user){const tool=toolLink.href.includes("guitarra")?"guitarra":toolLink.href.includes("voz")?"voz":"mixmaster";request("/char/tool-opened",{method:"POST",body:{tool}}).catch(()=>{});}
+    const toolLink=event.target.closest('a[href*="/ferramentas/"],a[href="/mixmaster.html"],a[href="/en/mixmaster.html"]');if(toolLink&&user){const tool=toolLink.href.includes("guitarra")?"guitarra":toolLink.href.includes("voz")?"voz":"mixmaster";request("/char/tool-opened",{method:"POST",body:{tool}}).catch(()=>{});}
     const close=event.target.closest("[data-close]");
     if(close){
       const dialog=close.closest("dialog");

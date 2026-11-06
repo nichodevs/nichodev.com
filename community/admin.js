@@ -177,7 +177,7 @@ function installAdmin(c){
   api.get('/admin/health',(req,res)=>{admin(req,'operations');res.json(healthReport());});
   function saveHealth(){try{const r=healthReport();fs.writeFileSync(path.join(dataDir,'server-health.json'),JSON.stringify({checkedAt:r.checkedAt,memoryBytes:r.memoryBytes,p95Ms:r.p95Ms,alerts:r.alerts}),{mode:0o600});}catch{console.error('Não foi possível gravar o resumo operacional.');}}
   const healthTimer=setInterval(saveHealth,60000);healthTimer.unref();const close=c.app.locals.close;c.app.locals.close=()=>{clearInterval(healthTimer);close();};
-  api.get('/config',(req,res)=>{const v=settings().value;res.json({registrationsOpen:v.registrationsOpen,publicationOpen:v.publicationOpen,maintenanceMessage:v.maintenanceMessage,rules:v.rules,features:v.features});});
+  api.get('/config',(req,res)=>{const v=settings().value;res.json({registrationsOpen:v.registrationsOpen,publicationOpen:v.publicationOpen,maintenanceMessage:v.maintenanceMessage,rules:req.get("X-Nichodev-Language")==="en"&&v.rules===defaults.rules?"Public posts are moderated.":v.rules,features:v.features});});
   return {admin,role,audit,settings,controls,touch,publish,measure};
 }
 module.exports={installAdmin,defaults,permissions};

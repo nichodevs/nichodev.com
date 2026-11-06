@@ -12,7 +12,7 @@
   const status=document.createElement("p");status.setAttribute("role","status");status.style.flexBasis="100%";
   bar.append(title,capture,feedback,home,status);document.body.prepend(bar);
   async function request(path,body){
-    const response=await fetch(api+path,{method:body?"POST":"GET",credentials:"same-origin",headers:{"Content-Type":"application/json","X-Nichodev-Client":"1"},...(body?{body:JSON.stringify(body)}:{})});
+    const response=await fetch(api+path,{method:body?"POST":"GET",credentials:"same-origin",headers:{"Content-Type":"application/json","X-Nichodev-Client":"1","X-Nichodev-Language":document.documentElement.lang},...(body?{body:JSON.stringify(body)}:{})});
     const value=await response.json().catch(()=>({}));
     if(!response.ok)throw new Error(value.error||"Não foi possível concluir. Tente novamente.");
     return value;

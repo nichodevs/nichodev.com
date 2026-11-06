@@ -168,7 +168,8 @@ test("galeria exige moderação e editar retira aprovação; links não listados
   assert.equal((await mod("/admin/creations/"+item.id,{method:"PATCH",body:{status:"approved",reason:"Publicação verificada",version:item.version}})).status,204);
   assert.equal((await guest("/creations")).data.items.length,1);
   const updated=await owner("/creations/"+item.id,{method:"PATCH",body:{version:2,visibility:"unlisted"}});assert.equal(updated.status,200);
-  const one=await owner("/creations/"+item.id+"/share",post({})),key1=new URLSearchParams(one.data.url.split("?")[1]).get("key");
+  const one=await owner("/creations/"+item.id+"/share",{...post({}),headers:{"X-Nichodev-Language":"en"}}),key1=new URLSearchParams(one.data.url.split("?")[1]).get("key");
+  assert.equal(new URL(one.data.url).pathname,"/en/comunidade/");
   assert.equal((await guest("/creations/"+item.id+"?key="+key1)).status,200);
   const two=await owner("/creations/"+item.id+"/share",post({})),key2=new URLSearchParams(two.data.url.split("?")[1]).get("key");assert.notEqual(key1,key2);
   assert.equal((await guest("/creations/"+item.id+"?key="+key1)).status,404);
