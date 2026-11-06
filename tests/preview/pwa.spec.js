@@ -1,11 +1,17 @@
+const path = require("node:path");
 const { test, expect } = require("@playwright/test");
 const { account, openCommunity, phrase } = require("../helpers/community");
 const { downloadBytes } = require("../helpers/audio");
 const { defaults } = require("../../community/char-format");
 
 test.use({
+  serviceWorkers: "allow",
   viewport: { width: 390, height: 844 },
-  launchOptions: { args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] }
+  launchOptions: { args: [
+    "--use-fake-ui-for-media-stream",
+    "--use-fake-device-for-media-stream",
+    "--use-file-for-fake-audio-capture=" + path.resolve(__dirname, "../../public/assets/chip-lab/piano.wav")
+  ] }
 });
 
 test.skip(({ browserName }) => browserName !== "chromium", "The test microphone is provided by Chromium");
@@ -47,7 +53,7 @@ test("the PWA opens the existing community and records an exportable WAV", async
     const record = page.locator("#recordButton");
     await record.click();
     await expect(record).toHaveClass(/recording/);
-    await expect(page.locator("#recordingTime")).not.toHaveText(/^00:00[.][0-3][0-9]$/);
+    await expect(page.locator("#recordingTime")).toHaveText(/^00:0[1-9][.]/);
     await record.click();
     await expect(page.locator("#projectStatus")).toContainText("Gravação salva");
     const wav = await downloadBytes(page, "#exportButton");
