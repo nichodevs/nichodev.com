@@ -1,7 +1,7 @@
 "use strict";
 
 function updateLanguageLinks() {
-  for (const link of document.querySelectorAll(".site-language a")) {
+  for (const link of document.querySelectorAll(".site-language a[hreflang]")) {
     const target = new URL(link.href);
     target.hash = location.hash;
     link.href = target.href;

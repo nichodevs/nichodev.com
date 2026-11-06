@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, "..");
 const publicRoot = path.join(root, "public");
 const pages = ["index.html", "voz.html", "guitarra.html", "mixmaster.html", "downloads.html", "onda/index.html"];
 const errors = [];
-const requiredDeployFiles = new Set([...pages, "language.css", "js/language.js"]);
+const requiredDeployFiles = new Set([...pages, "language.css", "js/language.js", "js/pwa.js", "pwa-worker.js", "nichodev.webmanifest", "assets/nichodev-192.png", "assets/nichodev-512.png"]);
 const read = file => fs.readFileSync(path.join(publicRoot, file), "utf8");
 const localPath = value => decodeURIComponent(value.split(/[?#]/, 1)[0]);
 const resolveLocal = (fromFile, value) => {

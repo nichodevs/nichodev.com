@@ -359,7 +359,7 @@ function createCommunityApp({dbPath,origin,secure=false,publicDir=path.join(__di
   function sendLocalized(req,res,html,nonce){
     const isEnglish=req.path.startsWith("/en/");
     res.set("Content-Language",isEnglish?"en":"pt-BR");
-    html=renderLanguage(html,isEnglish?req.path.slice(3):req.path,req.originalUrl,publicRelease);
+    html=renderLanguage(html,isEnglish?req.path.slice(3):req.path,req.originalUrl,publicRelease,!publicRelease);
     if(nonce)html=html.replace(/<script\b/g,'<script nonce="'+nonce+'"');
     res.type("html").send(html);
   }
