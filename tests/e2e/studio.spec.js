@@ -155,6 +155,10 @@ test("legendas aparecem somente sobre o botão, sem deslocar o menu, e preservam
 test("legendas têm acesso pelo teclado e respeitam movimento reduzido", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
+  for (const name of ["Português", "English"]) {
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("link", { name, exact: true })).toBeFocused();
+  }
   for (const group of await page.locator(".home-tool").all()) {
     const button = group.locator(".btn"), caption = group.locator(".tool-caption");
     await page.keyboard.press("Tab");

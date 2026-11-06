@@ -83,6 +83,8 @@ jobs:
             cd ..
             put public/style.css -o style.css
             put public/index.css -o index.css
+            put public/language.css -o language.css
+            put public/js/language.js -o js/language.js
             put public/downloads.css -o downloads.css
             put public/voz.css -o voz.css
             put public/voz-compacto.css -o voz-compacto.css
@@ -148,6 +150,8 @@ jobs:
             /robots.txt
             /assets/social-card.png
             /index.css
+            /language.css
+            /js/language.js
             /downloads.html
             /downloads.css
             /voz.css

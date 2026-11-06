@@ -694,3 +694,24 @@ test("ajustes de som têm uma etapa por gesto e preservam a edição anterior", 
     if (selector === "#masterVolume") await expect(page.locator("#masterValue")).toHaveText(Math.round(before * 100) + "%");
   }
 });
+
+test("English CHIP LAB loads recorded instruments and adds their MIDI to the shared project", async ({ page }) => {
+  await page.goto("/en/mixmaster.html");
+  await page.locator('[data-tab="chip"]').click();
+  await expect(page.locator(".chip-step")).toHaveCount(64);
+  await expect(page.locator("#chipInstrument optgroup").first()).toHaveAttribute("label", "8-bit Classics");
+  await page.locator("#chipInstrument").selectOption({ label: "Acoustic piano" });
+
+  const sample = page.waitForResponse(response => response.url().endsWith("/assets/chip-lab/piano.wav"));
+  await page.locator("#chipPlay").click();
+  expect((await sample).ok()).toBe(true);
+  await expect(page.locator("#chipStatus")).toHaveText("Playing loop preview.");
+  await page.locator("#chipInsert").click();
+  await expect(page.locator(".midi-clip")).toHaveCount(4);
+  const wav = await downloadBytes(page, "#exportButton");
+  expect(wav.toString("ascii", 0, 4)).toBe("RIFF");
+  expect(wav.length).toBeGreaterThan(44);
+  await page.getByRole("link", { name: "Português", exact: true }).click();
+  await expect(page).toHaveURL(/\/mixmaster\.html$/);
+  await expect(page.locator(".midi-clip")).toHaveCount(4);
+});

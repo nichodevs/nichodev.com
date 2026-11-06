@@ -1,6 +1,36 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.NicoChar=factory();})(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  const list=(names)=>names.split('|').map(id=>({id,label:id.replaceAll('-',' ')}));
+  const englishLabels = {
+    "medio": "average", "magro": "slim", "baixinho": "short", "alto": "tall",
+    "robo": "robot", "criatura": "creature", "curto": "short", "baguncado": "messy",
+    "moicano": "mohawk", "capacete": "helmet", "capuz": "hood", "careca": "bald",
+    "antena": "antenna", "franja": "bangs", "longo": "long", "coque": "bun",
+    "rabo-de-cavalo": "ponytail", "trancas": "braids", "cacheado": "curly", "espigado": "spiky",
+    "bone": "cap", "raposa": "fox", "serio": "serious", "animado": "excited",
+    "sono": "sleepy", "raiva": "angry", "feliz": "happy", "neutro": "neutral",
+    "sorriso": "smile", "dentes": "teeth", "mascara": "mask", "barba": "beard",
+    "bigode": "mustache", "cicatriz": "scar", "camiseta": "T-shirt", "armadura-synth": "synth armor",
+    "sobretudo": "overcoat", "capa": "cape", "equalizador": "equalizer", "listras": "stripes",
+    "colete": "vest", "jaqueta": "jacket", "astronauta": "astronaut", "jardineira": "overalls",
+    "vestido": "dress", "mago": "mage", "cassete": "cassette", "nenhum": "none",
+    "fones": "headphones", "oculos": "glasses", "oculos-escuros": "sunglasses", "corrente": "chain",
+    "mochila": "backpack", "luvas": "gloves", "espada": "sword", "guitarra": "guitar",
+    "microfone": "microphone", "sintetizador": "synthesizer", "cajado": "staff", "disquete": "floppy disk",
+    "fone-raro": "rare headphones", "capa-evento": "event cape", "em-pe": "standing", "mao-no-bolso": "hands in pockets",
+    "sentado": "sitting", "andando": "walking", "pulando": "jumping", "bracos-cruzados": "arms crossed",
+    "perfil": "side view", "costas": "back view", "ambar": "amber", "gelo": "ice",
+    "alerta": "alert", "preto": "black", "estrelas": "stars", "estudio": "studio",
+    "palco": "stage", "quarto": "bedroom", "cidade": "city", "voz": "voice",
+    "natal": "Christmas", "aniversario": "anniversary", "desafio": "challenge", "cartucho": "cartridge",
+    "gato-nico": "Nico cat", "robo-mini": "mini robot", "morcego": "bat", "disco-vivo": "living record",
+    "fantasma": "ghost", "lado": "beside", "ombro": "shoulder", "flutuando": "floating",
+    "rodape": "bottom", "nota": "music note", "coracao": "heart", "raio": "bolt",
+    "brilho": "glow", "contorno": "outline", "fumaca": "smoke", "notas": "music notes",
+    "raios": "lightning", "poeira": "dust", "orbita": "orbit", "retrato": "portrait",
+    "mini-cena": "mini scene", "robo-sound": "robot sound"
+  };
+  const english = typeof document !== "undefined" && document.documentElement.lang === "en";
+  const list = names => names.split("|").map(id => ({ id, label: english && Object.hasOwn(englishLabels, id) ? englishLabels[id] : id.replaceAll("-", " ") }));
   const catalog={
     style:list('atari-minimal|pocket-rpg|underground-hacker|cyber-mascot'),
     body:list('medio|magro|baixinho|alto|chibi|robo|criatura'),

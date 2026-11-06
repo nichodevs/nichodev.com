@@ -8,8 +8,8 @@ fetch('/api/community/session').then(response=>response.ok?response.json():null)
 }).catch(()=>{});
 
 const startButton = document.getElementById("startBtn");
-const selectButton = document.querySelector('a[href="guitarra.html"]');
-const mixmasterButton = document.querySelector('a[href="mixmaster.html"]');
+const selectButton = document.getElementById("guitarBtn");
+const mixmasterButton = document.getElementById("mixmasterBtn");
 
 let menuAudioContext = null;
 const primedMenuSounds = new WeakMap();

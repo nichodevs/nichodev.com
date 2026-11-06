@@ -15,7 +15,7 @@ function loadSampleBank(ctx, instrument) {
     const bank = { buffer: null };
     bank.ready = (async () => {
       try {
-        const url = new URL(`../../assets/chip-lab/${instrument}.wav`, import.meta.url);
+        const url = new URL(`/assets/chip-lab/${instrument}.wav`, import.meta.url);
         const response = await fetch(url);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         bank.buffer = await ctx.decodeAudioData(await response.arrayBuffer());
