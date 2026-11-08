@@ -96,8 +96,8 @@ void BitunerEditor::resized()
     const auto scale = static_cast<float>(getWidth()) / 560.0f;
     const auto place = [scale](juce::Component& component, int x, int y, int w, int h)
     {
-        component.setBounds(juce::Rectangle<float>(static_cast<float>(x), static_cast<float>(y),
-            static_cast<float>(w), static_cast<float>(h)).scaled(scale).toNearestInt());
+        component.setBounds(juce::Rectangle<float>(static_cast<float>(x) * scale, static_cast<float>(y) * scale,
+            static_cast<float>(w) * scale, static_cast<float>(h) * scale).toNearestInt());
     };
     place(note, 20, 100, 520, 94);
     place(reading, 20, 199, 520, 28);
@@ -136,7 +136,8 @@ void BitunerEditor::paint(juce::Graphics& g)
     g.setFont(pixelFont(9.0f));
     g.setColour(muted);
     for (int i = 0; i < 5; ++i)
-        g.drawText(juce::String(-50 + i * 25), 20 + i * 120, 242, 40, 18, juce::Justification::centred);
+        g.drawText(juce::String(-50 + i * 25), 20 + i * 130 - (i == 0 ? 0 : i == 4 ? 40 : 20), 242, 40, 18,
+            i == 0 ? juce::Justification::centredLeft : i == 4 ? juce::Justification::centredRight : juce::Justification::centred);
     const std::array<juce::Colour, 5> colours{{juce::Colour(0xff642a31), juce::Colour(0xff82743b),
         juce::Colour(0xff24371e), juce::Colour(0xff82743b), juce::Colour(0xff642a31)}};
     const std::array<int, 6> edges{{20, 150, 254, 306, 410, 540}};

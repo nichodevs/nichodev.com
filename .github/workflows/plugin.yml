@@ -71,7 +71,7 @@ jobs:
         run: cmake -S plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release
 
       - name: Compilar os bundles VST3
-        run: cmake --build build/plugin --config Release --parallel 2 --target NichodevGuitarFX_VST3 NichodevDeluxe65_VST3 Nichodev8bituner_VST3
+        run: cmake --build build/plugin --config Release --parallel 2 --target Nichodev8bituner_VST3 Nichodev8bitunerHostTests NichodevGuitarFX_VST3 NichodevDeluxe65_VST3
 
       - name: Compilar e executar testes DSP e do processador
         run: |

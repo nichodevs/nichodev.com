@@ -92,7 +92,7 @@ void BitunerAudioProcessor::AnalysisThread::prepare(double rate)
 void BitunerAudioProcessor::AnalysisThread::stop()
 {
     active.store(false);
-    stopThread(-1);
+    stopThread();
     frequency.store(0.0f, std::memory_order_relaxed);
 }
 
