@@ -170,7 +170,8 @@ if(BUILD_TESTING)
   target_link_libraries(Nichodev8bitunerProcessorTests PRIVATE Nichodev8bituner)
   set(tuner_bundle "${CMAKE_BINARY_DIR}/Nichodev8bituner_artefacts/$<CONFIG>/VST3/8bituner.vst3")
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    add_test(NAME Nichodev8bitunerHostTests COMMAND xvfb-run -a $<TARGET_FILE:Nichodev8bitunerHostTests>
+    add_test(NAME Nichodev8bitunerHostTests COMMAND xvfb-run -a bash "${CMAKE_CURRENT_SOURCE_DIR}/tests/run_linux_host_test.sh"
+      $<TARGET_FILE:Nichodev8bitunerHostTests>
       "${tuner_bundle}")
     add_test(NAME Nichodev8bitunerProcessorTests COMMAND xvfb-run -a $<TARGET_FILE:Nichodev8bitunerProcessorTests>
       "${CMAKE_BINARY_DIR}/8bituner-preview.png")

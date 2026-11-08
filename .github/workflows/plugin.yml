@@ -65,20 +65,38 @@ jobs:
             libglu1-mesa-dev \
             libgtk-3-dev \
             libjack-jackd2-dev \
-            xvfb
+            xvfb \
+            openbox \
+            x11-utils
 
       - name: Configurar CMake e baixar JUCE
         run: cmake -S plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release
 
       - name: Compilar os bundles VST3
-        run: cmake --build build/plugin --config Release --parallel 2 --target Nichodev8bituner_VST3 Nichodev8bitunerHostTests NichodevGuitarFX_VST3 NichodevDeluxe65_VST3
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build build/plugin --config Release --parallel 2 --target Nichodev8bituner_VST3 Nichodev8bitunerHostTests
+          ctest --test-dir build/plugin --build-config Release --output-on-failure -R '^Nichodev8bitunerHostTests$'
+          cmake --build build/plugin --config Release --parallel 2 --target NichodevGuitarFX_VST3 NichodevDeluxe65_VST3
 
       - name: Compilar e executar testes DSP e do processador
         shell: bash
         run: |
           set -euo pipefail
           cmake --build build/plugin --config Release --parallel 2 --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests Nichodev8bitunerDSPTests Nichodev8bitunerHostTests Nichodev8bitunerProcessorTests
-          ctest --test-dir build/plugin --build-config Release --output-on-failure
+          ctest --test-dir build/plugin --build-config Release --output-on-failure -E '^Nichodev8bitunerHostTests$'
+
+      - name: Guardar diagnostico nativo que falhou
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: 8bituner-native-failure-${{ matrix.os }}
+          path: |
+            build/plugin/Testing/Temporary/LastTest.log
+            build/plugin/8bituner-window-manager.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Guardar previa nativa do 8bituner
         uses: actions/upload-artifact@v7
