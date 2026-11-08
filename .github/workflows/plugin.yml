@@ -74,7 +74,9 @@ jobs:
         run: cmake --build build/plugin --config Release --parallel 2 --target Nichodev8bituner_VST3 Nichodev8bitunerHostTests NichodevGuitarFX_VST3 NichodevDeluxe65_VST3
 
       - name: Compilar e executar testes DSP e do processador
+        shell: bash
         run: |
+          set -euo pipefail
           cmake --build build/plugin --config Release --parallel 2 --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests Nichodev8bitunerDSPTests Nichodev8bitunerHostTests Nichodev8bitunerProcessorTests
           ctest --test-dir build/plugin --build-config Release --output-on-failure
 

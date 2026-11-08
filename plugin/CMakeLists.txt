@@ -165,7 +165,6 @@ if(BUILD_TESTING)
   )
   target_compile_definitions(Nichodev8bitunerProcessorTests PRIVATE
     $<TARGET_PROPERTY:Nichodev8bituner,COMPILE_DEFINITIONS>
-    JUCE_MODAL_LOOPS_PERMITTED=1
   )
   target_compile_features(Nichodev8bitunerProcessorTests PRIVATE cxx_std_17)
   target_link_libraries(Nichodev8bitunerProcessorTests PRIVATE Nichodev8bituner)

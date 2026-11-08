@@ -88,7 +88,8 @@ int main(int argc, char** argv)
         expect(child != nullptr && editor->getLocalBounds().contains(child->getBounds()), "resized controls stay inside the editor");
     }
     expect(waitForFrequency(processor, 0.0), "stopped input clears the previous pitch");
-    juce::MessageManager::getInstance()->runDispatchLoopUntil(50);
+    juce::Timer::callAfterDelay(80, [] { juce::MessageManager::getInstance()->stopDispatchLoop(); });
+    juce::MessageManager::getInstance()->runDispatchLoop();
     expect(note != nullptr && note->getText() == "--", "no signal clears the displayed note");
     editor.reset();
     processor.releaseResources();
