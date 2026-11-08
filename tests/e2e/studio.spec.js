@@ -111,12 +111,17 @@ test("acesso à comunidade aparece somente quando o backend público está ativo
 test.describe("downloads VST3 sem JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 
-  test("menu leva aos dois downloads diretos e ao guia de instalação", async ({ page }) => {
+  test("menu leva aos downloads da suite e do 8bituner e ao guia de instalação", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("link", { name: "Baixar a suite Nichodev VST3" }).click();
     await expect(page).toHaveURL(/\/downloads\.html$/);
     await expect(page.getByRole("heading", { name: "NICHODEV GUITAR FX", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "NICHODEV DELUXE 65 AMP", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "8bituner", exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Baixar 8bituner para Windows", exact: true }))
+      .toHaveAttribute("href", "https://github.com/nichodevs/nichodev.com/releases/latest/download/8bituner-windows-latest.zip");
+    await expect(page.getByRole("link", { name: "Baixar 8bituner para Linux", exact: true }))
+      .toHaveAttribute("href", "https://github.com/nichodevs/nichodev.com/releases/latest/download/8bituner-ubuntu-latest.zip");
     await expect(page.getByRole("link", { name: "BAIXAR PARA WINDOWS", exact: true }))
       .toHaveAttribute("href", "https://github.com/nichodevs/nichodev.com/releases/latest/download/NichodevVST3-windows-latest.zip");
     await expect(page.getByRole("link", { name: "BAIXAR PARA LINUX", exact: true }))
@@ -125,8 +130,26 @@ test.describe("downloads VST3 sem JavaScript", () => {
     await expect(page.locator("#instalacao")).toBeInViewport();
     await expect(page.getByRole("heading", { name: "NO REAPER", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "EM OUTRA DAW", exact: true })).toBeVisible();
+    await expect(page.locator("#instalacao")).toContainText("8bituner.vst3");
     await page.getByRole("link", { name: "← MENU", exact: true }).click();
     await expect(page).toHaveURL(/\/index\.html$/);
+  });
+
+  test("downloads do 8bituner ficam traduzidos e cabem na tela do celular sem JavaScript", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 740 });
+    await page.goto("/downloads.html");
+    await page.getByRole("link", { name: "English", exact: true }).click();
+    await expect(page).toHaveURL(/\/en\/downloads\.html$/);
+    const tuner = page.getByRole("region", { name: "01 / 8bituner", exact: true });
+    await expect(tuner).toContainText("A standalone chromatic guitar tuner");
+    await expect(tuner.getByRole("link", { name: "Download 8bituner for Windows", exact: true }))
+      .toHaveAttribute("href", "https://github.com/nichodevs/nichodev.com/releases/latest/download/8bituner-windows-latest.zip");
+    await expect(tuner.getByRole("link", { name: "Download 8bituner for Linux", exact: true }))
+      .toHaveAttribute("href", "https://github.com/nichodevs/nichodev.com/releases/latest/download/8bituner-ubuntu-latest.zip");
+    await expect(tuner).toContainText("Tuner-only download. Each ZIP contains only");
+    await expect(page.getByRole("heading", { name: "02 / COMPLETE SUITE", exact: true })).toBeVisible();
+    await expect(page.locator("#instalacao")).toContainText("8bituner.vst3");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 });
 
