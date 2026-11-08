@@ -59,7 +59,7 @@ int main(int argc, char** argv)
     mute->setValueNotifyingHost(0.0f);
     feed(processor, targets[0] * std::pow(2.0, -12.0 / 1200.0), 0);
     expect(waitForFrequency(processor, 81.83765), "the analyser follows a detuned low E");
-    std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditor());
+    std::unique_ptr<juce::AudioProcessorEditor> editor(processor.createEditorAndMakeActive());
     const auto* note = dynamic_cast<juce::Label*>(editor->findChildWithID("note"));
     expect(note != nullptr && note->getText() == "E2", "the native editor displays the detected scientific note");
     const auto* advice = dynamic_cast<juce::Label*>(editor->findChildWithID("advice"));

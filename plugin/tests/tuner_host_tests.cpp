@@ -61,7 +61,7 @@ int main(int argc, char** argv)
         for (int i = 0; i < 256; ++i)
             expect(dry.getSample(channel, i) == original.getSample(channel, i), "unmuted samples pass through unchanged");
 
-    std::unique_ptr<juce::AudioProcessorEditor> editor(plugin->createEditor());
+    std::unique_ptr<juce::AudioProcessorEditor> editor(plugin->createEditorAndMakeActive());
     expect(editor != nullptr, "the compiled plugin opens its native editor");
     if (editor == nullptr) return EXIT_FAILURE;
     editor->addToDesktop(juce::ComponentPeer::windowIsTemporary);

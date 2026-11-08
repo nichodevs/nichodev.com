@@ -18,7 +18,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout BitunerAudioProcessor::creat
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
     layout.add(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"reference", 1}, "A4 Reference",
-        juce::NormalisableRange<float>{430.0f, 450.0f, 1.0f}, 440.0f, "Hz"));
+        juce::NormalisableRange<float>{430.0f, 450.0f, 1.0f}, 440.0f,
+        juce::AudioParameterFloatAttributes().withLabel("Hz")));
     layout.add(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"mute", 1}, "Mute Output", false));
     return layout;
