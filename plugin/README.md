@@ -1,15 +1,16 @@
 # Nichodev VST3 Suite
 
-Pedaleira e amplificador nativos para DAWs de 64 bits com suporte a VST3, feitos com JUCE 9.0.4 e interface em 8 bits. Os pacotes publicados atendem Windows e Linux x86_64; a compatibilidade do build Linux depende da distribuição e da DAW. Ainda não há pacote para macOS.
+Pedaleira, amplificador e afinador nativos para DAWs de 64 bits com suporte a VST3, feitos com JUCE 9.0.4 e interface em 8 bits. Os pacotes publicados atendem Windows e Linux x86_64; a compatibilidade do build Linux depende da distribuição e da DAW. Ainda não há pacote para macOS.
 
 | Plugin | Função |
 | --- | --- |
 | **Nichodev Guitar FX** | Cadeia reordenável de 15 pedais e controles de amplificador |
 | **Nichodev Deluxe 65 Amp** | Amplificador independente com canais Normal/Clean e Vibrato/Dirty |
+| **8bituner** | Afinador cromático independente para guitarra, com saída silenciável |
 
-O [release v0.2.2](https://github.com/nichodevs/nichodev.com/releases/tag/v0.2.2) contém Guitar FX **0.1.8** e Deluxe 65 Amp **0.1.2**, conforme [CMakeLists.txt](CMakeLists.txt). A versão do pacote é independente da versão de cada plugin; ao preparar um novo release, atualize esta referência.
+O [release v0.3.0](https://github.com/nichodevs/nichodev.com/releases/tag/v0.3.0) contém Guitar FX **0.1.8**, Deluxe 65 Amp **0.1.2** e 8bituner **0.1.0**, conforme [CMakeLists.txt](CMakeLists.txt). A versão do pacote é independente da versão de cada plugin; ao preparar um novo release, atualize esta referência.
 
-Ambos aceitam áudio mono ou estéreo, salvam o estado no projeto da DAW e expõem parâmetros para automação do host. Não recebem nem geram MIDI. O Deluxe pode ser usado sozinho ou depois do Guitar FX; os controles completos estão no [guia do amplificador](DELUXE_65.md). Instalar os VST3 não exige Node.js nem iniciar o site.
+Os três aceitam áudio mono ou estéreo, salvam o estado no projeto da DAW e expõem parâmetros para automação do host. Não recebem nem geram MIDI. O Deluxe pode ser usado sozinho ou depois do Guitar FX; os controles completos estão no [guia do amplificador](DELUXE_65.md). Instalar os VST3 não exige Node.js nem iniciar o site.
 
 ## Download e instalação
 
@@ -20,7 +21,9 @@ Ambos aceitam áudio mono ou estéreo, salvam o estado no projeto da DAW e expõ
    | Windows | `NichodevVST3-windows-latest.zip` |
    | Linux | `NichodevVST3-ubuntu-latest.zip` |
 
-2. Extraia o ZIP. Os pacotes da suite contêm os bundles completos `Nichodev Guitar FX.vst3` e `Nichodev Deluxe 65 Amp.vst3`.
+   Para instalar **somente o afinador**, baixe [8bituner para Windows](https://github.com/nichodevs/nichodev.com/releases/latest/download/8bituner-windows-latest.zip) ou [8bituner para Linux](https://github.com/nichodevs/nichodev.com/releases/latest/download/8bituner-ubuntu-latest.zip).
+
+2. Extraia o ZIP. Os pacotes completos contêm `Nichodev Guitar FX.vst3`, `Nichodev Deluxe 65 Amp.vst3` e `8bituner.vst3`. Os ZIPs exclusivos do afinador contêm apenas `8bituner.vst3`.
 3. Copie os bundles desejados para uma pasta VST3 reconhecida pela DAW:
 
    | Sistema | Pasta comum |
@@ -51,11 +54,15 @@ O canal **Normal/Clean** oferece volume e saturação suave; **Vibrato/Dirty** t
 
 A troca de canais usa uma transição suavizada de 20 ms. Nas posições extremas, somente a saturação do canal audível é calculada; durante a transição, ambos os caminhos são processados. Consulte [DELUXE_65.md](DELUXE_65.md) para os controles, o modelo DSP e seus limites.
 
+## 8bituner
+
+Afinador cromático monofônico de **55 a 1.500 Hz**, com referência de Lá entre 430 e 450 Hz e silenciamento de saída. Insira-o na faixa da guitarra, antes dos pedais e do amplificador, e toque uma corda por vez. Consulte o [guia do 8bituner](8BITUNER.md) para controles, funcionamento e limites.
+
 ## Som e limites
 
 Os efeitos são aproximações DSP independentes e não oficiais. O Guitar FX LAB do navegador usa Web Audio e pode soar diferente do VST3. O GE-7 TILT oferece inclinação tonal, sem as sete bandas de um equalizador gráfico.
 
-Afinador, seleção de dispositivo, gravação e importação de arquivos pertencem às ferramentas do [site](../README.md). O Guitar FX declara até 60 segundos de cauda para acomodar reverb seguido de alto ganho; hosts que usam esse metadado podem acrescentar esse tempo à renderização.
+O Guitar FX não inclui afinador: use o 8bituner independente ou a ferramenta do [site](../README.md). Seleção de dispositivo, gravação e importação de arquivos são feitas pela DAW ou pelo site. O Guitar FX declara até 60 segundos de cauda para acomodar reverb seguido de alto ganho; hosts que usam esse metadado podem acrescentar esse tempo à renderização.
 
 Os testes automatizados verificam regressões, mas a avaliação auditiva em DAWs e interfaces continua necessária.
 
@@ -63,11 +70,11 @@ Os testes automatizados verificam regressões, mas a avaliação auditiva em DAW
 
 Execute os comandos a partir da raiz do repositório. Requisitos: CMake 3.22 ou superior, compilador C++17 e dependências de áudio/interface do JUCE para seu sistema. A primeira configuração baixa JUCE 9.0.4 e precisa de internet. O [workflow do plugin](../.github/workflows/plugin.yml) lista as dependências Linux usadas no CI.
 
-Para compilar os dois VST3:
+Para compilar os três VST3:
 
 ```sh
 cmake -S plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release
-cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3 NichodevDeluxe65_VST3
+cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3 NichodevDeluxe65_VST3 Nichodev8bituner_VST3
 ```
 
 Para usar uma instalação local do JUCE, informe sua pasta raiz na configuração:
@@ -80,23 +87,27 @@ Os bundles ficam em:
 
 - `build/plugin/NichodevGuitarFX_artefacts/Release/VST3/`
 - `build/plugin/NichodevDeluxe65_artefacts/Release/VST3/`
+- `build/plugin/Nichodev8bituner_artefacts/Release/VST3/`
 
 A pasta de configuração pode variar conforme o gerador e a configuração escolhidos. O build não instala os plugins automaticamente na DAW.
 
 ## Testes automatizados
 
 ```sh
-cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests
+cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests Nichodev8bitunerDSPTests Nichodev8bitunerHostTests
 ctest --test-dir build/plugin --build-config Release --output-on-failure
 ```
 
-As três suítes cobrem:
+No Linux, instale também `xvfb` para o teste que abre a interface nativa. As cinco suítes cobrem:
 
 - **Guitar FX DSP:** presets, reordenação, cadeia Space Delay, ecos do DD-8/RV-6, bypass, isolamento dos canais, entradas inválidas, buffers, mistura gradual e bloqueio de DC. Comparam gate, compressor, EQ e PH-3 em 44,1, 48, 96 e 192 kHz e verificam o decaimento após a cauda declarada.
 - **Processador Guitar FX:** aplicação de preset, parâmetros do host e resposta atrasada pelo `processBlock` real do JUCE, além da restauração de estado e ordem.
 - **Deluxe DSP:** canais e sua transição, entradas atenuadas, estabilidade entre taxas, Clean em volume zero, continuidade do vibrato ao cruzar profundidade zero, variação de afinação e cauda do reverb.
 
-O [GitHub Actions](../.github/workflows/plugin.yml) compila os dois plugins e executa essas suítes em Windows e Linux. No Linux, também testa as proteções do workflow de release com `python3 plugin/tests/release_workflow_tests.py`.
+- **8bituner DSP:** cordas padrão e desafinação em sete taxas de amostragem, harmônicos, ruído, sinais fracos, silêncio, DC, entradas inválidas, reset, notas e calibração.
+- **8bituner host:** carrega o VST3 compilado, confere áudio direto e mute, entradas estéreo, automação, estado, bypass, reabertura mono e renderização do painel em `build/plugin/8bituner-preview.png`.
+
+O [GitHub Actions](../.github/workflows/plugin.yml) compila os três plugins e executa essas suítes em Windows e Linux. No Linux, também testa as proteções do workflow de release com `python3 plugin/tests/release_workflow_tests.py`.
 
 ## Releases e versões
 

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(NichodevVST3Suite VERSION 0.2.2 LANGUAGES C CXX)
+project(NichodevVST3Suite VERSION 0.3.0 LANGUAGES C CXX)
 
 set(JUCE_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(JUCE_BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
@@ -56,8 +56,26 @@ juce_add_plugin(NichodevDeluxe65
   VST3_CATEGORIES Fx Distortion Reverb Modulation
 )
 
+juce_add_plugin(Nichodev8bituner
+  VERSION 0.1.0
+  COMPANY_NAME "Nichodev"
+  BUNDLE_ID com.nichodev.8bituner
+  PLUGIN_MANUFACTURER_CODE NCHD
+  PLUGIN_CODE N8tu
+  FORMATS VST3
+  PRODUCT_NAME "8bituner"
+  IS_SYNTH FALSE
+  NEEDS_MIDI_INPUT FALSE
+  NEEDS_MIDI_OUTPUT FALSE
+  IS_MIDI_EFFECT FALSE
+  EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+  COPY_PLUGIN_AFTER_BUILD FALSE
+  VST3_CATEGORIES Fx Analyzer
+)
+
 juce_generate_juce_header(NichodevGuitarFX)
 juce_generate_juce_header(NichodevDeluxe65)
+juce_generate_juce_header(Nichodev8bituner)
 
 juce_add_binary_data(NichodevVST3SuiteAssets
   SOURCES
@@ -73,6 +91,19 @@ target_sources(NichodevGuitarFX PRIVATE
 target_sources(NichodevDeluxe65 PRIVATE
   Source/DeluxeAmpProcessor.cpp
   Source/DeluxeAmpEditor.cpp
+)
+
+target_sources(Nichodev8bituner PRIVATE Source/TunerProcessor.cpp Source/TunerEditor.cpp)
+target_compile_features(Nichodev8bituner PRIVATE cxx_std_17)
+target_compile_definitions(Nichodev8bituner PRIVATE
+  JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0
+)
+target_link_libraries(Nichodev8bituner PRIVATE
+  NichodevVST3SuiteAssets
+  juce::juce_audio_utils
+  juce::juce_recommended_config_flags
+  juce::juce_recommended_lto_flags
+  juce::juce_recommended_warning_flags
 )
 
 target_compile_features(NichodevGuitarFX PRIVATE cxx_std_17)
@@ -115,6 +146,29 @@ target_link_libraries(NichodevDeluxe65
 
 include(CTest)
 if(BUILD_TESTING)
+  add_executable(Nichodev8bitunerDSPTests tests/tuner_dsp_tests.cpp)
+  target_include_directories(Nichodev8bitunerDSPTests PRIVATE Source)
+  target_compile_features(Nichodev8bitunerDSPTests PRIVATE cxx_std_17)
+  add_test(NAME Nichodev8bitunerDSPTests COMMAND Nichodev8bitunerDSPTests)
+
+  juce_add_console_app(Nichodev8bitunerHostTests PRODUCT_NAME "8bituner host tests")
+  target_sources(Nichodev8bitunerHostTests PRIVATE tests/tuner_host_tests.cpp)
+  target_compile_features(Nichodev8bitunerHostTests PRIVATE cxx_std_17)
+  target_compile_definitions(Nichodev8bitunerHostTests PRIVATE
+    JUCE_PLUGINHOST_VST3=1 JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=1
+  )
+  target_link_libraries(Nichodev8bitunerHostTests PRIVATE juce::juce_audio_utils juce::juce_recommended_config_flags)
+  add_dependencies(Nichodev8bitunerHostTests Nichodev8bituner_VST3)
+  set(tuner_bundle "${CMAKE_BINARY_DIR}/Nichodev8bituner_artefacts/$<CONFIG>/VST3/8bituner.vst3")
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_test(NAME Nichodev8bitunerHostTests COMMAND xvfb-run -a $<TARGET_FILE:Nichodev8bitunerHostTests>
+      "${tuner_bundle}" "${CMAKE_BINARY_DIR}/8bituner-preview.png")
+  else()
+    add_test(NAME Nichodev8bitunerHostTests COMMAND Nichodev8bitunerHostTests
+      "${tuner_bundle}" "${CMAKE_BINARY_DIR}/8bituner-preview.png")
+  endif()
+  set_tests_properties(Nichodev8bitunerHostTests PROPERTIES TIMEOUT 90)
+
   add_executable(NichodevGuitarFXDSPTests tests/dsp_tests.cpp)
   target_include_directories(NichodevGuitarFXDSPTests PRIVATE Source)
   target_compile_features(NichodevGuitarFXDSPTests PRIVATE cxx_std_17)
