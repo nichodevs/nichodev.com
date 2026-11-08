@@ -37,15 +37,26 @@ gh() {
         mkdir -p "$7/Nichodev Deluxe 65 Amp.vst3/Contents"
         echo fixture > "$7/Nichodev Deluxe 65 Amp.vst3/Contents/binary"
       fi
+      if [ "$MODE" != missing-tuner ]; then
+        mkdir -p "$7/8bituner.vst3/Contents/x86_64-win" "$7/8bituner.vst3/Contents/x86_64-linux"
+        if [ "$MODE" != missing-tuner-binary ]; then
+          echo fixture > "$7/8bituner.vst3/Contents/x86_64-win/8bituner.vst3"
+          echo fixture > "$7/8bituner.vst3/Contents/x86_64-linux/8bituner.so"
+        fi
+      fi
       ;;
     "release create")
       test "$3" = v0.2.1
       test -s "$4"
       test -s "$5"
-      test "$6" = --target
-      test "$7" = "$GITHUB_SHA"
-      test "${10}" = --notes-file
-      test -s "${11}"
+      test -s "$6"
+      test -s "$7"
+      test "$8" = --target
+      test "$9" = "$GITHUB_SHA"
+      test "${12}" = --notes-file
+      test -s "${13}"
+      unzip -Z1 "$6" | grep -q '^8bituner.vst3/'
+      ! unzip -Z1 "$6" | grep -q '^Nichodev '
       echo published > result
       ;;
     *) return 99 ;;
@@ -56,7 +67,7 @@ gh() {
 
 class ReleaseWorkflowTests(unittest.TestCase):
     def test_publication_guards(self):
-        for mode in ("new", "published", "draft", "incomplete", "tagged", "missing", "no-notes", "bad-version"):
+        for mode in ("new", "published", "draft", "incomplete", "tagged", "missing", "missing-tuner", "missing-tuner-binary", "no-notes", "bad-version"):
             with self.subTest(mode=mode), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 (root / "plugin/releases").mkdir(parents=True)
@@ -68,6 +79,7 @@ class ReleaseWorkflowTests(unittest.TestCase):
                 if mode != "no-notes":
                     (root / "plugin/releases/v0.2.1.md").write_text("Fixture notes\n", encoding="utf-8")
                 assets = [{"name": f"NichodevVST3-{os}.zip"} for os in ("windows-latest", "ubuntu-latest")]
+                assets += [{"name": f"8bituner-{os}.zip"} for os in ("windows-latest", "ubuntu-latest")]
                 (root / "existing.json").write_text(json.dumps({
                     "isDraft": mode == "draft",
                     "assets": assets[:1] if mode == "incomplete" else assets,

@@ -1,6 +1,6 @@
 # nichodev.com
 
-Ferramentas para gravar, processar e mixar áudio no navegador, com visual retrô em 8 bits. O projeto reúne Voice Studio, Guitar FX LAB, MIXMASTER, uma onda interativa e dois plugins VST3 para Windows e Linux. Acesse [nichodev.com](https://nichodev.com).
+Ferramentas para gravar, processar e mixar áudio no navegador, com visual retrô em 8 bits. O projeto reúne Voice Studio, Guitar FX LAB, MIXMASTER, uma onda interativa e três plugins VST3 para Windows e Linux. Acesse [nichodev.com](https://nichodev.com).
 
 ## Ferramentas
 
@@ -13,7 +13,7 @@ Ferramentas para gravar, processar e mixar áudio no navegador, com visual retr�
 
 Na página inicial, **START** abre o Voice Studio, **SELECT** abre o Guitar FX LAB, **MIX/MASTER** abre o editor e **DOWNLOAD VST** abre as instruções de download e instalação. As legendas dos botões aparecem ao passar o ponteiro ou focá-los pelo teclado, com um glitch breve que respeita a preferência por redução de movimento. O guia no rodapé continua disponível.
 
-A [suite VST3](plugin/README.md) contém **Nichodev Guitar FX**, com 15 pedais, e **Nichodev Deluxe 65 Amp**, com canais Clean/Dirty, reverb de mola e vibrato de afinação. Baixe os pacotes Windows ou Linux na [página de downloads](https://nichodev.com/downloads.html), com links diretos e instruções para o Reaper ou outra DAW VST3. Os arquivos permanecem nos [GitHub Releases](https://github.com/nichodevs/nichodev.com/releases/latest).
+A [suite VST3](plugin/README.md) contém **Nichodev Guitar FX**, com 15 pedais, **Nichodev Deluxe 65 Amp**, com canais Clean/Dirty, reverb de mola e vibrato de afinação, e **[8bituner](plugin/8BITUNER.md)**, afinador cromático independente. Baixe os pacotes Windows ou Linux na [página de downloads](https://nichodev.com/downloads.html), com instruções para o Reaper ou outra DAW VST3. Os [GitHub Releases](https://github.com/nichodevs/nichodev.com/releases/latest) também oferecem ZIPs exclusivos do 8bituner.
 
 ## Executar o site
 
@@ -79,7 +79,7 @@ A API tem testes próprios (`npm run test:community`) e a interface é validada 
 - `prototypes/community/`: interface da comunidade servida pelo backend.
 - `public/assets/cursors/`: cursores retrô.
 - [public/onda/](public/onda/README.md): página da onda de gratidão.
-- [plugin/](plugin/README.md): JUCE/CMake, dois VST3, testes e notas de release.
+- [plugin/](plugin/README.md): JUCE/CMake, três VST3, testes e notas de release.
 - `scripts/` e `tests/e2e/`: validação do site e testes Playwright.
 - `.github/workflows/`: validação, builds, releases e deploy.
 - `build/`: saída local do CMake, ignorada pelo Git.

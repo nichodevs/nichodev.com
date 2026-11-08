@@ -64,24 +64,36 @@ jobs:
             libgl1-mesa-dev \
             libglu1-mesa-dev \
             libgtk-3-dev \
-            libjack-jackd2-dev
+            libjack-jackd2-dev \
+            xvfb
 
       - name: Configurar CMake e baixar JUCE
         run: cmake -S plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release
 
       - name: Compilar os bundles VST3
-        run: cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3 NichodevDeluxe65_VST3
+        run: cmake --build build/plugin --config Release --parallel 2 --target Nichodev8bituner_VST3 Nichodev8bitunerHostTests NichodevGuitarFX_VST3 NichodevDeluxe65_VST3
 
       - name: Compilar e executar testes DSP e do processador
+        shell: bash
         run: |
-          cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests
+          set -euo pipefail
+          cmake --build build/plugin --config Release --parallel 2 --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests Nichodev8bitunerDSPTests Nichodev8bitunerHostTests Nichodev8bitunerProcessorTests
           ctest --test-dir build/plugin --build-config Release --output-on-failure
+
+      - name: Guardar previa nativa do 8bituner
+        uses: actions/upload-artifact@v7
+        with:
+          name: 8bituner-preview-${{ matrix.os }}
+          path: build/plugin/8bituner-preview.png
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Montar pacote de distribuição
         run: |
           cmake -E make_directory build/plugin/release-package
           cmake -E copy_directory "build/plugin/NichodevGuitarFX_artefacts/Release/VST3/Nichodev Guitar FX.vst3" "build/plugin/release-package/Nichodev Guitar FX.vst3"
           cmake -E copy_directory "build/plugin/NichodevDeluxe65_artefacts/Release/VST3/Nichodev Deluxe 65 Amp.vst3" "build/plugin/release-package/Nichodev Deluxe 65 Amp.vst3"
+          cmake -E copy_directory "build/plugin/Nichodev8bituner_artefacts/Release/VST3/8bituner.vst3" "build/plugin/release-package/8bituner.vst3"
 
       - name: Publicar os bundles para Windows e Linux
         uses: actions/upload-artifact@v7
@@ -120,7 +132,7 @@ jobs:
           notes="plugin/releases/$tag.md"
           test -s "$notes"
 
-          if ready="$(gh release view "$tag" --json isDraft,assets --jq '(.isDraft | not) and ([.assets[].name] | index("NichodevVST3-windows-latest.zip") != null and index("NichodevVST3-ubuntu-latest.zip") != null)' 2>/dev/null)"; then
+          if ready="$(gh release view "$tag" --json isDraft,assets --jq '(.isDraft | not) and ([.assets[].name] | index("NichodevVST3-windows-latest.zip") != null and index("NichodevVST3-ubuntu-latest.zip") != null and index("8bituner-windows-latest.zip") != null and index("8bituner-ubuntu-latest.zip") != null)' 2>/dev/null)"; then
             test "$ready" = true || { echo "::error::Release existente incompleto ou em rascunho; confira os assets no GitHub."; exit 1; }
             echo "Release $tag já publicado; arquivos preservados."
             exit 0
@@ -136,9 +148,19 @@ jobs:
             gh run download "$GITHUB_RUN_ID" --name "$name" --dir "$name"
             test -d "$name/Nichodev Guitar FX.vst3/Contents"
             test -d "$name/Nichodev Deluxe 65 Amp.vst3/Contents"
+            test -d "$name/8bituner.vst3/Contents"
+            if [[ "$name" == *windows* ]]; then
+              test -s "$name/8bituner.vst3/Contents/x86_64-win/8bituner.vst3"
+            else
+              test -s "$name/8bituner.vst3/Contents/x86_64-linux/8bituner.so"
+            fi
             (cd "$name" && zip -qr "../$name.zip" .)
             unzip -tq "$name.zip"
+            tuner="8bituner-${name#NichodevVST3-}.zip"
+            (cd "$name" && zip -qr "../$tuner" 8bituner.vst3)
+            unzip -tq "$tuner"
           done
 
           gh release create "$tag" NichodevVST3-windows-latest.zip NichodevVST3-ubuntu-latest.zip \
+            8bituner-windows-latest.zip 8bituner-ubuntu-latest.zip \
             --target "$GITHUB_SHA" --title "Nichodev VST3 Suite $tag" --notes-file "$notes"
