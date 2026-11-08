@@ -17,7 +17,7 @@ test.use({
 test.skip(({ browserName }) => browserName !== "chromium", "The test microphone is provided by Chromium");
 
 test("the PWA opens the existing community and records an exportable WAV", async ({ context, page }) => {
-  const community = await openCommunity();
+  const community = await openCommunity({ publicRelease: true });
   try {
     const client = community.client();
     await account(client, "pwa_tester");
@@ -43,6 +43,7 @@ test("the PWA opens the existing community and records an exportable WAV", async
     await page.locator("#accountUser").fill("pwa_tester");
     await page.locator("#accountPassword").fill(phrase);
     await page.locator("#accountSubmit").click();
+    await expect(page).toHaveURL(community.origin + "/comunidade/#estudio");
     await expect(page.locator("#accountLabel")).toContainText("pwa_tester");
     await page.locator("#headerChar").click();
     await expect(page.locator("#nicoPreview")).toBeVisible();
@@ -50,6 +51,7 @@ test("the PWA opens the existing community and records an exportable WAV", async
 
     await page.getByRole("link", { name: "MIXMASTER", exact: true }).click();
     await expect(page).toHaveURL(community.origin + "/mixmaster.html");
+    await expect(page.locator(".track-row").first()).toBeVisible();
     const record = page.locator("#recordButton");
     await record.click();
     await expect(record).toHaveClass(/recording/);
