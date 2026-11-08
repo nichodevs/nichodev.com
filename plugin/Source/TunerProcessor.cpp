@@ -48,9 +48,10 @@ void BitunerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
     juce::ScopedNoDenormals noDenormals;
     midi.clear();
     // Choose the stronger input rather than summing stereo: inverted channels must not cancel.
+    const auto channels = juce::jmin(getTotalNumInputChannels(), buffer.getNumChannels());
     int analysisChannel = 0;
     double strongestEnergy = -1.0;
-    for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+    for (int channel = 0; channel < channels; ++channel)
     {
         auto* data = buffer.getWritePointer(channel);
         double energy = 0.0;
@@ -63,14 +64,14 @@ void BitunerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce:
         }
         if (energy > strongestEnergy) { strongestEnergy = energy; analysisChannel = channel; }
     }
-    if (buffer.getNumChannels() > 0)
+    if (channels > 0 && buffer.getNumSamples() > 0)
         analyser.push(buffer.getReadPointer(analysisChannel), buffer.getNumSamples());
 
     outputGain.setTargetValue(isMuted() ? 0.0f : 1.0f);
     for (int i = 0; i < buffer.getNumSamples(); ++i)
     {
         const auto gain = outputGain.getNextValue();
-        for (int channel = 0; channel < buffer.getNumChannels(); ++channel)
+        for (int channel = 0; channel < channels; ++channel)
             buffer.getWritePointer(channel)[i] *= gain;
     }
 }

@@ -46,6 +46,18 @@ int main(int argc, char** argv)
     if (argc < 2) return EXIT_FAILURE;
     BitunerAudioProcessor processor;
     processor.prepareToPlay(48000.0, 256);
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> empty(2, 0);
+    processor.processBlock(empty, midi);
+    juce::AudioBuffer<float> padded(4, 256);
+    padded.clear();
+    padded.setSample(2, 20, 0.75f);
+    padded.setSample(3, 20, -0.75f);
+    processor.parameters.getParameter("mute")->setValueNotifyingHost(1.0f);
+    processor.processBlock(padded, midi);
+    expect(padded.getSample(2, 20) == 0.75f && padded.getSample(3, 20) == -0.75f,
+           "channels outside the declared buses are not modified");
+    processor.parameters.getParameter("mute")->setValueNotifyingHost(0.0f);
     const double targets[]{82.406889, 110.0, 146.832384};
     for (int mode = 0; mode < 3; ++mode)
     {
