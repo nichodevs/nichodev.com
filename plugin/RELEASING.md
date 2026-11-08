@@ -18,7 +18,7 @@ O workflow [Compilar plugin de áudio](../.github/workflows/plugin.yml) compila 
 5. Integre a mudança em `main`. Após os dois builds e testes passarem novamente, o job **Publicar release VST3** baixa os artefatos dessa mesma execução, confere os três bundles, o binário nativo do afinador e a integridade dos quatro ZIPs e cria `Nichodev VST3 Suite vX.Y.Z`, com a tag no commit compilado.
 6. Abra o release e confirme `NichodevVST3-windows-latest.zip`, `NichodevVST3-ubuntu-latest.zip`, `8bituner-windows-latest.zip` e `8bituner-ubuntu-latest.zip`. Os botões existentes acompanham `/releases/latest/download/`; não é necessário enviar os bundles para a Hostinger.
 
-O token tem escrita em conteúdo apenas no job de publicação da `main`. As publicações são serializadas. Se a versão já tiver release publicado com os dois ZIPs, o job termina sem substituir arquivos. Uma tag sem release, um rascunho ou um release sem os dois arquivos interrompe o job para conferência manual.
+O token tem escrita em conteúdo apenas no job de publicação da `main`. As publicações são serializadas. Se a versão já tiver release publicado com os quatro ZIPs, o job termina sem substituir arquivos. Uma tag sem release, um rascunho ou um release incompleto interrompe o job para conferência manual.
 
 ## Se a publicação falhar
 

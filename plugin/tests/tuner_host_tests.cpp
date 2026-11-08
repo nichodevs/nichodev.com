@@ -106,6 +106,11 @@ int main(int argc, char** argv)
     if (mute != nullptr && reference != nullptr)
     {
         mute->setValueNotifyingHost(1.0f);
+        for (int channel = 0; channel < 2; ++channel)
+            for (int i = 0; i < 256; ++i) dry.setSample(channel, i, 0.25f);
+        plugin->processBlock(dry, midi);
+        expect(dry.getSample(0, 0) < 0.25f && dry.getSample(0, 0) > dry.getSample(0, 255)
+            && dry.getSample(0, 255) > 0.0f, "mute fades gradually instead of cutting the waveform abruptly");
         reference->setValueNotifyingHost(0.6f);
         feed(*plugin, 19200, 1, 442.0);
         expect(waitForNote(*editor, "A4"), "analysis remains active while the output is muted");
@@ -125,6 +130,7 @@ int main(int argc, char** argv)
         plugin->processBlockBypassed(dry, midi);
         expect(dry.getSample(0, 40) == original.getSample(0, 40), "host bypass passes audio even with mute enabled");
     }
+    expect(waitForNote(*editor, "--"), "a stopped input clears the previous reading");
     editor.reset();
     plugin->releaseResources();
     plugin->setPlayConfigDetails(1, 1, 44100.0, 512);

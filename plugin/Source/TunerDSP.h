@@ -94,6 +94,7 @@ private:
                                      static_cast<int>(std::ceil(analysisRate / minimumFrequency)));
         const auto comparisonSize = frameSize - static_cast<std::size_t>(maxLag) - 1;
         std::array<double, frameSize / 2> difference{};
+        std::array<double, frameSize / 2> rawDifference{};
         double runningSum = 0.0;
         for (int lag = 1; lag <= maxLag; ++lag)
         {
@@ -104,6 +105,7 @@ private:
                 sum += delta * delta;
             }
             runningSum += sum;
+            rawDifference[static_cast<std::size_t>(lag)] = sum;
             difference[static_cast<std::size_t>(lag)] = runningSum > 1.0e-20 ? sum * lag / runningSum : 1.0;
         }
 
@@ -113,14 +115,16 @@ private:
                 continue;
             while (lag + 1 < maxLag && difference[static_cast<std::size_t>(lag + 1)] < difference[static_cast<std::size_t>(lag)])
                 ++lag;
-            const auto a = difference[static_cast<std::size_t>(lag - 1)];
-            const auto b = difference[static_cast<std::size_t>(lag)];
-            const auto c = difference[static_cast<std::size_t>(lag + 1)];
+            const auto a = rawDifference[static_cast<std::size_t>(lag - 1)];
+            const auto b = rawDifference[static_cast<std::size_t>(lag)];
+            const auto c = rawDifference[static_cast<std::size_t>(lag + 1)];
             const auto denominator = a - 2.0 * b + c;
             const auto offset = std::abs(denominator) > 1.0e-12
                 ? std::clamp(0.5 * (a - c) / denominator, -0.5, 0.5) : 0.0;
             const auto result = analysisRate / (lag + offset);
-            return result >= minimumFrequency && result <= maximumFrequency ? static_cast<float>(result) : 0.0f;
+            // Numerical interpolation can cross a supported endpoint by a fraction of a hertz.
+            return result >= minimumFrequency - 0.01 && result <= maximumFrequency + 0.01
+                ? static_cast<float>(result) : 0.0f;
         }
         return 0.0f;
     }

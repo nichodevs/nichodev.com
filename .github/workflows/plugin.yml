@@ -71,11 +71,11 @@ jobs:
         run: cmake -S plugin -B build/plugin -DCMAKE_BUILD_TYPE=Release
 
       - name: Compilar os bundles VST3
-        run: cmake --build build/plugin --config Release --target NichodevGuitarFX_VST3 NichodevDeluxe65_VST3 Nichodev8bituner_VST3
+        run: cmake --build build/plugin --config Release --parallel 2 --target NichodevGuitarFX_VST3 NichodevDeluxe65_VST3 Nichodev8bituner_VST3
 
       - name: Compilar e executar testes DSP e do processador
         run: |
-          cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests Nichodev8bitunerDSPTests Nichodev8bitunerHostTests
+          cmake --build build/plugin --config Release --parallel 2 --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests Nichodev8bitunerDSPTests Nichodev8bitunerHostTests
           ctest --test-dir build/plugin --build-config Release --output-on-failure
 
       - name: Guardar previa nativa do 8bituner

@@ -48,15 +48,26 @@ int main()
                 const auto detected = measure(rate, target, 0.25);
                 const auto error = detected > 0.0 ? std::abs(1200.0 * std::log2(detected / target)) : 9999.0;
                 maximumError = std::max(maximumError, error);
+                if (error >= 2.0)
+                    std::cerr << "Rate " << rate << ", target " << target << ", detected " << detected << ", error " << error << '\n';
                 expect(error < 2.0, "six guitar strings and detuning are within two cents across sample rates");
             }
     for (const auto rate : {44100.0, 48000.0, 96000.0})
         for (const auto frequency : {62.0, 73.416192, 82.406889, 110.0, 329.627557, 440.0, 880.0, 1318.510228})
         {
             const auto detected = measure(rate, frequency, 0.25, true, true);
+            if (detected == 0.0 || std::abs(1200.0 * std::log2(detected / frequency)) >= 3.0)
+                std::cerr << "Harmonics: rate " << rate << ", target " << frequency << ", detected " << detected << '\n';
             expect(detected > 0.0 && std::abs(1200.0 * std::log2(detected / frequency)) < 3.0,
                    "decaying guitar-like harmonics and noise retain the fundamental");
         }
+    for (const auto frequency : {55.0, 1500.0})
+    {
+        const auto detected = measure(48000, frequency, 0.25);
+        if (detected == 0.0) std::cerr << "Range endpoint: " << frequency << '\n';
+        expect(detected > 0.0 && std::abs(1200.0 * std::log2(detected / frequency)) < 3.0,
+               "both declared range endpoints are detected");
+    }
     expect(measure(48000, 82.406889, 0.003) > 0.0, "quiet guitar signal is detected");
     expect(measure(48000, 110.0, 0.00001) == 0.0, "sub-threshold signal is rejected");
     expect(measure(48000, 110.0, 0.0) == 0.0, "silence is rejected");
