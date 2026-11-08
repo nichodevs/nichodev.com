@@ -21,10 +21,7 @@ body { padding: 24px 20px; }
 .downloads a:focus-visible { outline: 3px dashed var(--fg); outline-offset: 5px; }
 .download-grid, .plugin-grid, .daw-guides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 .plugin-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.tuner-download { --bg: #10160f; --fg: #c9f27a; --mute: #b8c3aa; --line: #64734d; color: #eaf2dc; }
-.tuner-download h2, .tuner-download h3 { color: var(--fg); }
 .tuner-download > p:first-of-type { margin-bottom: 24px; }
-.tuner-download .download-card { background: #1b2418; }
 .download-card { display: flex; flex-direction: column; align-items: flex-start; padding: 24px; border: 2px solid var(--line); }
 .download-card p { margin-bottom: 22px; color: var(--mute); }
 .download-button { margin-top: auto; background: var(--fg); color: var(--bg) !important; font-size: 10px; }
