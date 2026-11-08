@@ -31,27 +31,151 @@
   outline-offset: 2px;
 }
 
-.pwa-install summary {
-  display: flex;
+.site-language .pwa-install {
+  display: inline-flex;
   align-items: center;
-  min-height: 2.25rem;
-  padding: .2rem .5rem;
-  text-decoration: underline;
-  text-underline-offset: .22em;
+  justify-content: center;
+  gap: .5rem;
+  min-height: 2.75rem;
+  padding: .6rem 1rem;
+  margin-left: .5rem;
+  border: 2px solid #c9f27a;
+  border-radius: 0;
+  background: #c9f27a;
+  color: #10160c;
+  box-shadow: 3px 3px 0 #455333;
+  font: 700 .85rem/1.3 monospace;
+  text-transform: uppercase;
   cursor: pointer;
 }
 
-.pwa-install[open] {
-  flex-basis: 100%;
+.site-language .pwa-install:hover {
+  background: #e0ffab;
 }
 
-.pwa-install p {
-  margin: .25rem .5rem .5rem;
-  max-width: 40rem;
+.site-language .pwa-install[hidden] {
+  display: none;
+}
+
+.pwa-dialog {
+  box-sizing: border-box;
+  width: min(32rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  padding: 1.5rem;
+  overflow: auto;
+  border: 2px solid #c9f27a;
+  border-radius: 0;
+  background: #10160c;
+  color: #edf3e4;
+  box-shadow: 8px 8px 0 #455333;
+  font: 1rem/1.55 system-ui, sans-serif;
+  text-align: left;
+}
+
+/* Tool pages force their pixel font on every descendant. */
+body .pwa-dialog, body .pwa-dialog * {
+  font-family: system-ui, sans-serif !important;
+}
+
+body .pwa-dialog h2, body .pwa-dialog .pwa-kicker {
+  font-family: monospace !important;
+}
+
+.pwa-dialog::backdrop {
+  background: #000b;
+}
+
+.pwa-dialog h2, .pwa-dialog h3, .pwa-dialog p {
+  margin: 0 0 1rem;
+}
+
+.pwa-dialog h2 {
+  font: 700 1.5rem/1.3 monospace;
+  color: #c9f27a;
+}
+
+.pwa-dialog h3 {
+  font-size: 1rem;
+}
+
+.pwa-dialog .pwa-kicker {
+  color: #c6a5f0;
+  font: 700 .8rem/1.5 monospace;
+}
+
+.pwa-dialog button {
+  min-height: 2.75rem;
+  padding: .5rem;
+  border: 1px solid #839567;
+  border-radius: 0;
+  background: #1c2615;
+  color: #edf3e4;
+  font: 700 .8rem/1.3 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.pwa-dialog .pwa-close {
+  float: right;
+  min-width: 2.75rem;
+  margin: -.75rem -.75rem 0 .5rem;
+  font-size: 1.5rem;
+}
+
+.pwa-platforms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .4rem;
+  margin-block: 1.25rem;
+}
+
+.pwa-platforms [aria-pressed="true"] {
+  background: #c9f27a;
+  color: #10160c;
+  border-color: #c9f27a;
+}
+
+.pwa-dialog .pwa-native {
+  width: 100%;
+  background: #c9f27a;
+  color: #10160c;
+  border-color: #c9f27a;
+}
+
+.pwa-dialog ol {
+  padding-left: 1.5rem;
+}
+
+.pwa-dialog li + li {
+  margin-top: .75rem;
+}
+
+.pwa-dialog .pwa-note {
+  margin: 1.25rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid #455333;
+  color: #c4cfb6;
+  font-size: .875rem;
+}
+
+.site-language .pwa-install:focus-visible, .pwa-dialog button:focus-visible {
+  outline: 2px solid #c6a5f0;
+  outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+  .site-language .pwa-install {
+    flex-basis: 100%;
+    margin: .5rem 0;
+  }
+
+  .pwa-dialog {
+    padding: 1rem;
+  }
 }
 
 @media (display-mode: standalone) {
-  .pwa-install {
+  .site-language .pwa-install {
     display: none;
   }
 }
