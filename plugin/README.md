@@ -98,7 +98,7 @@ cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests Ni
 ctest --test-dir build/plugin --build-config Release --output-on-failure
 ```
 
-No Linux, instale também `xvfb` para os testes que abrem a interface nativa. As seis suítes cobrem:
+No Linux, instale também `xvfb`, `openbox` e `x11-utils` para os testes que abrem a interface nativa. O teste de host usa um desktop virtual com gerenciador de janelas. As seis suítes cobrem:
 
 - **Guitar FX DSP:** presets, reordenação, cadeia Space Delay, ecos do DD-8/RV-6, bypass, isolamento dos canais, entradas inválidas, buffers, mistura gradual e bloqueio de DC. Comparam gate, compressor, EQ e PH-3 em 44,1, 48, 96 e 192 kHz e verificam o decaimento após a cauda declarada.
 - **Processador Guitar FX:** aplicação de preset, parâmetros do host e resposta atrasada pelo `processBlock` real do JUCE, além da restauração de estado e ordem.
