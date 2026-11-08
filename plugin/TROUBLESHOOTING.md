@@ -1,11 +1,11 @@
 # Instalação e diagnóstico do VST3
 
-Este guia ajuda a confirmar a instalação do Nichodev Guitar FX e do Nichodev Deluxe 65 Amp e a reunir informações úteis quando uma DAW não detecta os plugins, não produz áudio ou apresenta estalos. Os nomes dos menus variam entre versões da DAW.
+Este guia ajuda a confirmar a instalação de Nichodev Guitar FX, Nichodev Deluxe 65 Amp e 8bituner e a reunir informações úteis quando uma DAW não detecta os plugins, não produz áudio ou apresenta estalos. Os nomes dos menus variam entre versões da DAW.
 
 ## Instalar ou atualizar
 
-1. Baixe o ZIP de Windows ou Linux na [página de downloads](https://nichodev.com/downloads.html), que inclui os dois plugins e instruções para a DAW. Os pacotes são de 64 bits; no Linux, usam x86_64 e dependem da compatibilidade da distribuição. Ainda não há pacote para macOS. Para builds não publicados, use os artefatos de uma execução bem-sucedida da `main` no [workflow dos plugins](https://github.com/nichodevs/nichodev.com/actions/workflows/plugin.yml). Os ZIPs dos [releases](https://github.com/nichodevs/nichodev.com/releases/latest) permanecem disponíveis; artefatos do GitHub Actions expiram após 14 dias.
-2. Feche a DAW, extraia o ZIP e copie os bundles completos que quiser instalar (`Nichodev Guitar FX.vst3` e/ou `Nichodev Deluxe 65 Amp.vst3`) para uma pasta VST3 reconhecida. Preserve a estrutura interna de cada bundle; não copie apenas `Contents`.
+1. Baixe o ZIP completo de Windows ou Linux na [página de downloads](https://nichodev.com/downloads.html), com instruções para a DAW. Para instalar somente o afinador, escolha um dos ZIPs `8bituner-*` no [release](https://github.com/nichodevs/nichodev.com/releases/latest). Os pacotes são de 64 bits; no Linux, usam x86_64 e dependem da compatibilidade da distribuição. Ainda não há pacote para macOS. Para builds não publicados, use os artefatos de uma execução bem-sucedida da `main` no [workflow dos plugins](https://github.com/nichodevs/nichodev.com/actions/workflows/plugin.yml). Os ZIPs dos releases permanecem disponíveis; artefatos do GitHub Actions expiram após 14 dias.
+2. Feche a DAW, extraia o ZIP e copie os bundles completos que quiser instalar (`Nichodev Guitar FX.vst3`, `Nichodev Deluxe 65 Amp.vst3` ou `8bituner.vst3`) para uma pasta VST3 reconhecida. Preserve a estrutura interna de cada bundle; não copie apenas `Contents`.
 3. No Windows, a pasta compartilhada comum é `C:\Program Files\Common Files\VST3`, que pode exigir permissão de administrador. No Linux, a pasta de usuário comum é `~/.vst3`. Também é possível usar outra pasta gravável, desde que esteja configurada na busca de plugins da DAW.
 4. Evite cópias antigas em outras pastas VST3 que a DAW também verifica. Reabra a DAW e faça uma nova varredura dos plugins. Se o VST3 não aparecer, confira as pastas configuradas e solicite uma varredura completa.
 
@@ -24,6 +24,13 @@ Este guia ajuda a confirmar a instalação do Nichodev Guitar FX e do Nichodev D
 2. Ajuste **Normal Volume** ou **Vibrato Drive**, depois suba **Master**. No canal Clean, Normal Volume em zero silencia o canal. Master em zero silencia ambos os canais.
 3. O reverb de mola e o vibrato de afinação estão associados ao canal **Vibrato / Dirty**. Para testar vibrato, ligue **PITCH VIBRATO** e ajuste **Vibrato Depth** acima de zero; para o reverb, aumente **Spring Reverb**.
 4. Compare o plugin ativo com o bypass da DAW. Se o medidor antes do plugin se move, mas a saída some somente com o Deluxe 65 ativo, registre canal, entrada e controles usados.
+
+## 8bituner
+
+1. Se a nota não aparece, confira o sinal na faixa, o monitoramento e o estado ativo do plugin. Insira o afinador antes de efeitos e toque uma corda por vez dentro de 55 a 1.500 Hz.
+2. Se há nota mas não há som, confira **SILENCIAR SAIDA**. A análise continua ativa com a saída silenciada; o bypass da DAW libera o áudio.
+3. Se todas as notas parecem deslocadas, confira a referência **A4**. O padrão é 440 Hz; a referência fica salva no projeto e pode receber automação.
+4. A leitura precisa de uma janela de sinal. Use uma nota sustentada, com sinal limpo e nível suficiente. Consulte o [guia do afinador](8BITUNER.md) para os limites dos testes.
 
 ## Estalos ou interrupções
 

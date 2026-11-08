@@ -159,15 +159,30 @@ if(BUILD_TESTING)
   )
   target_link_libraries(Nichodev8bitunerHostTests PRIVATE juce::juce_audio_utils juce::juce_recommended_config_flags)
   add_dependencies(Nichodev8bitunerHostTests Nichodev8bituner_VST3)
+  add_executable(Nichodev8bitunerProcessorTests tests/tuner_processor_tests.cpp)
+  target_include_directories(Nichodev8bitunerProcessorTests PRIVATE
+    Source $<TARGET_PROPERTY:Nichodev8bituner,INCLUDE_DIRECTORIES>
+  )
+  target_compile_definitions(Nichodev8bitunerProcessorTests PRIVATE
+    $<TARGET_PROPERTY:Nichodev8bituner,COMPILE_DEFINITIONS>
+    JUCE_MODAL_LOOPS_PERMITTED=1
+  )
+  target_compile_features(Nichodev8bitunerProcessorTests PRIVATE cxx_std_17)
+  target_link_libraries(Nichodev8bitunerProcessorTests PRIVATE Nichodev8bituner)
   set(tuner_bundle "${CMAKE_BINARY_DIR}/Nichodev8bituner_artefacts/$<CONFIG>/VST3/8bituner.vst3")
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_test(NAME Nichodev8bitunerHostTests COMMAND xvfb-run -a $<TARGET_FILE:Nichodev8bitunerHostTests>
-      "${tuner_bundle}" "${CMAKE_BINARY_DIR}/8bituner-preview.png")
+      "${tuner_bundle}")
+    add_test(NAME Nichodev8bitunerProcessorTests COMMAND xvfb-run -a $<TARGET_FILE:Nichodev8bitunerProcessorTests>
+      "${CMAKE_BINARY_DIR}/8bituner-preview.png")
   else()
     add_test(NAME Nichodev8bitunerHostTests COMMAND Nichodev8bitunerHostTests
-      "${tuner_bundle}" "${CMAKE_BINARY_DIR}/8bituner-preview.png")
+      "${tuner_bundle}")
+    add_test(NAME Nichodev8bitunerProcessorTests COMMAND Nichodev8bitunerProcessorTests
+      "${CMAKE_BINARY_DIR}/8bituner-preview.png")
   endif()
   set_tests_properties(Nichodev8bitunerHostTests PROPERTIES TIMEOUT 90)
+  set_tests_properties(Nichodev8bitunerProcessorTests PROPERTIES TIMEOUT 30)
 
   add_executable(NichodevGuitarFXDSPTests tests/dsp_tests.cpp)
   target_include_directories(NichodevGuitarFXDSPTests PRIVATE Source)

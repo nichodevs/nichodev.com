@@ -94,18 +94,19 @@ A pasta de configuração pode variar conforme o gerador e a configuração esco
 ## Testes automatizados
 
 ```sh
-cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests Nichodev8bitunerDSPTests Nichodev8bitunerHostTests
+cmake --build build/plugin --config Release --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests Nichodev8bitunerDSPTests Nichodev8bitunerHostTests Nichodev8bitunerProcessorTests
 ctest --test-dir build/plugin --build-config Release --output-on-failure
 ```
 
-No Linux, instale também `xvfb` para o teste que abre a interface nativa. As cinco suítes cobrem:
+No Linux, instale também `xvfb` para os testes que abrem a interface nativa. As seis suítes cobrem:
 
 - **Guitar FX DSP:** presets, reordenação, cadeia Space Delay, ecos do DD-8/RV-6, bypass, isolamento dos canais, entradas inválidas, buffers, mistura gradual e bloqueio de DC. Comparam gate, compressor, EQ e PH-3 em 44,1, 48, 96 e 192 kHz e verificam o decaimento após a cauda declarada.
 - **Processador Guitar FX:** aplicação de preset, parâmetros do host e resposta atrasada pelo `processBlock` real do JUCE, além da restauração de estado e ordem.
 - **Deluxe DSP:** canais e sua transição, entradas atenuadas, estabilidade entre taxas, Clean em volume zero, continuidade do vibrato ao cruzar profundidade zero, variação de afinação e cauda do reverb.
 
 - **8bituner DSP:** cordas padrão e desafinação em sete taxas de amostragem, harmônicos, ruído, sinais fracos, silêncio, DC, entradas inválidas, reset, notas e calibração.
-- **8bituner host:** carrega o VST3 compilado, confere áudio direto e mute, entradas estéreo, automação, estado, bypass, reabertura mono e renderização do painel em `build/plugin/8bituner-preview.png`.
+- **8bituner host:** carrega o VST3 compilado, confere áudio direto, mute gradual, automação, estado, bypass, reabertura mono e abertura da interface em uma janela nativa do host.
+- **8bituner processador/editor:** verifica detecção em entradas estéreo normais, somente à direita e invertidas, análise durante mute, orientação, falta de sinal, redimensionamento e renderização do painel real em `build/plugin/8bituner-preview.png`.
 
 O [GitHub Actions](../.github/workflows/plugin.yml) compila os três plugins e executa essas suítes em Windows e Linux. No Linux, também testa as proteções do workflow de release com `python3 plugin/tests/release_workflow_tests.py`.
 

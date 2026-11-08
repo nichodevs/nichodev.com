@@ -75,7 +75,7 @@ jobs:
 
       - name: Compilar e executar testes DSP e do processador
         run: |
-          cmake --build build/plugin --config Release --parallel 2 --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests Nichodev8bitunerDSPTests Nichodev8bitunerHostTests
+          cmake --build build/plugin --config Release --parallel 2 --target NichodevGuitarFXDSPTests NichodevGuitarFXProcessorTests NichodevDeluxe65DSPTests Nichodev8bitunerDSPTests Nichodev8bitunerHostTests Nichodev8bitunerProcessorTests
           ctest --test-dir build/plugin --build-config Release --output-on-failure
 
       - name: Guardar previa nativa do 8bituner
