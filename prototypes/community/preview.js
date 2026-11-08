@@ -19,7 +19,7 @@
     if(!response.ok){const error=new Error(data.error||"Não foi possível concluir. Tente novamente.");error.status=response.status;throw error;}
     return data;
   }
-  const closeDialogs=()=>document.querySelectorAll("dialog[open]").forEach(dialog=>dialog.close());
+  const closeDialogs=()=>document.querySelectorAll("dialog[open]:not(.pwa-dialog)").forEach(dialog=>dialog.close());
   const openDialog=id=>{closeDialogs();$(id).showModal();};
   let adminConfirmation=null,confirmAdmin=null,cancelAdmin=null;
   function confirmAdminPassword(){
@@ -372,7 +372,7 @@
       }
     }catch(error){if(action==="share-detail")$("shareStatus").textContent=error.message;else status(error.message);}
   });
-  document.querySelectorAll("dialog").forEach(dialog=>{
+  document.querySelectorAll("dialog:not(.pwa-dialog)").forEach(dialog=>{
     dialog.addEventListener("close",()=>{stopExample();dialog.querySelectorAll('input[type="password"]').forEach(input=>{input.value="";});if(dialog.id==="recoveryKeyDialog"&&!keyFlow){$("recoveryKey").value="";keyUsername="";}});
     dialog.addEventListener("cancel",event=>{if(dialog.id==="recoveryKeyDialog"&&keyFlow){event.preventDefault();$("keyStatus").textContent="Guarde a chave e conclua a etapa ou use o botão de cancelar cadastro.";}});
   });
