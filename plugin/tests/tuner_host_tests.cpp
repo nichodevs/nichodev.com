@@ -34,6 +34,9 @@ int main(int argc, char** argv)
 {
     juce::ScopedJuceInitialiser_GUI initialise;
     if (argc < 2) return EXIT_FAILURE;
+    // Initialise the host's X11 connection before loading a plugin with its own GUI.
+    juce::DocumentWindow hostWindow("8bituner host test", juce::Colours::black,
+                                   juce::DocumentWindow::allButtons);
     juce::VST3PluginFormat format;
     juce::OwnedArray<juce::PluginDescription> descriptions;
     format.findAllTypesForFile(descriptions, argv[1]);
@@ -64,8 +67,9 @@ int main(int argc, char** argv)
     std::unique_ptr<juce::AudioProcessorEditor> editor(plugin->createEditorAndMakeActive());
     expect(editor != nullptr, "the compiled plugin opens its native editor");
     if (editor == nullptr) return EXIT_FAILURE;
-    editor->addToDesktop(juce::ComponentPeer::windowIsTemporary);
-    editor->setVisible(true);
+    hostWindow.setContentNonOwned(editor.get(), true);
+    hostWindow.centreWithSize(hostWindow.getWidth(), hostWindow.getHeight());
+    hostWindow.setVisible(true);
     juce::MessageManager::getInstance()->runDispatchLoopUntil(50);
     expect(editor->getWidth() >= 560 && editor->getHeight() >= 420,
            "the VST3 view attaches to a native host window");
@@ -110,7 +114,7 @@ int main(int argc, char** argv)
         plugin->processBlockBypassed(dry, midi);
         expect(dry.getSample(0, 40) == original.getSample(0, 40), "host bypass passes audio even with mute enabled");
     }
-    editor->removeFromDesktop();
+    hostWindow.clearContentComponent();
     editor.reset();
     plugin->releaseResources();
     plugin->setPlayConfigDetails(1, 1, 44100.0, 512);
